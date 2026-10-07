@@ -1,0 +1,2 @@
+const ADMIN_USER='Admin',ADMIN_HASH='c09167973ace8bd95bc8167b1b7170ca6f8ae554e1356c9679b75444cd2a8da2';
+document.getElementById('login').addEventListener('submit',async e=>{e.preventDefault();const u=document.getElementById('u').value.trim(),h=await mhsHash(document.getElementById('p').value);if(u===ADMIN_USER&&h===ADMIN_HASH){sessionStorage.setItem('mhs_admin','1');location.href='index.html'}else document.getElementById('msg').textContent='Invalid administrator credentials.'});

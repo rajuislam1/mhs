@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220">
+<circle cx="110" cy="110" r="103" fill="#fff" stroke="#006a4e" stroke-width="8"/>
+<circle cx="110" cy="110" r="83" fill="#006a4e"/>
+<path d="M62 88h96v67H62z" fill="#fff" opacity=".96"/>
+<path d="M72 99h76M72 112h76M72 125h54" stroke="#006a4e" stroke-width="6" stroke-linecap="round"/>
+<path d="M110 38c16 16 25 31 25 45 0 22-12 35-25 35S85 105 85 83c0-14 9-29 25-45z" fill="#e22b3b"/>
+<text x="110" y="178" text-anchor="middle" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#fff">MHS</text>
+<text x="110" y="199" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#006a4e">ESTD. 1962</text>
+</svg>
