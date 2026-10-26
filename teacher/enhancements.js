@@ -18,3 +18,5 @@
  };
  setTimeout(searchTables,0);
 })();
+render();
+
