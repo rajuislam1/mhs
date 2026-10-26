@@ -11,7 +11,15 @@ document.getElementById('login').addEventListener('submit', async (e) => {
   button.disabled = true;
 
   try {
+    if (!window.mhsSupabaseReady) {
+      throw new Error('Supabase connection is not configured.');
+    }
+
     const supabase = await window.mhsSupabaseReady;
+
+    if (!supabase) {
+      throw new Error('Supabase connection failed. Please check configuration.');
+    }
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -28,7 +36,11 @@ document.getElementById('login').addEventListener('submit', async (e) => {
 
     if (profileError) throw profileError;
 
-    if (!profile || profile.role !== 'super_admin' || !profile.is_active) {
+    if (
+      !profile ||
+      profile.role !== 'super_admin' ||
+      profile.is_active !== true
+    ) {
       await supabase.auth.signOut();
       throw new Error('This account does not have active administrator access.');
     }
@@ -37,6 +49,7 @@ document.getElementById('login').addEventListener('submit', async (e) => {
     window.location.href = 'index.html';
 
   } catch (error) {
+    console.error('Admin login error:', error);
     msg.textContent = error.message || 'Login failed. Please try again.';
   } finally {
     button.disabled = false;
