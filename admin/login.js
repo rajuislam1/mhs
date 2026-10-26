@@ -17,32 +17,54 @@ document.getElementById('login').addEventListener('submit', async (e) => {
 
     const supabase = await window.mhsSupabaseReady;
 
-    if (!supabase) {
-      throw new Error('Supabase connection failed. Please check configuration.');
-    }
-
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
 
-    if (error) throw error;
+    if (error) {
+      throw new Error('Authentication failed: ' + error.message);
+    }
+
+    if (!data.user) {
+      throw new Error('Login succeeded but no user was returned.');
+    }
 
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('role, is_active')
+      .select('id, role, is_active')
       .eq('id', data.user.id)
       .maybeSingle();
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('Profile query failed:', profileError);
+      throw new Error(
+        'Profile query failed: ' + profileError.message
+      );
+    }
 
-    if (
-      !profile ||
-      profile.role !== 'super_admin' ||
-      profile.is_active !== true
-    ) {
-      await supabase.auth.signOut();
-      throw new Error('This account does not have active administrator access.');
+    if (!profile) {
+      console.error('No profile found for user ID:', data.user.id);
+      throw new Error('No user profile found for this login account.');
+    }
+
+    console.log('Admin profile check:', {
+      idMatches: profile.id === data.user.id,
+      role: profile.role,
+      is_active: profile.is_active
+    });
+
+    if (profile.role !== 'super_admin') {
+      throw new Error(
+        'Incorrect role returned: ' + String(profile.role)
+      );
+    }
+
+    if (profile.is_active !== true) {
+      throw new Error(
+        'Administrator account is inactive. Returned value: ' +
+        String(profile.is_active)
+      );
     }
 
     sessionStorage.setItem('mhs_admin', '1');
