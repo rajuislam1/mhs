@@ -1,1 +1,38 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Teacher Login | MHS</title><link rel="icon" href="../assets/images/logo.svg"><link rel="stylesheet" href="../css/admin.css"></head><body class="login-page"><div class="login-card"><img src="../assets/images/logo.svg"><h1>Teacher Portal</h1><p>মোখলেশপুর উচ্চ বিদ্যালয়</p><form id="login"><label>Username<input id="u" required autocomplete="username"></label><label>Password<input id="p" type="password" required autocomplete="current-password"></label><button>Login</button><small id="msg"></small></form><a href="../admin/login.html">← Administrator Login</a></div><script src="../js/data.js"></script><script src="../js/core.js"></script><script src="login.js"></script></body></html>
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teacher Login | MHS</title>
+  <link rel="icon" href="../assets/images/logo.svg">
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <img src="../assets/images/logo.svg" alt="School Logo">
+    <h1>Teacher Portal</h1>
+    <p>মোখলেশপুর উচ্চ বিদ্যালয়</p>
+
+    <form id="login">
+      <label>
+        Email Address
+        <input id="u" type="email" required autocomplete="username">
+      </label>
+      <label>
+        Password
+        <input id="p" type="password" required autocomplete="current-password">
+      </label>
+      <button type="submit">Login</button>
+      <small id="msg"></small>
+    </form>
+
+    <a href="../admin/login.html">← Administrator Login</a>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/core.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>
