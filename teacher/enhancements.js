@@ -17,6 +17,17 @@
    view.innerHTML=`<div class="panel"><div class="box"><h2>My Classes & Subjects</h2><p class="hint">This list is controlled by the Super Admin. Every class/subject assignment on your account appears here.</p>${Object.keys(grouped).sort().map(c=>`<div class="box" style="margin-top:12px"><div class="toolbar"><h3>Class ${TESC(c)}</h3><span>${grouped[c].length} assignment(s)</span></div><div style="display:flex;gap:8px;flex-wrap:wrap">${grouped[c].map(x=>`<span class="pill-status">${TESC(x.subject)}${x.section?' · Section '+TESC(x.section):''}</span>`).join('')}</div></div>`).join('')||'<div class="empty-admin">No classes have been assigned to this teacher yet.</div>'}</div></div>`;
  };
  setTimeout(searchTables,0);
+
+const nav = document.querySelector('nav');
+
+if (nav && !nav.querySelector('[data-tab="notifications"]')) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.dataset.tab = 'notifications';
+  btn.textContent = 'Result Edit Requests';
+  nav.appendChild(btn);
+}
+
 })();
 render();
 
