@@ -2,13 +2,13 @@
    Uses the public/publishable key only. Never put a service_role/secret key here. */
 (function () {
   const SUPABASE_URL = 'https://wolxiieqyqeihvdefomd.supabase.co';
-  const SUPABASE_PUBLISHABLE_KEY = 'PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_uBD6HEEQTsmJncjvdSeUWw_cCSlcrrF';
 
   function initializeSupabase() {
     if (!window.supabase || typeof window.supabase.createClient !== 'function') {
       throw new Error('Supabase JS library is not loaded.');
     }
-    if (SUPABASE_PUBLISHABLE_KEY === 'PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE') {
+    if (SUPABASE_PUBLISHABLE_KEY === 'sb_publishable_uBD6HEEQTsmJncjvdSeUWw_cCSlcrrF') {
       throw new Error('Add the Supabase publishable key in js/supabase.js first.');
     }
     if (!window.mhsSupabase) {
