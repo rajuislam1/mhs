@@ -1,2 +1,44 @@
-const ADMIN_USER='Admin',ADMIN_HASH='c09167973ace8bd95bc8167b1b7170ca6f8ae554e1356c9679b75444cd2a8da2';
-document.getElementById('login').addEventListener('submit',async e=>{e.preventDefault();const u=document.getElementById('u').value.trim(),h=await mhsHash(document.getElementById('p').value);if(u===ADMIN_USER&&h===ADMIN_HASH){sessionStorage.setItem('mhs_admin','1');location.href='index.html'}else document.getElementById('msg').textContent='Invalid administrator credentials.'});
+
+document.getElementById('login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const email = document.getElementById('u').value.trim();
+  const password = document.getElementById('p').value;
+  const msg = document.getElementById('msg');
+  const button = e.currentTarget.querySelector('button');
+
+  msg.textContent = 'Signing in...';
+  button.disabled = true;
+
+  try {
+    const supabase = await window.mhsSupabaseReady;
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('role, is_active')
+      .eq('id', data.user.id)
+      .maybeSingle();
+
+    if (profileError) throw profileError;
+
+    if (!profile || profile.role !== 'super_admin' || !profile.is_active) {
+      await supabase.auth.signOut();
+      throw new Error('This account does not have active administrator access.');
+    }
+
+    sessionStorage.setItem('mhs_admin', '1');
+    window.location.href = 'index.html';
+
+  } catch (error) {
+    msg.textContent = error.message || 'Login failed. Please try again.';
+  } finally {
+    button.disabled = false;
+  }
+});
