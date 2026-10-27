@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -10,106 +9,46 @@
 </head>
 <body>
   <script src="js/header.js"></script>
-
   <main class="page">
     <div class="page-hero">
       <span data-i18n="NOTICE BOARD">NOTICE BOARD</span>
       <h1 data-i18n="Latest Notices">Latest Notices</h1>
-      <p data-i18n="School announcements and official information.">
-        School announcements and official information.
-      </p>
+      <p data-i18n="School announcements and official information.">School announcements and official information.</p>
     </div>
-
-    <section class="section">
-      <div id="allNotices" class="notice-list">
-        <div class="empty">Loading notices…</div>
-      </div>
-    </section>
+    <section class="section"><div id="allNotices" class="notice-list"><div class="empty">Loading notices…</div></div></section>
   </main>
-
-  <!-- Required scripts: keep Supabase before the notice-loading script -->
   <script src="js/data.js"></script>
   <script src="js/supabase.js"></script>
-
   <script>
     (async function loadAllPublicNotices() {
       const target = document.getElementById('allNotices');
-
-      const escNotice = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      }[ch]));
-
+      const escNotice = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
       const renderRows = rows => {
-        target.innerHTML = rows.map(item => {
-          const date = item.published_at || item.created_at || item.date || new Date().toISOString();
-          const title = item.title || '';
-          const content = item.content ?? item.description ?? '';
-          const file = item.attachment_url ?? item.file ?? '';
-
-          return `
-            <article class="notice-row">
-              <div class="date-box">
-                <b>${new Date(date).toLocaleDateString('en-GB', {
-                  day: '2-digit',
-                  month: 'short'
-                })}</b>
-                <small>${new Date(date).getFullYear()}</small>
-              </div>
-
-              <div>
-                <h3>${escNotice(title)}</h3>
-                <p>${escNotice(content)}</p>
-                <small>Posted: ${new Date(date).toLocaleString()}</small>
-
-                ${file ? `
-                  <p>
-                    <a class="text-link"
-                       href="${escNotice(file)}"
-                       target="_blank"
-                       rel="noopener noreferrer">
-                      View attachment →
-                    </a>
-                  </p>
-                ` : ''}
-              </div>
-            </article>
-          `;
+        target.innerHTML = rows.map(x => {
+          const date = x.published_at || x.created_at || x.date || new Date().toISOString();
+          const title = x.title || '';
+          const content = x.content ?? x.description ?? '';
+          const file = x.attachment_url ?? x.file ?? '';
+          return `<article class="notice-row"><div class="date-box"><b>${new Date(date).toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}</b><small>${new Date(date).getFullYear()}</small></div><div><h3>${escNotice(title)}</h3><p>${escNotice(content)}</p><small>Posted: ${new Date(date).toLocaleString()}</small>${file ? `<p><a class="text-link" href="${escNotice(file)}" target="_blank" rel="noopener noreferrer">View attachment →</a></p>` : ''}</div></article>`;
         }).join('') || '<div class="empty">No notices published.</div>';
       };
-
       try {
         const sb = await window.mhsSupabaseReady;
-
-        const { data, error } = await sb
-          .from('notices')
+        const { data, error } = await sb.from('notices')
           .select('id,title,content,attachment_url,is_published,published_at,created_at')
           .eq('is_published', true)
           .order('published_at', { ascending: false });
-
         if (error) throw error;
-
         renderRows(data || []);
-
       } catch (error) {
         console.error('Could not load public notices from Supabase:', error);
-
-        // Fallback to local/demo notices if Supabase is unavailable.
+        // If Supabase is temporarily unavailable, retain the old local/demo notices as a fallback.
         let fallback = [];
-
-        try {
-          fallback = JSON.parse(localStorage.getItem('mhs_notices') || 'null')
-            || (typeof NOTICES !== 'undefined' ? NOTICES : []);
-        } catch (_) {}
-
+        try { fallback = JSON.parse(localStorage.getItem('mhs_notices') || 'null') || (typeof NOTICES !== 'undefined' ? NOTICES : []); } catch (_) {}
         renderRows(fallback);
       }
     })();
   </script>
-
   <script src="js/footer.js"></script>
 </body>
 </html>
