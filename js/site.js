@@ -1,27 +1,43 @@
 
-const SITE_ACTIVE = JSON.parse(localStorage.getItem('mhs_site_settings') || 'null') || SITE;
+/* ============================================================
+   MOKHLESHPUR HIGH SCHOOL - PUBLIC SITE
+   Supabase notices integration
+   File: js/site.js
+   ============================================================ */
 
-const noticeData = JSON.parse(localStorage.getItem('mhs_notices') || 'null') || NOTICES;
-const tickerCfg = JSON.parse(localStorage.getItem('mhs_ticker_notice') || 'null') || {
-  text: noticeData[0]?.title || 'School notice'
-};
+const SITE_ACTIVE =
+  JSON.parse(localStorage.getItem('mhs_site_settings') || 'null') || SITE;
 
-const escSite = s => String(s ?? '').replace(/[&<>"']/g, m => ({
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#039;'
-}[m]));
+const noticeData =
+  JSON.parse(localStorage.getItem('mhs_notices') || 'null') || NOTICES;
+
+const tickerCfg =
+  JSON.parse(localStorage.getItem('mhs_ticker_notice') || 'null') || {
+    text: noticeData[0]?.title || 'School notice'
+  };
+
+const escSite = value =>
+  String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[ch]));
 
 const ti = document.getElementById('tickerItems');
+
 if (ti) {
   ti.innerHTML = `<span>${escSite(tickerCfg.text || 'School notice')}</span>`;
 }
 
 const ab = document.getElementById('aboutText');
-if (ab) ab.textContent = SITE_ACTIVE.about;
 
+if (ab) {
+  ab.textContent = SITE_ACTIVE.about;
+}
+
+/* Initial local fallback */
 const nc = document.getElementById('noticeCards');
 
 if (nc) {
@@ -35,6 +51,7 @@ if (nc) {
   `).join('');
 }
 
+/* School statistics */
 const statVals = document.querySelectorAll('.stats strong');
 
 if (statVals.length >= 4) {
@@ -43,11 +60,11 @@ if (statVals.length >= 4) {
 
   try {
     students = JSON.parse(localStorage.getItem('mhs_students') || '[]');
-  } catch {}
+  } catch (_) {}
 
   try {
     teachers = JSON.parse(localStorage.getItem('mhs_teachers') || 'null');
-  } catch {}
+  } catch (_) {}
 
   statVals[0].textContent = students.length;
   statVals[1].textContent = String((teachers || TEACHERS).length).padStart(2, '0');
@@ -55,11 +72,12 @@ if (statVals.length >= 4) {
   statVals[3].textContent = SITE_ACTIVE.passRate;
 }
 
+/* Mobile menu */
 document.getElementById('menu')?.addEventListener('click', () => {
   document.getElementById('nav')?.classList.toggle('open');
 });
 
-/* Hero image slideshow */
+/* Hero slideshow */
 (function () {
   const bg = document.querySelector('.hero-bg');
   if (!bg) return;
@@ -68,11 +86,12 @@ document.getElementById('menu')?.addEventListener('click', () => {
 
   try {
     heroData = JSON.parse(localStorage.getItem('mhs_hero') || 'null');
-  } catch {}
+  } catch (_) {}
 
-  const images = (heroData === null
-    ? ['assets/images/hero/1.jpg', 'assets/images/hero/2.jpg']
-    : heroData.map(item => item.url)
+  const images = (
+    heroData === null
+      ? ['assets/images/hero/1.jpg', 'assets/images/hero/2.jpg']
+      : heroData.map(item => item.url)
   ).filter(Boolean);
 
   if (!images.length) return;
@@ -99,20 +118,21 @@ document.getElementById('menu')?.addEventListener('click', () => {
   }
 })();
 
-/* Load published notices from Supabase */
-(async function loadMhsPublicNoticeCards() {
+/* ============================================================
+   LOAD PUBLISHED NOTICES FROM SUPABASE
+   ============================================================ */
+
+(async function loadPublicNotices() {
   const container = document.getElementById('noticeCards');
+
   if (!container) return;
 
   try {
+    // Supabase client should be initialized by js/supabase.js.
     if (!window.mhsSupabaseReady) {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'js/supabase.js';
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('Could not load js/supabase.js'));
-        document.head.appendChild(script);
-      });
+      throw new Error(
+        'Supabase client is not initialized. Check index.html script order.'
+      );
     }
 
     const sb = await window.mhsSupabaseReady;
@@ -130,7 +150,9 @@ document.getElementById('menu')?.addEventListener('click', () => {
 
     container.innerHTML = rows.map(n => `
       <article class="notice-card">
-        <small>${new Date(n.published_at || n.created_at).toLocaleDateString('en-GB')}</small>
+        <small>
+          ${new Date(n.published_at || n.created_at).toLocaleDateString('en-GB')}
+        </small>
         <h3>${escSite(n.title)}</h3>
         <p>${escSite(n.content || '')}</p>
         <a href="notices.html">Read notice →</a>
@@ -138,6 +160,7 @@ document.getElementById('menu')?.addEventListener('click', () => {
     `).join('') || '<p class="hint">No notices published.</p>';
 
   } catch (error) {
-    console.error('Public Supabase notices could not be loaded; keeping local fallback.', error);
+    console.error('Supabase notices could not be loaded:', error);
+    // Keep the existing local fallback if the database is unavailable.
   }
 })();
