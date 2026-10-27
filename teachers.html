@@ -1,1 +1,134 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Teachers | Mokhleshpur High School</title><link rel="icon" href="assets/images/logo.svg"><link rel="stylesheet" href="css/style.css"></head><body><script src="js/header.js"></script><main class="page"><div class="page-hero"><span data-i18n="OUR TEACHERS">OUR TEACHERS</span><h1 data-i18n="Teachers & Staff">Teachers & Staff</h1><p data-i18n="Dedicated educators supporting our students.">Dedicated educators supporting our students.</p></div><section class="section"><div id="teacherGrid" class="teacher-grid"></div></section></main><script src="js/data.js"></script><script>const t=JSON.parse(localStorage.getItem('mhs_teachers')||'null')||TEACHERS;document.getElementById('teacherGrid').innerHTML=t.map(x=>`<article class="teacher-card"><div class="avatar">${x.photo?`<img src="${x.photo}" alt="">`:'<span>👤</span>'}</div><h3>${x.name}</h3><p>${x.designation}</p><b>${x.subject}</b><small>${x.qualification||'Qualification not provided'}</small></article>`).join('');</script><script src="js/footer.js"></script></body></html>
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <title>Teachers | Mokhleshpur High School</title>
+
+  <link rel="icon" href="assets/images/logo.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+  <script src="js/header.js"></script>
+
+  <main class="page">
+    <div class="page-hero">
+      <span data-i18n="OUR TEACHERS">OUR TEACHERS</span>
+      <h1 data-i18n="Teachers & Staff">Teachers & Staff</h1>
+      <p data-i18n="Dedicated educators supporting our students.">
+        Dedicated educators supporting our students.
+      </p>
+    </div>
+
+    <section class="section">
+      <div id="teacherGrid" class="teacher-grid">
+        <p class="hint">Loading teachers...</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/supabase.js"></script>
+
+  <script>
+    (async function loadPublicTeachers() {
+      const grid = document.getElementById('teacherGrid');
+
+      function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        })[ch]);
+      }
+
+      function renderTeachers(list) {
+        if (!Array.isArray(list) || !list.length) {
+          grid.innerHTML =
+            '<p class="hint">No teacher profiles have been published yet.</p>';
+          return;
+        }
+
+        grid.innerHTML = list.map(teacher => {
+          const name = escapeHtml(teacher.name);
+          const designation = escapeHtml(
+            teacher.designation || 'Teacher'
+          );
+          const subject = escapeHtml(teacher.subject || '');
+          const qualification = escapeHtml(
+            teacher.qualification || 'Qualification not provided'
+          );
+          const photo = typeof teacher.photo === 'string'
+            ? teacher.photo.trim()
+            : '';
+
+          // Only allow normal web image URLs.
+          const safePhoto = /^https?:\/\/[^\s"'<>]+$/i.test(photo)
+            ? photo
+            : '';
+
+          return `
+            <article class="teacher-card">
+              <div class="avatar">
+                ${safePhoto
+                  ? `<img src="${escapeHtml(safePhoto)}"
+                       alt="${name}"
+                       loading="lazy"
+                       onerror="this.remove();this.parentElement.innerHTML='<span>👤</span>'">`
+                  : '<span>👤</span>'}
+              </div>
+              <h3>${name}</h3>
+              <p>${designation}</p>
+              <b>${subject}</b>
+              <small>${qualification}</small>
+            </article>
+          `;
+        }).join('');
+      }
+
+      // Local fallback while Supabase loads.
+      const localTeachers = (() => {
+        try {
+          return JSON.parse(
+            localStorage.getItem('mhs_teachers') || 'null'
+          ) || (typeof TEACHERS !== 'undefined' ? TEACHERS : []);
+        } catch {
+          return typeof TEACHERS !== 'undefined' ? TEACHERS : [];
+        }
+      })();
+
+      renderTeachers(localTeachers);
+
+      try {
+        if (!window.mhsSupabaseReady) {
+          throw new Error('Supabase connection is not available.');
+        }
+
+        const supabase = await window.mhsSupabaseReady;
+
+        const { data, error } = await supabase
+          .from('teacher_public_profiles')
+          .select('id,name,designation,subject,qualification,photo')
+          .eq('is_published', true)
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        // Supabase is authoritative, including an intentionally empty list.
+        renderTeachers(data || []);
+      } catch (error) {
+        console.error('Could not load public teachers from Supabase:', error);
+
+        // The previously rendered local fallback remains visible.
+      }
+    })();
+  </script>
+
+  <script src="js/footer.js"></script>
+</body>
+</html>
