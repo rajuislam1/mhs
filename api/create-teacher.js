@@ -22,21 +22,30 @@ module.exports = async (req, res) => {
     'Content-Type': 'application/json'
   };
 
+  let createdUserId = null;
+  let teacherRowCreated = false;
+  let profileCreated = false;
+
   try {
     const token = (req.headers.authorization || '')
       .replace(/^Bearer\s+/i, '');
 
     if (!token) {
-      return res.status(401).json({ error: 'Admin login required.' });
+      return res.status(401).json({
+        error: 'Admin login required.'
+      });
     }
 
-    // Verify the current Supabase Auth user.
-    const authCheck = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${token}`
+    // Verify the current Supabase Auth session.
+    const authCheck = await fetch(
+      `${SUPABASE_URL}/auth/v1/user`,
+      {
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${token}`
+        }
       }
-    });
+    );
 
     if (!authCheck.ok) {
       return res.status(401).json({
@@ -46,9 +55,11 @@ module.exports = async (req, res) => {
 
     const admin = await authCheck.json();
 
-    // Verify active Super Admin access.
+    // Verify the administrator's role and active status.
     const profileCheck = await fetch(
-      `${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${encodeURIComponent(admin.id)}&select=id,role,is_active`,
+      `${SUPABASE_URL}/rest/v1/user_profiles` +
+      `?id=eq.${encodeURIComponent(admin.id)}` +
+      '&select=id,role,is_active',
       { headers }
     );
 
@@ -72,19 +83,30 @@ module.exports = async (req, res) => {
     }
 
     const body = req.body || {};
-    const name = typeof body.name === 'string' ? body.name.trim() : '';
+
+    const name = typeof body.name === 'string'
+      ? body.name.trim() : '';
+
     const email = typeof body.email === 'string'
-      ? body.email.trim().toLowerCase()
-      : '';
+      ? body.email.trim().toLowerCase() : '';
+
     const username = typeof body.username === 'string'
-      ? body.username.trim()
-      : '';
+      ? body.username.trim() : '';
+
     const password = typeof body.password === 'string'
-      ? body.password
-      : '';
+      ? body.password : '';
+
+    const designation = typeof body.designation === 'string'
+      ? body.designation.trim() : '';
+
     const subject = typeof body.subject === 'string'
-      ? body.subject.trim()
-      : '';
+      ? body.subject.trim() : '';
+
+    const qualification = typeof body.qualification === 'string'
+      ? body.qualification.trim() : '';
+
+    const photo = typeof body.photo === 'string'
+      ? body.photo : null;
 
     if (!name || !username || !email || !password) {
       return res.status(400).json({
@@ -110,7 +132,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Create the teacher's secure Supabase Auth account.
+    // Create the authentication account.
     const createResponse = await fetch(
       `${SUPABASE_URL}/auth/v1/admin/users`,
       {
@@ -133,14 +155,56 @@ module.exports = async (req, res) => {
 
     if (!createResponse.ok) {
       return res.status(400).json({
-        error: createdUser.msg ||
+        error:
+          createdUser.msg ||
           createdUser.message ||
           createdUser.error_description ||
           'Could not create the teacher account.'
       });
     }
 
-    // Add the teacher's authorization profile.
+    createdUserId = createdUser.id;
+
+    // Insert the teacher's profile record.
+    const teacherId = `T-${createdUserId}`;
+
+    const teacherResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/teachers`,
+      {
+        method: 'POST',
+        headers: {
+          ...headers,
+          Prefer: 'return=representation'
+        },
+        body: JSON.stringify({
+          teacher_id: teacherId,
+          name,
+          designation: designation || null,
+          mobile: null,
+          email,
+          username,
+          subject: subject || null,
+          qualification: qualification || null,
+          photo,
+          status: true
+        })
+      }
+    );
+
+    if (!teacherResponse.ok) {
+      const detail = await teacherResponse.text();
+      console.error('Teacher row creation failed:', detail);
+      throw new Error(
+        'Could not save teacher details. Please check the database constraints.'
+      );
+    }
+
+    const teacherRows = await teacherResponse.json();
+    teacherRowCreated = true;
+
+    const teacherRow = teacherRows[0];
+
+    // Link the Auth account to the teacher database row.
     const profileResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/user_profiles`,
       {
@@ -150,50 +214,81 @@ module.exports = async (req, res) => {
           Prefer: 'return=minimal'
         },
         body: JSON.stringify({
-          id: createdUser.id,
+          id: createdUserId,
           role: 'teacher',
-          is_active: true,
-          display_name: name
+          teacher_id: teacherRow.id,
+          display_name: name,
+          is_active: true
         })
       }
     );
 
     if (!profileResponse.ok) {
-      // Roll back the Auth account if its profile cannot be created.
-      await fetch(
-        `${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(createdUser.id)}`,
-        {
-          method: 'DELETE',
-          headers
-        }
+      const detail = await profileResponse.text();
+      console.error('Teacher profile creation failed:', detail);
+      throw new Error(
+        'Could not link the teacher account to its profile.'
       );
-
-      console.error(
-        'Teacher profile creation failed:',
-        await profileResponse.text()
-      );
-
-      return res.status(500).json({
-        error: 'Teacher profile could not be created. Please try again.'
-      });
     }
+
+    profileCreated = true;
 
     return res.status(201).json({
       success: true,
       message: 'Teacher account created successfully.',
       teacher: {
-        id: createdUser.id,
+        id: teacherRow.id,
+        authId: createdUserId,
+        teacher_id: teacherId,
         name,
         username,
         email,
-        subject
+        designation,
+        subject,
+        qualification,
+        photo
       }
     });
   } catch (error) {
     console.error('Create teacher API error:', error);
 
+    // Roll back records created during this request.
+    if (createdUserId) {
+      try {
+        if (profileCreated) {
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${encodeURIComponent(createdUserId)}`,
+            {
+              method: 'DELETE',
+              headers
+            }
+          );
+        }
+
+        if (teacherRowCreated) {
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/teachers?teacher_id=eq.${encodeURIComponent(`T-${createdUserId}`)}`,
+            {
+              method: 'DELETE',
+              headers
+            }
+          );
+        }
+
+        await fetch(
+          `${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(createdUserId)}`,
+          {
+            method: 'DELETE',
+            headers
+          }
+        );
+      } catch (rollbackError) {
+        console.error('Teacher rollback failed:', rollbackError);
+      }
+    }
+
     return res.status(500).json({
-      error: 'Unexpected server error.'
+      error: error.message || 'Unexpected server error.'
     });
   }
 };
