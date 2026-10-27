@@ -1,5 +1,5 @@
 
-/* MHS V15 — Supabase Teacher Account Management */
+/* MHS V16 — Supabase Teacher Accounts & Public Profiles */
 (function () {
   'use strict';
 
@@ -42,7 +42,7 @@
     return token;
   }
 
-  async function teacherApi(method, body) {
+  async function apiRequest(url, method = 'GET', body = null) {
     const token = await getAdminToken();
 
     const options = {
@@ -53,9 +53,9 @@
       }
     };
 
-    if (body) options.body = JSON.stringify(body);
+    if (body !== null) options.body = JSON.stringify(body);
 
-    const response = await fetch('/api/manage-teacher', options);
+    const response = await fetch(url, options);
 
     let result;
     try {
@@ -65,15 +65,31 @@
     }
 
     if (!response.ok || !result.success) {
-      throw new Error(result.error || 'Teacher operation failed.');
+      throw new Error(result.error || 'Request failed.');
     }
 
     return result;
   }
 
+  async function teacherApi(method, body) {
+    return apiRequest('/api/manage-teacher', method, body);
+  }
+
+  async function publicTeacherApi(method, body) {
+    return apiRequest('/api/manage-public-teacher', method, body);
+  }
+
+  function showError(message, error) {
+    console.error(message, error);
+    alert(error?.message || message);
+  }
+
+  // --------------------------------------------------
+  // Edit teacher login account
+  // --------------------------------------------------
   window.editSupabaseTeacher = async function (id) {
-    const accounts = window.mhsSupabaseTeachers || [];
-    const teacher = accounts.find(x => x.id === id);
+    const teacher = (window.mhsSupabaseTeachers || [])
+      .find(x => x.id === id);
 
     if (!teacher) {
       alert('Teacher record not found. Reload the page and try again.');
@@ -111,7 +127,7 @@
 
     try {
       await teacherApi('PATCH', {
-        id: teacher.id,
+        id,
         name: name.trim(),
         designation: designation.trim(),
         subject: subject.trim(),
@@ -121,13 +137,15 @@
       });
 
       alert('Teacher details updated successfully.');
-      render();
+      await window.teachers();
     } catch (error) {
-      console.error('Teacher edit error:', error);
-      alert(error.message || 'Could not update teacher.');
+      showError('Could not update teacher.', error);
     }
   };
 
+  // --------------------------------------------------
+  // Deactivate teacher login account
+  // --------------------------------------------------
   window.deactivateSupabaseTeacher = async function (id) {
     const teacher = (window.mhsSupabaseTeachers || [])
       .find(x => x.id === id);
@@ -139,29 +157,112 @@
 
     if (!confirm(
       `Deactivate ${teacher.name}?\n\n` +
-      'This will disable the teacher profile. The record will not be permanently deleted.'
-    )) {
-      return;
-    }
+      'This disables the teacher account without permanently deleting it.'
+    )) return;
 
     try {
-      await teacherApi('DELETE', { id: teacher.id });
+      await teacherApi('DELETE', { id });
       alert('Teacher account deactivated successfully.');
-      render();
+      await window.teachers();
     } catch (error) {
-      console.error('Teacher deactivation error:', error);
-      alert(error.message || 'Could not deactivate teacher.');
+      showError('Could not deactivate teacher.', error);
     }
   };
 
+  // --------------------------------------------------
+  // Edit public website teacher profile
+  // --------------------------------------------------
+  window.editSupabasePublicTeacher = async function (id) {
+    const teacher = (window.mhsPublicTeachers || [])
+      .find(x => x.id === id);
+
+    if (!teacher) {
+      alert('Public teacher profile not found. Reload and try again.');
+      return;
+    }
+
+    const name = prompt('Teacher Name:', teacher.name || '');
+    if (name === null) return;
+
+    if (!name.trim()) {
+      alert('Teacher name cannot be empty.');
+      return;
+    }
+
+    const designation = prompt(
+      'Designation:',
+      teacher.designation || 'Teacher'
+    );
+    if (designation === null) return;
+
+    const subject = prompt('Subject:', teacher.subject || '');
+    if (subject === null) return;
+
+    const qualification = prompt(
+      'Qualification:',
+      teacher.qualification || ''
+    );
+    if (qualification === null) return;
+
+    const photo = prompt('Photo URL:', teacher.photo || '');
+    if (photo === null) return;
+
+    try {
+      await publicTeacherApi('PATCH', {
+        id,
+        name: name.trim(),
+        designation: designation.trim() || 'Teacher',
+        subject: subject.trim(),
+        qualification: qualification.trim(),
+        photo: photo.trim()
+      });
+
+      alert('Public teacher profile updated successfully.');
+      await window.teachers();
+    } catch (error) {
+      showError('Could not update public teacher profile.', error);
+    }
+  };
+
+  // --------------------------------------------------
+  // Remove public teacher profile from the website
+  // --------------------------------------------------
+  window.removeSupabasePublicTeacher = async function (id) {
+    const teacher = (window.mhsPublicTeachers || [])
+      .find(x => x.id === id);
+
+    if (!teacher) {
+      alert('Public teacher profile not found. Reload and try again.');
+      return;
+    }
+
+    if (!confirm(
+      `Remove ${teacher.name} from the public website?\n\n` +
+      'The record will be unpublished, not permanently deleted.'
+    )) return;
+
+    try {
+      await publicTeacherApi('DELETE', { id });
+      alert('Teacher profile removed from the public website.');
+      await window.teachers();
+    } catch (error) {
+      showError('Could not remove public teacher profile.', error);
+    }
+  };
+
+  // --------------------------------------------------
+  // Main Teacher Management screen
+  // --------------------------------------------------
   window.teachers = async function () {
     let accounts = read('mhs_teacher_accounts');
     let accountLoadError = '';
 
-    const profiles = read(
+    let profiles = read(
       'mhs_teachers',
       typeof TEACHERS !== 'undefined' ? TEACHERS : []
     );
+
+    let publicProfileLoadError = '';
 
     const assignments = read('mhs_teacher_classes');
     const year = new Date().getFullYear();
@@ -173,16 +274,16 @@
 
     const subjects = read('mhs_class_subjects');
 
-    // Load the authoritative teacher account list from Supabase.
+    // Load login accounts from Supabase.
     try {
       const result = await teacherApi('GET');
+
       accounts = Array.isArray(result.teachers)
         ? result.teachers
         : [];
 
       window.mhsSupabaseTeachers = accounts;
 
-      // Keep the legacy local cache for existing assignment features.
       write('mhs_teacher_accounts', accounts.map(x => ({
         id: x.id,
         name: x.name,
@@ -195,10 +296,33 @@
         status: x.status
       })));
     } catch (error) {
-      console.error('Teacher list load error:', error);
+      console.error('Teacher account load error:', error);
       accountLoadError = error.message || 'Could not load teacher accounts.';
       accounts = read('mhs_teacher_accounts');
       window.mhsSupabaseTeachers = [];
+    }
+
+    // Load public website profiles from Supabase.
+    try {
+      const result = await publicTeacherApi('GET');
+
+      profiles = Array.isArray(result.teachers)
+        ? result.teachers
+        : [];
+
+      window.mhsPublicTeachers = profiles;
+    } catch (error) {
+      console.error('Public teacher profile load error:', error);
+      publicProfileLoadError =
+        error.message || 'Could not load public teacher profiles.';
+
+      // Keep existing browser-local profiles visible if the API fails.
+      profiles = read(
+        'mhs_teachers',
+        typeof TEACHERS !== 'undefined' ? TEACHERS : []
+      );
+
+      window.mhsPublicTeachers = [];
     }
 
     const assignmentSummary = username => {
@@ -213,12 +337,41 @@
         : '<span class="hint">No teaching assignment</span>';
     };
 
+    const publicProfileRows = profiles.map((x, i) => {
+      const isDatabaseProfile = Boolean(
+        x.id && window.mhsPublicTeachers?.some(t => t.id === x.id)
+      );
+
+      const action = isDatabaseProfile
+        ? `
+          <button type="button" class="btn-small"
+            onclick="editSupabasePublicTeacher('${escTeacher(x.id)}')">
+            Edit
+          </button>
+          <button type="button" class="btn-small danger"
+            onclick="removeSupabasePublicTeacher('${escTeacher(x.id)}')">
+            Remove
+          </button>
+        `
+        : '<span class="hint">Legacy browser-only profile</span>';
+
+      return `
+        <tr>
+          <td>${escTeacher(x.name)}</td>
+          <td>${escTeacher(x.designation || 'Teacher')}</td>
+          <td>${escTeacher(x.subject || '—')}</td>
+          <td>${action}</td>
+        </tr>
+      `;
+    }).join('');
+
     app.innerHTML = `
       <div class="panel">
+
         <div class="box">
           <h2>Create Teacher Login Account</h2>
           <p class="hint">
-            Teacher login accounts are created in Supabase Auth.
+            Login accounts are created in Supabase Auth.
             Passwords are not stored in browser localStorage.
           </p>
 
@@ -226,35 +379,45 @@
             <label>Teacher Name
               <input id="tn" required>
             </label>
+
             <label>Designation
               <input id="td" value="Teacher">
             </label>
+
             <label>Primary Subject
               <input id="ts" placeholder="e.g. Mathematics">
             </label>
+
             <label>Qualification
               <input id="tq" placeholder="Optional">
             </label>
+
             <label>Username
               <input id="tu" required minlength="3"
                 maxlength="40" pattern="[A-Za-z0-9._-]{3,40}">
             </label>
+
             <label>Personal Email
               <input id="te" type="email" required>
             </label>
+
             <label>Password
               <input id="tp" type="password" required minlength="8"
                 autocomplete="new-password">
             </label>
+
             <label>Mobile Number
               <input id="tmobile" type="tel" placeholder="Optional">
             </label>
+
             <label>Photo URL
               <input id="tphoto" placeholder="Optional">
             </label>
+
             <button type="submit" id="createTeacherBtn">
               Create Teacher Account
             </button>
+
             <p id="teacherCreateMessage" class="hint"
               role="status" aria-live="polite"></p>
           </form>
@@ -270,7 +433,6 @@
             <p class="hint" role="status">
               Could not refresh accounts from Supabase:
               ${escTeacher(accountLoadError)}
-              The displayed legacy list may be outdated.
             </p>
           ` : ''}
 
@@ -284,8 +446,12 @@
                 <th>Teaching Assignments</th>
                 <th>Action</th>
               </tr>
-              ${accounts.map(x => {
+
+              ${accounts.map((x, i) => {
                 const isActive = x.status === true;
+                const isDatabaseAccount = Boolean(
+                  x.id && window.mhsSupabaseTeachers?.some(t => t.id === x.id)
+                );
 
                 return `
                   <tr>
@@ -295,11 +461,12 @@
                     <td>${isActive ? 'Active' : 'Inactive'}</td>
                     <td>${assignmentSummary(x.username)}</td>
                     <td>
-                      ${x.id && window.mhsSupabaseTeachers?.some(t => t.id === x.id) ? `
+                      ${isDatabaseAccount ? `
                         <button type="button" class="btn-small"
                           onclick="editSupabaseTeacher('${escTeacher(x.id)}')">
                           Edit
                         </button>
+
                         ${isActive ? `
                           <button type="button" class="btn-small danger"
                             onclick="deactivateSupabaseTeacher('${escTeacher(x.id)}')">
@@ -307,8 +474,9 @@
                           </button>
                         ` : ''}
                       ` : '<span class="hint">Legacy account</span>'}
+
                       <button type="button" class="btn-small"
-                        onclick="manageTeacherAssignments(${accounts.indexOf(x)})">
+                        onclick="manageTeacherAssignments(${i})">
                         Manage Classes & Subjects
                       </button>
                     </td>
@@ -320,14 +488,16 @@
           </div>
 
           <p class="hint">
-            Deactivate disables the teacher account without permanently
-            deleting the database record. Login email and username are
-            not changed by the profile editor.
+            Deactivated accounts remain in the database.
+            Login email and username are not changed by the profile editor.
           </p>
         </div>
 
         <div class="box">
-          <h2>Assign Teacher to Classes & Subjects</h2>
+          <div class="toolbar">
+            <h2>Assign Teacher to Classes & Subjects</h2>
+          </div>
+
           <form class="form" id="assignForm">
             <label>Teacher
               <select id="atTeacher" required>
@@ -339,25 +509,31 @@
                 `).join('')}
               </select>
             </label>
+
             <label>Academic Year
               <select id="atYear">
                 <option>${year}</option>
                 <option>${year + 1}</option>
               </select>
             </label>
+
             <label>Class
               <select id="atClass">
                 ${classes.map(c => `<option>${c}</option>`).join('')}
               </select>
             </label>
+
             <label>Section
               <input id="atSection" placeholder="A (optional)">
             </label>
+
             <label>Subject
               <select id="atSubject" required></select>
             </label>
+
             <button type="submit">Add Teaching Assignment</button>
           </form>
+
           <div id="assignmentList" style="margin-top:14px"></div>
         </div>
 
@@ -366,44 +542,65 @@
             <h2>Website Teacher Profiles</h2>
             <span>${profiles.length} teachers</span>
           </div>
+
           <p class="hint">
-            These profiles appear on the public website and are separate
-            from teacher login accounts. They remain browser-local for now.
+            These profiles are stored in Supabase and can be loaded
+            across browsers. They are separate from teacher login accounts.
           </p>
+
+          ${publicProfileLoadError ? `
+            <p class="hint" role="status">
+              Could not load Supabase profiles:
+              ${escTeacher(publicProfileLoadError)}
+              The displayed legacy profiles may be browser-local only.
+            </p>
+          ` : ''}
+
           <form class="form" id="pf">
-            <label>Name<input id="pn" required></label>
-            <label>Designation<input id="pd" value="Teacher"></label>
-            <label>Subject<input id="ps"></label>
-            <label>Qualification<input id="pq"></label>
-            <label class="full">Photo URL<input id="pphoto"></label>
-            <button type="submit">Add Teacher to Website</button>
+            <label>Name
+              <input id="pn" required>
+            </label>
+
+            <label>Designation
+              <input id="pd" value="Teacher">
+            </label>
+
+            <label>Subject
+              <input id="ps">
+            </label>
+
+            <label>Qualification
+              <input id="pq">
+            </label>
+
+            <label class="full">Photo URL
+              <input id="pphoto" placeholder="Optional">
+            </label>
+
+            <button type="submit" id="addPublicTeacherBtn">
+              Add Teacher to Website
+            </button>
           </form>
+
           <div class="table-wrap">
             <table class="table">
               <tr>
-                <th>Name</th><th>Designation</th>
-                <th>Subject</th><th>Action</th>
+                <th>Name</th>
+                <th>Designation</th>
+                <th>Subject</th>
+                <th>Action</th>
               </tr>
-              ${profiles.map((x, i) => `
-                <tr>
-                  <td>${escTeacher(x.name)}</td>
-                  <td>${escTeacher(x.designation)}</td>
-                  <td>${escTeacher(x.subject)}</td>
-                  <td>
-                    <button type="button" class="btn-small"
-                      onclick="editPubTeacher(${i})">Edit</button>
-                    <button type="button" class="btn-small danger"
-                      onclick="delPublicTeacher(${i})">Remove</button>
-                  </td>
-                </tr>
-              `).join('') ||
+
+              ${publicProfileRows ||
                 '<tr><td colspan="4" class="empty-admin">No public teacher profiles.</td></tr>'}
             </table>
           </div>
         </div>
+
       </div>
     `;
 
+    // Create teacher login account.
     const form = document.getElementById('tf');
     const message = document.getElementById('teacherCreateMessage');
     const submitButton = document.getElementById('createTeacherBtn');
@@ -452,27 +649,21 @@
           })
         });
 
-        let result;
-        try {
-          result = await response.json();
-        } catch {
-          throw new Error('Invalid server response. Check the deployment.');
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok || !result?.success) {
+          throw new Error(
+            result?.error || 'Could not create teacher account.'
+          );
         }
 
-        if (!response.ok || !result.success) {
-          throw new Error(result.error || 'Could not create teacher account.');
-        }
-
-        // Refresh from Supabase so the real database ID is used.
-        message.textContent = 'Account created. Refreshing teacher list...';
         document.getElementById('tp').value = '';
-
         alert(
           'Teacher account created successfully. ' +
           'The teacher can sign in using their email and password.'
         );
 
-        render();
+        await window.teachers();
       } catch (error) {
         console.error('Teacher account creation error:', error);
         message.textContent = error.message || 'Account creation failed.';
@@ -481,6 +672,52 @@
       }
     };
 
+    // Add public website teacher profile to Supabase.
+    const publicForm = document.getElementById('pf');
+    const publicSubmit = document.getElementById('addPublicTeacherBtn');
+
+    publicForm.onsubmit = async event => {
+      event.preventDefault();
+
+      const name = document.getElementById('pn').value.trim();
+      const designation =
+        document.getElementById('pd').value.trim() || 'Teacher';
+      const subject = document.getElementById('ps').value.trim();
+      const qualification = document.getElementById('pq').value.trim();
+      const photo = document.getElementById('pphoto').value.trim();
+
+      if (!name) {
+        alert('Teacher name is required.');
+        return;
+      }
+
+      publicSubmit.disabled = true;
+      publicSubmit.textContent = 'Saving...';
+
+      try {
+        await publicTeacherApi('POST', {
+          name,
+          designation,
+          subject,
+          qualification,
+          photo
+        });
+
+        alert('Teacher profile saved to Supabase successfully.');
+
+        publicForm.reset();
+        document.getElementById('pd').value = 'Teacher';
+
+        await window.teachers();
+      } catch (error) {
+        showError('Could not save public teacher profile.', error);
+      } finally {
+        publicSubmit.disabled = false;
+        publicSubmit.textContent = 'Add Teacher to Website';
+      }
+    };
+
+    // Teaching assignments remain browser-local as before.
     document.getElementById('assignForm').onsubmit = event => {
       event.preventDefault();
 
@@ -522,7 +759,7 @@
 
       write('mhs_teacher_classes', all);
       alert('Teaching assignment added.');
-      render();
+      window.teachers();
     };
 
     const updateSubjects = () => {
@@ -562,8 +799,10 @@
         <div class="table-wrap">
           <table class="table">
             <tr>
-              <th>Year</th><th>Class</th>
-              <th>Section</th><th>Subject</th>
+              <th>Year</th>
+              <th>Class</th>
+              <th>Section</th>
+              <th>Subject</th>
             </tr>
             ${list.map(x => `
               <tr>
@@ -585,28 +824,6 @@
 
     updateSubjects();
     updateAssignments();
-
-    document.getElementById('pf').onsubmit = event => {
-      event.preventDefault();
-
-      const list = read(
-        'mhs_teachers',
-        typeof TEACHERS !== 'undefined' ? TEACHERS : []
-      );
-
-      list.push({
-        name: document.getElementById('pn').value.trim(),
-        designation:
-          document.getElementById('pd').value.trim() || 'Teacher',
-        subject: document.getElementById('ps').value.trim(),
-        qualification: document.getElementById('pq').value.trim(),
-        photo: document.getElementById('pphoto').value.trim()
-      });
-
-      write('mhs_teachers', list);
-      alert('Teacher added to website.');
-      render();
-    };
 
     if (window.MHS_ADMIN_SEARCH) {
       setTimeout(window.MHS_ADMIN_SEARCH, 0);
