@@ -32,3 +32,9 @@ This package is a static/localStorage version. Admin-created teacher accounts an
 
 ## Deploy to Vercel
 You can deploy this ZIP/folder directly with Vercel Drop or import it into GitHub and connect the repository to Vercel.
+
+
+## Supabase migration — Step 1 (safe preparation)
+- In Admin Portal, use **Download Data Backup** to export this browser's localStorage as a JSON file before migrating data.
+- Run `supabase/migration-step-1-inspect.sql` in the Supabase SQL Editor. It is read-only and only reports schema, class/year IDs, policies, and row counts.
+- This step does not migrate or delete records and does not change RLS policies.
