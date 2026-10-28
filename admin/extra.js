@@ -19,9 +19,10 @@ async admissions(){
  box.innerHTML='<div class="panel"><div class="box"><h2>Online Admission Applications</h2><p class="hint">Loading applications from Supabase…</p></div></div>';
  try{
   const sb=await window.mhsSupabaseReady;
-  const {data:sessionData,error:sessionError}=await sb.auth.getUser();
-  if(sessionError||!sessionData?.user)throw new Error('Admin session expired. Sign in again.');
-  const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',sessionData.user.id).single();
+  const {data:sessionData,error:sessionError}=await sb.auth.getSession();
+  if(sessionError||!sessionData?.session?.user)throw new Error('Admin session expired. Sign in again.');
+  const adminUser=sessionData.session.user;
+  const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',adminUser.id).single();
   if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access is required.');
   const {data:rows,error}=await sb.from('admission_applications').select('id,application_no,student_name,date_of_birth,gender,father_name,mother_name,applying_class_id,guardian_mobile,mobile,address,previous_school,application_status,submitted_at,remarks,classes:classes(name,class_number)').order('submitted_at',{ascending:false});
   if(error)throw error;
@@ -43,10 +44,10 @@ async admissions(){
     const {data:students,error:studentsError}=await sb.from('students').select('student_id');
     if(studentsError)throw studentsError;
     const nextId=String((students||[]).reduce((max,s)=>/^\d+$/.test(String(s.student_id||''))?Math.max(max,Number(s.student_id)):max,100000)+1);
-    const response=await fetch('/api/create-student-portal-account',{method:'POST',headers:{Authorization:'Bearer '+sessionData.user.access_token,'Content-Type':'application/json'},body:JSON.stringify({student_id:nextId,admission_number:admissionNumber,name:row.student_name,class:row.classes?.class_number,roll:roll.trim(),gender:row.gender||'',guardian:row.father_name||row.mother_name||'',guardian_phone:row.guardian_mobile||row.mobile||'',date_of_birth:row.date_of_birth||'',password:temporaryPassword})});
+    const response=await fetch('/api/create-student-portal-account',{method:'POST',headers:{Authorization:'Bearer '+sessionData.session.access_token,'Content-Type':'application/json'},body:JSON.stringify({student_id:nextId,admission_number:admissionNumber,name:row.student_name,class:row.classes?.class_number,roll:roll.trim(),gender:row.gender||'',guardian:row.father_name||row.mother_name||'',guardian_phone:row.guardian_mobile||row.mobile||'',date_of_birth:row.date_of_birth||'',password:temporaryPassword})});
     const result=await response.json().catch(()=>null);
     if(!response.ok||!result?.success)throw new Error(result?.error||'Student account creation failed.');
-    const {error:updateError}=await sb.from('admission_applications').update({application_status:'approved',reviewed_at:new Date().toISOString(),reviewed_by:sessionData.user.id,remarks:'Student portal account created. Student ID: '+result.student_id,student_id:result.student_record_id||null}).eq('id',row.id).eq('application_status','pending');
+    const {error:updateError}=await sb.from('admission_applications').update({application_status:'approved',reviewed_at:new Date().toISOString(),reviewed_by:adminUser.id,remarks:'Student portal account created. Student ID: '+result.student_id,student_id:result.student_record_id||null}).eq('id',row.id).eq('application_status','pending');
     if(updateError)throw new Error('Student account was created, but application status could not be updated. Record Student ID '+result.student_id+' and review the application status manually. '+updateError.message);
     alert('Admission approved and student portal account created.\nStudent ID: '+result.student_id+'\nAdmission No.: '+admissionNumber+'\nRoll: '+roll.trim()+'\nTemporary password: '+temporaryPassword+'\nGive these login details to the guardian securely.');
     await window.MHS_EXTRA.admissions();
