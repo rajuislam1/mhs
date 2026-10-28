@@ -46,10 +46,17 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Enter Student ID, Admission No., name, class, roll and a password of at least 8 characters.' });
     }
 
-    const duplicate = await fetch(rest + '/students?or=(student_id.eq.' + encodeURIComponent(studentId) + ',admission_number.eq.' + encodeURIComponent(admission) + ')&select=id,student_id,admission_number', { headers });
-    const duplicates = await parse(duplicate);
+    const duplicate = await fetch(rest + '/students?select=student_id,admission_number', { headers });
+    const existingStudents = await parse(duplicate);
     if (!duplicate.ok) return res.status(500).json({ success: false, error: 'Could not check duplicate student ID/admission number.' });
-    if (duplicates?.length) return res.status(409).json({ success: false, error: 'Student ID or Admission No. already exists in Supabase. Refresh the student list and use a new ID.' });
+    if ((existingStudents || []).some(s => String(s.admission_number || '').trim().toLowerCase() === admission.toLowerCase())) {
+      return res.status(409).json({ success: false, error: 'Admission No. already exists in Supabase. Please use the existing student record instead of adding it twice.' });
+    }
+    if ((existingStudents || []).some(s => String(s.student_id) === studentId)) {
+      const maxId = (existingStudents || []).reduce((max, s) => /^\\d+$/.test(String(s.student_id || '')) ? Math.max(max, Number(s.student_id)) : max, 100000);
+      b.student_id = String(maxId + 1);
+    }
+    const finalStudentId = String(b.student_id || studentId).trim();
 
     const [classResponse, yearResponse] = await Promise.all([
       fetch(rest + '/classes?class_number=eq.' + encodeURIComponent(classNumber) + '&status=eq.true&select=id,class_number,name&limit=1', { headers }),
@@ -65,7 +72,7 @@ module.exports = async (req, res) => {
       method: 'POST',
       headers: { ...headers, Prefer: 'return=representation' },
       body: JSON.stringify({
-        student_id: studentId,
+        student_id: finalStudentId,
         admission_number: admission,
         name,
         class_id: classes[0].id,
