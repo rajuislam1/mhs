@@ -11,7 +11,7 @@
   if (!isAdmin && !isTeacher) return;
 
   document.documentElement.style.visibility = 'hidden';
-  const expectedRole = isAdmin ? 'super_admin' : 'teacher';
+  const expectedRole = isAdmin ? 'super_admin' : (isTeacher ? 'teacher' : 'student');
   const loginPath = './login.html';
 
   // Use Supabase Auth logout even if legacy portal scripts also register a click handler.
