@@ -180,7 +180,7 @@ async students(){
    const active=button.dataset.active!=='1';if(!confirm((active?'Activate':'Deactivate')+' this student portal account?'))return;button.disabled=true;
    try{
     const {error:studentError}=await sb.from('students').update({status:active,updated_at:new Date().toISOString()}).eq('id',button.dataset.studentToggle);if(studentError)throw studentError;
-    const response=await fetch('/api/manage-student-portal-account',{method:'POST',headers:{Authorization:'Bearer '+sessionData.session.access_token,'Content-Type':'application/json'},body:JSON.stringify({profile_id:button.dataset.profileId,is_active:active})});
+    const response=await fetch('/api/manage-student-portal-account',{method:'PATCH',headers:{Authorization:'Bearer '+sessionData.session.access_token,'Content-Type':'application/json'},body:JSON.stringify({profile_id:button.dataset.profileId,is_active:active})});
     const result=await response.json().catch(()=>null);if(!response.ok||!result?.success)throw new Error(result?.error||'Could not update portal account status.');
     mhsToast(active?'Student activated':'Student deactivated');await window.MHS_EXTRA.students();
    }catch(error){alert('Could not update student status: '+(error.message||String(error)));button.disabled=false;}
