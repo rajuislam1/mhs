@@ -62,7 +62,7 @@ document.getElementById('login').addEventListener('submit', async (e) => {
     const teacherSession = {
       id: data.user.id,
       name: profile.display_name || metadata.display_name || data.user.email,
-      username: metadata.username || result.username || identifier,
+      username: result.username || metadata.username || identifier,
       email: data.user.email,
       subject: metadata.subject || '',
       designation: 'Teacher'
