@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
     }
     if (!students.length) return res.status(401).json({ success: false, error: 'Invalid roll number or password, or student access is inactive.' });
 
-    const profilesResponse = await fetch(rest + '/user_profiles?role=eq.student&is_active=eq.true&select=id,student_id,display_name', { headers });
+    const profilesResponse = await fetch(rest + '/user_profiles?role=eq.student&is_active=eq.true&select=id,student_id,display_name,is_active', { headers });
     const profiles = await profilesResponse.json().catch(() => []);
     if (!profilesResponse.ok) return res.status(500).json({ success: false, error: 'Could not verify student account permissions.' });
 
