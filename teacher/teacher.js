@@ -340,28 +340,37 @@ async function results(){
     }
 }
 
-function students(){
-    let c=get('mhs_teacher_classes',[]).filter(x=>x.teacher===me.username);
-    let r=get('mhs_results',[]).filter(x=>mhsOwn(x,me.username));
+async function loadAssignedStudentContext(){
+ const sb=await window.mhsSupabaseReady;
+ const {data:authData,error:authError}=await sb.auth.getUser();
+ if(authError||!authData?.user)throw new Error('Teacher session expired. Sign in again.');
+ const {data:profile,error:profileError}=await sb.from('user_profiles').select('teacher_id,role,is_active').eq('id',authData.user.id).single();
+ if(profileError||profile?.role!=='teacher'||profile?.is_active!==true||!profile.teacher_id)throw new Error('Active teacher profile required.');
+ const {data:assignments,error:assignmentError}=await sb.from('teacher_assignments').select('class_id,subject_id,academic_year_id').eq('teacher_id',profile.teacher_id).eq('status',true);
+ if(assignmentError)throw assignmentError;
+ const [{data:classesData,error:classesError},{data:subjectsData,error:subjectsError},{data:studentsData,error:studentsError}]=await Promise.all([
+  sb.from('classes').select('id,name,class_number'),
+  sb.from('subjects').select('id,name'),
+  sb.from('students').select('id,student_id,name,roll,section,gender,guardian,mobile,status,class_id,academic_year_id,classes(name,class_number),academic_years(year,name)').eq('status',true).order('roll')
+ ]);
+ if(classesError)throw classesError;if(subjectsError)throw subjectsError;if(studentsError)throw studentsError;
+ const allowed=new Set((assignments||[]).map(a=>a.class_id+'|'+a.academic_year_id));
+ const students=(studentsData||[]).filter(st=>allowed.has(st.class_id+'|'+st.academic_year_id));
+ const classMap=new Map((classesData||[]).map(x=>[x.id,x]));
+ const subjectMap=new Map((subjectsData||[]).map(x=>[x.id,x]));
+ const choices=(assignments||[]).map(a=>({class_id:a.class_id,academic_year_id:a.academic_year_id,subject_id:a.subject_id,className:classMap.get(a.class_id)?.name||classMap.get(a.class_id)?.class_number||'Class',subjectName:subjectMap.get(a.subject_id)?.name||'Subject'}));
+ return {sb,profile,assignments:assignments||[],students,classMap,subjectMap,choices};
+}
 
-    view.innerHTML=`<div class="panel">
-        <div class="box">
-            <h2>Student Result Records</h2>
-            <table class="table">
-                <tr><th>Student</th><th>Class</th><th>Roll</th><th>Year</th><th>Subjects</th><th>GPA</th></tr>
-                ${r.map(x=>`<tr>
-                    <td>${esc(x.name)}</td><td>${esc(x.class)}</td><td>${esc(x.roll)}</td>
-                    <td>${esc(x.year)} · ${esc(x.exam||'—')}</td>
-                    <td>${(x.subjects||[]).map(s=>`${esc(s.subject)}: ${esc(s.marks)} (${esc(s.grade)})`).join('<br>')}</td>
-                    <td>${Number(x.gpa||0).toFixed(2)}</td>
-                </tr>`).join('')||'<tr><td colspan="6" class="empty-admin">No student result records.</td></tr>'}
-            </table>
-        </div>
-        <div class="box">
-            <h2>Assigned Classes & Subjects</h2>
-            ${c.map(x=>`<span class="pill-status">Class ${esc(x.class)}${x.section?' - '+esc(x.section):''} · ${esc(x.subject)}</span> `).join('')||'No classes assigned.'}
-        </div>
-    </div>`;
+async function students(){
+ const box=document.getElementById('view');
+ box.innerHTML='<div class="panel"><div class="box"><h2>My Students</h2><p class="hint">Loading your assigned students from Supabase…</p></div></div>';
+ try{
+  const ctx=await loadAssignedStudentContext();
+  box.innerHTML=`<div class="panel"><div class="box"><div class="toolbar"><h2>Students in My Assigned Classes</h2><span>${ctx.students.length} student(s)</span></div><p class="hint">Student records are read directly from Supabase and limited to your assigned class/academic-year combinations.</p><div class="table-wrap"><table class="table"><tr><th>Student ID</th><th>Name</th><th>Class / Roll</th><th>Year</th><th>Gender</th><th>Guardian / Phone</th><th>My Subjects</th></tr>
+  ${ctx.students.map(st=>{const subs=ctx.choices.filter(a=>a.class_id===st.class_id&&a.academic_year_id===st.academic_year_id).map(a=>a.subjectName);return `<tr><td>${esc(st.student_id)}</td><td>${esc(st.name)}</td><td>${esc(st.classes?.class_number||st.classes?.name||'—')} / ${esc(st.roll??'—')}${st.section?'-'+esc(st.section):''}</td><td>${esc(st.academic_years?.year||st.academic_years?.name||'—')}</td><td>${esc(st.gender||'—')}</td><td>${esc(st.guardian||'—')}<br><small>${esc(st.mobile||'')}</small></td><td>${subs.map(esc).join(', ')||'—'}</td></tr>`}).join('')||'<tr><td colspan="7" class="empty-admin">No active students found in your assigned classes.</td></tr>'}
+  </table></div></div></div>`;
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>My Students</h2><p class="hint">Could not load students: ${esc(error.message||String(error))}</p></div></div>`;}
 }
 
 function notificationsPage(){
@@ -632,35 +641,20 @@ async function supabaseEditRequestsPage(){
     }
 }
 
-function classStudents(){
-    const S=get('mhs_students',[]);
-    const R=get('mhs_results',[]);
-    const cur=window.__cs||'6';
-    const list=S.filter(x=>String(x.class)===cur).sort((a,b)=>Number(a.roll)-Number(b.roll));
-    const cnt=g=>list.filter(x=>x.gender===g).length;
-
-    view.innerHTML=`<div class="panel">
-        <div class="cards4">
-            ${['6','7','8','9','10'].map(c=>`<div class="stat" style="cursor:pointer;${c===cur?'outline:2px solid #0b6b4a':''}" onclick="window.__cs='${c}';render()">
-                <b>${S.filter(x=>String(x.class)===c).length}</b><span>Class ${c} students</span>
-            </div>`).join('')}
-        </div>
-        <div class="box">
-            <h2>Class ${esc(cur)} — ${list.length} students</h2>
-            <p class="hint">Boys: ${cnt('Male')} · Girls: ${cnt('Female')} · Other: ${cnt('Other')}. Students are added by the Super Admin (Students tab).</p>
-            <div class="table-wrap">
-                <table class="table">
-                    <tr><th>Roll</th><th>Name</th><th>Class</th><th>Section</th><th>Gender</th><th>Guardian Phone</th><th>Marks</th></tr>
-                    ${list.map(x=>`<tr>
-                        <td>${esc(x.roll)}</td><td>${esc(x.name)}</td><td>${esc(x.class)}</td>
-                        <td>${esc(x.section||'—')}</td><td>${esc(x.gender||'—')}</td>
-                        <td>${esc(x.phone||'—')}</td>
-                        <td>${R.filter(r=>String(r.class)===String(x.class)&&String(r.roll)===String(x.roll)&&nrm(r.name)===nrm(x.name)).map(r=>esc(r.exam||'')+' '+esc(r.year)+': '+r.total+' (GPA '+Number(r.gpa).toFixed(2)+')').join('<br>')||'—'}</td>
-                    </tr>`).join('')||'<tr><td colspan="7" class="empty-admin">No students in this class yet.</td></tr>'}
-                </table>
-            </div>
-        </div>
-    </div>`;
+async function classStudents(){
+ const box=document.getElementById('view');
+ box.innerHTML='<div class="panel"><div class="box"><h2>Class Students</h2><p class="hint">Loading assigned classes from Supabase…</p></div></div>';
+ try{
+  const ctx=await loadAssignedStudentContext();
+  const classOptions=[...new Map(ctx.students.map(st=>[st.class_id+'|'+st.academic_year_id,{class_id:st.class_id,academic_year_id:st.academic_year_id,className:st.classes?.name||('Class '+st.classes?.class_number),classNumber:String(st.classes?.class_number??st.classes?.name??'').replace(/^class\s*/i,'').trim(),year:st.academic_years?.year||st.academic_years?.name||''}])).values()];
+  const cur=window.__cs||classOptions[0]?.classNumber||'6';
+  const yearSelected=window.__csYear||classOptions.find(x=>x.classNumber===String(cur))?.year||'';
+  const list=ctx.students.filter(st=>String(st.classes?.class_number??String(st.classes?.name||'').replace(/^class\s*/i,''))===String(cur)&&String(st.academic_years?.year||st.academic_years?.name||'')===String(yearSelected)).sort((a,b)=>Number(a.roll)-Number(b.roll));
+  const count=gender=>list.filter(st=>st.gender===gender).length;
+  box.innerHTML=`<div class="panel"><div class="cards4">${classOptions.map(x=>`<div class="stat" style="cursor:pointer;${x.classNumber===String(cur)&&String(x.year)===String(yearSelected)?'outline:2px solid #0b6b4a':''}" data-class-choice="${esc(x.classNumber)}" data-year-choice="${esc(x.year)}"><b>${ctx.students.filter(st=>st.class_id===x.class_id&&st.academic_year_id===x.academic_year_id).length}</b><span>${esc(x.className)} · ${esc(x.year)}</span></div>`).join('')}</div><div class="box"><h2>${esc(list[0]?.classes?.name||('Class '+cur))} — ${esc(yearSelected)} · ${list.length} students</h2><p class="hint">Boys: ${count('Male')} · Girls: ${count('Female')} · Other: ${count('Other')}</p><div class="table-wrap"><table class="table"><tr><th>Roll</th><th>Student ID</th><th>Name</th><th>Section</th><th>Gender</th><th>Guardian Phone</th></tr>${list.map(st=>`<tr><td>${esc(st.roll??'—')}</td><td>${esc(st.student_id)}</td><td>${esc(st.name)}</td><td>${esc(st.section||'—')}</td><td>${esc(st.gender||'—')}</td><td>${esc(st.mobile||'—')}</td></tr>`).join('')||'<tr><td colspan="6" class="empty-admin">No students in this class/year.</td></tr>'}</table></div></div></div>`;
+  box.querySelectorAll('[data-class-choice]').forEach(button=>button.addEventListener('click',()=>{window.__cs=button.dataset.classChoice;window.__csYear=button.dataset.yearChoice;classStudents();}));
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Class Students</h2><p class="hint">Could not load class students: ${esc(error.message||String(error))}</p></div></div>`;}
 }
+
 
 render();
