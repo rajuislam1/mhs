@@ -15,6 +15,8 @@ Updated: 2026-10-28
 - Database policy verification: PASS. New student policies are present in `pg_policies`.
 - Security advisor: previous missing-RLS-policy and public/anon event-trigger execution findings are absent.
 - Browser end-to-end tests: NOT RUN. This integration cannot enter real account credentials into the hosted website.
+- JavaScript parse checks: PASS for updated `teacher/teacher.js` and `admin/admin.js`.
+- Results RLS verification: PASS; verified the Super Admin ALL policy, teacher draft INSERT, teacher conditional UPDATE, teacher assigned SELECT, and student own-published SELECT policies.
 - Valid/invalid login, inactive account, wrong-role account, logout, direct URL, and data ownership tests must be run using actual provisioned test accounts before merge.
 - Existing Admin and Teacher account credentials must correspond to Supabase Auth users and `user_profiles` rows.
 
@@ -31,6 +33,9 @@ Teacher portal still stores these modules in localStorage and they are not yet w
 ### Newly completed in this audit pass
 - Teacher `My Classes & Subjects` is now read-only and based on active `teacher_assignments` from Supabase; teachers can no longer self-assign a class/subject in the UI.
 - Teacher `Class Routine` now creates, lists, and deletes `class_routines` records in Supabase, using only active class/subject/year assignments.
+- Teacher `Publish Results` now reads active teacher assignments, assigned students, subjects and years from Supabase and writes result rows to `public.results`. New rows are saved as drafts; published rows cannot be changed unless an Admin-approved edit request exists.
+- Admin `Student Results` now reads Supabase results and supports publish, unpublish, delete, and approve/reject of Supabase result edit requests.
+- Result RLS now restricts teacher inserts to drafts for assigned students/subjects; teacher updates require a draft or an approved correction request; active Super Admins can manage results; students can read only their own published results.
 - RLS now constrains teacher routine INSERT/SELECT/DELETE to the authenticated active teacher and the exact matching active assignment. Policies were queried after migration to verify they are present.
 - Student lookup and marksheet data: read from `students`, `student_enrollments`, `results`, and related academic tables under RLS.
 
