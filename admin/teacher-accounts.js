@@ -586,7 +586,7 @@
                   <tr>
                     <td>${escTeacher(x.name)}</td>
                     <td>${escTeacher(x.username)}</td>
-                    <td>${escTeacher(x.email || '—')}</td>
+                    <td>${x.email && !x.email.endsWith('@login.mokhleshpur-high-school.edu.bd') ? escTeacher(x.email) : '—'}</td>
                     <td>${isActive ? 'Active' : 'Inactive'}</td>
                     <td>${assignmentSummary(x.username)}</td>
                     <td>
