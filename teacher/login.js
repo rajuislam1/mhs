@@ -31,7 +31,7 @@ document.getElementById('login').addEventListener('submit', async (e) => {
       .eq('id', data.user.id)
       .maybeSingle();
 
-    if (profileError) throw new Error('Could not verify teacher profile.');
+    if (profileError) { await supabase.auth.signOut(); throw new Error('Could not verify teacher profile.'); }
     if (!profile || profile.role !== 'teacher' || profile.is_active !== true) {
       await supabase.auth.signOut();
       throw new Error('This account does not have active teacher access.');
