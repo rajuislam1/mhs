@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
       const studentId = String(body.student_id||'').trim();
       const email = ''; // Student portal credentials use roll number; internal Auth email is never shown.
       const password = String(body.password||'');
-      if (!studentId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 8) return res.status(400).json({success:false,error:'Choose a student, enter a valid email and password of at least 8 characters.'});
+      if (!studentId || password.length < 8) return res.status(400).json({success:false,error:'Choose a student and enter a password of at least 8 characters.'});
       const sr = await fetch(rest+'/students?id=eq.'+encodeURIComponent(studentId)+'&select=id,student_id,name,roll,status',{headers});
       const students = await parse(sr);
       const student = students?.[0];
