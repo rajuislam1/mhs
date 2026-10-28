@@ -148,7 +148,65 @@ async function gallery(){
   }));
  }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Achievements & Gallery</h2><p class="hint">Could not load content: ${esc(error.message||String(error))}</p></div></div>`;}
 }
-function settings(){let s=get('mhs_site_settings',SITE);app.innerHTML=`<div class="panel"><div class="box"><h2>Edit School Information</h2><form class="form" id="sf"><label>Bangla Name<input id="sbn" value="${esc(s.nameBn)}"></label><label>English Name<input id="sen" value="${esc(s.nameEn)}"></label><label>EIIN<input id="sei" value="${esc(s.eiin)}"></label><label>Established<input id="ses" value="${esc(s.estd)}"></label><label>Board<input id="sbo" value="${esc(s.board)}"></label><label>Phone<input id="sph" value="${esc(s.phone)}"></label><label>Email<input id="sem" value="${esc(s.email)}"></label><label>Website<input id="sweb" value="${esc(s.website)}"></label><label>Headmaster<input id="shm" value="${esc(s.headmaster)}"></label><label>Students<input id="sst" type="number" value="${esc(s.students)}"></label><label>Teachers<input id="ste" type="number" value="${esc(s.teachers)}"></label><label>Service Years<input id="ssv" type="number" value="${esc(s.serviceYears)}"></label><label>SSC Pass Rate<input id="spr" value="${esc(s.passRate)}"></label><label class="full">Address<input id="sad" value="${esc(s.address)}"></label><label class="full">About<textarea id="sab">${esc(s.about)}</textarea></label><label class="full">History<textarea id="shi">${esc(s.history)}</textarea></label><label class="full">Mission<textarea id="smi">${esc(s.mission)}</textarea></label><label class="full">Vision<textarea id="svi">${esc(s.vision)}</textarea></label><button>Save School Information</button></form></div></div>`;sf.onsubmit=e=>{e.preventDefault();let x={...SITE,nameBn:sbn.value,nameEn:sen.value,eiin:sei.value,estd:ses.value,board:sbo.value,phone:sph.value,email:sem.value,website:sweb.value,headmaster:shm.value,students:Number(sst.value),teachers:Number(ste.value),serviceYears:Number(ssv.value),passRate:spr.value,address:sad.value,about:sab.value,history:shi.value,mission:smi.value,vision:svi.value};set('mhs_site_settings',x);alert('School information saved.');render()}}
+async function settings(){
+ const box=app;box.innerHTML='<div class="panel"><div class="box"><h2>School Settings</h2><p class="hint">Loading settings from Supabase…</p></div></div>';
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data:authData,error:authError}=await sb.auth.getUser();if(authError||!authData?.user)throw new Error('Admin session expired.');
+  const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',authData.user.id).single();
+  if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access required.');
+  const {data:rows,error}=await sb.from('school_settings').select('*').order('updated_at',{ascending:false}).limit(1);
+  if(error)throw error;
+  const saved=rows?.[0]||null,base={
+   school_name:saved?.school_name??SITE.nameBn??'মোখলেশপুর উচ্চ বিদ্যালয়',
+   school_name_en:saved?.school_name_en??SITE.nameEn??'Mokhleshpur High School',
+   eiin:saved?.eiin??SITE.eiin??'120140',
+   established_year:saved?.established_year??SITE.estd??1962,
+   education_board:saved?.education_board??SITE.board??'Dinajpur',
+   phone:saved?.phone??SITE.phone??'',
+   email:saved?.email??SITE.email??'',
+   website_url:saved?.website_url??SITE.website??'',
+   headmaster_name:saved?.headmaster_name??SITE.headmaster??'',
+   student_count:saved?.student_count??SITE.students??120,
+   teacher_count:saved?.teacher_count??SITE.teachers??9,
+   service_years:saved?.service_years??SITE.serviceYears??64,
+   ssc_pass_rate:saved?.ssc_pass_rate??SITE.passRate??'87%',
+   address:saved?.address??SITE.address??'Mokhleshpur, Birol, Dinajpur',
+   slogan:saved?.slogan??'সবার জন্য শিক্ষা',
+   facebook_url:saved?.facebook_url??'',map_url:saved?.map_url??'',
+   about_text:saved?.about_text??SITE.about??'',
+   history_text:saved?.history_text??SITE.history??'',
+   mission_text:saved?.mission_text??SITE.mission??'',
+   vision_text:saved?.vision_text??SITE.vision??'',
+   logo_url:saved?.logo_url??'',favicon_url:saved?.favicon_url??''
+  };
+  box.innerHTML=`<div class="panel"><div class="box"><h2>School Information</h2><p class="hint">Settings are saved centrally in Supabase. No existing localStorage settings are imported automatically.</p><form class="form" id="sbSettingsForm">
+   <label>Bangla Name<input name="school_name" value="${esc(base.school_name)}" required></label><label>English Name<input name="school_name_en" value="${esc(base.school_name_en)}"></label>
+   <label>EIIN<input name="eiin" value="${esc(base.eiin)}"></label><label>Established Year<input name="established_year" type="number" value="${esc(base.established_year)}"></label>
+   <label>Education Board<input name="education_board" value="${esc(base.education_board)}"></label><label>Headmaster<input name="headmaster_name" value="${esc(base.headmaster_name)}"></label>
+   <label>Phone<input name="phone" value="${esc(base.phone)}"></label><label>Email<input name="email" type="email" value="${esc(base.email)}"></label>
+   <label>Website URL<input name="website_url" type="url" value="${esc(base.website_url)}"></label><label>Facebook URL<input name="facebook_url" type="url" value="${esc(base.facebook_url)}"></label>
+   <label>Students<input name="student_count" type="number" min="0" value="${esc(base.student_count)}"></label><label>Teachers<input name="teacher_count" type="number" min="0" value="${esc(base.teacher_count)}"></label>
+   <label>Service Years<input name="service_years" type="number" min="0" value="${esc(base.service_years)}"></label><label>SSC Pass Rate<input name="ssc_pass_rate" value="${esc(base.ssc_pass_rate)}"></label>
+   <label>School Slogan<input name="slogan" value="${esc(base.slogan)}"></label><label>Map URL<input name="map_url" type="url" value="${esc(base.map_url)}"></label>
+   <label class="full">Address<input name="address" value="${esc(base.address)}"></label><label class="full">Logo URL<input name="logo_url" type="url" value="${esc(base.logo_url)}"></label><label class="full">Favicon URL<input name="favicon_url" type="url" value="${esc(base.favicon_url)}"></label>
+   <label class="full">About<textarea name="about_text">${esc(base.about_text)}</textarea></label><label class="full">History<textarea name="history_text">${esc(base.history_text)}</textarea></label><label class="full">Mission<textarea name="mission_text">${esc(base.mission_text)}</textarea></label><label class="full">Vision<textarea name="vision_text">${esc(base.vision_text)}</textarea></label>
+   <button type="submit">Save School Settings to Supabase</button></form></div></div>`;
+  document.getElementById('sbSettingsForm').onsubmit=async event=>{
+   event.preventDefault();const fd=new FormData(event.currentTarget),payload={};
+   for(const key of ['school_name','school_name_en','eiin','education_board','phone','email','website_url','headmaster_name','ssc_pass_rate','address','slogan','facebook_url','map_url','about_text','history_text','mission_text','vision_text','logo_url','favicon_url'])payload[key]=String(fd.get(key)||'').trim()||null;
+   for(const key of ['established_year','student_count','teacher_count','service_years'])payload[key]=String(fd.get(key)||'').trim()===''?null:Number(fd.get(key));
+   payload.updated_at=new Date().toISOString();
+   const button=event.currentTarget.querySelector('button[type="submit"]');button.disabled=true;
+   try{
+    const response=saved?await sb.from('school_settings').update(payload).eq('id',saved.id):await sb.from('school_settings').insert(payload);
+    if(response.error)throw response.error;mhsToast('School settings saved to Supabase');alert('School settings saved successfully.');
+   }catch(error){alert('Could not save settings: '+(error.message||String(error)));}
+   finally{button.disabled=false;}
+  };
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>School Settings</h2><p class="hint">Could not load settings: ${esc(error.message||String(error))}</p></div></div>`;}
+}
+
 render();
 
 
