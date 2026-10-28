@@ -72,7 +72,7 @@ module.exports = async (req, res) => {
     const updateResponse = await fetch(rest+'/user_profiles?id=eq.'+encodeURIComponent(profileId),{method:'PATCH',headers:{...headers,Prefer:'return=representation'},body:JSON.stringify({is_active:isActive,updated_at:new Date().toISOString()})});
     const updated = await parse(updateResponse);
     if (!updateResponse.ok || !updated?.length) return res.status(500).json({success:false,error:'Could not update student account status.'});
-    await fetch(rest+'/students?id=eq.'+encodeURIComponent(target.student_id),{method:'PATCH',headers:{...headers,Prefer:'return=minimal'},body:JSON.stringify({status:isActive,updated_at:new Date().toISOString()})});
+    // Account activation is independent of the underlying student record status.
     return res.status(200).json({success:true,message:isActive?'Student account activated.':'Student account deactivated.',is_active:isActive});
   } catch (error) {
     console.error('Manage student portal account error:',error);
