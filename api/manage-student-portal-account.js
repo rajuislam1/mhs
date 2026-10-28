@@ -84,6 +84,20 @@ module.exports = async (req, res) => {
       return res.status(200).json({success:true,message:'Student portal password reset successfully.'});
     }
 
+    if (req.method === 'PATCH' && typeof body.display_name === 'string') {
+      const profileId = String(body.profile_id || '').trim();
+      const displayName = body.display_name.trim();
+      if (!profileId || !displayName) return res.status(400).json({success:false,error:'Student profile ID and display name are required.'});
+      const updateResponse = await fetch(rest+'/user_profiles?id=eq.'+encodeURIComponent(profileId)+'&role=eq.student', {
+        method:'PATCH',
+        headers:{...headers,Prefer:'return=representation'},
+        body:JSON.stringify({display_name:displayName,updated_at:new Date().toISOString()})
+      });
+      const updated = await parse(updateResponse);
+      if (!updateResponse.ok || !updated?.length) return res.status(400).json({success:false,error:'Could not update the student portal display name.'});
+      return res.status(200).json({success:true,message:'Student portal display name updated.'});
+    }
+
     const profileId = String(body.profile_id||'').trim();
     const isActive = body.is_active;
     if (!profileId || typeof isActive !== 'boolean') return res.status(400).json({success:false,error:'Profile ID and boolean is_active are required.'});
