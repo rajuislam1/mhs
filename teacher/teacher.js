@@ -38,18 +38,7 @@ function esc(s){
     }[m]));
 }
 
-function notifications(){
-    let q=get('mhs_result_edit_requests',[])
-        .filter(x=>x.teacher===me.username&&x.status==='pending');
-
-    return q.length
-        ? `<div class="teacher-notice-bar">
-            <b>🔔 Super Admin Result Edit Request</b>
-            <span>${q.length} pending request${q.length>1?'s':''} — ${q.map(x=>`${esc(x.subject)} | Class ${esc(x.class)} | Roll ${esc(x.roll)}`).join(' · ')}</span>
-            <button onclick="tab='notifications';document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.tab==='notifications'));render()">View</button>
-          </div>`
-        :'';
-}
+function notifications(){ return ''; }
 
 function render(){
     title.textContent={
