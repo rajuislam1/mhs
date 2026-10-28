@@ -103,7 +103,7 @@ module.exports = async (req, res) => {
         email: authEmail,
         password,
         email_confirm: true,
-        user_metadata: { role: 'student', student_id: student.id, student_number: studentId, roll, display_name: name }
+        user_metadata: { role: 'student', student_id: student.id, student_number: finalStudentId, roll, display_name: name }
       })
     });
     const authData = await parse(createAuth);
@@ -124,7 +124,7 @@ module.exports = async (req, res) => {
       return res.status(500).json({ success: false, error: profileData?.message || 'Could not link student login to profile. Student and Auth account rollback was attempted.' });
     }
 
-    return res.status(201).json({ success: true, message: 'Student record and portal login created successfully.', student_id: studentId, roll, login: 'Use Roll Number or Student ID with the password you set.' });
+    return res.status(201).json({ success: true, message: 'Student record and portal login created successfully.', student_id: finalStudentId, roll, login: 'Use Roll Number and the password you set.' });
   } catch (error) {
     console.error('Create student portal account error:', error);
     return res.status(500).json({ success: false, error: 'Unexpected server error while creating student.' });
