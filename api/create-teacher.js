@@ -120,7 +120,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    if (suppliedEmail && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(suppliedEmail)) {
+    if (suppliedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(suppliedEmail)) {
       return res.status(400).json({
         error: 'Please provide a valid email address.'
       });
