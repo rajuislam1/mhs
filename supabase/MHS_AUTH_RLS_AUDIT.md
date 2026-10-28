@@ -33,6 +33,9 @@ The latest Security Advisor result contains one warning:
 - Fixed over-escaped photo URL validation in `admin/extra.js`.
 - Fixed regular-expression parsing in `api/create-student-portal-account.js`.
 - Fixed teacher session username precedence in `teacher/login.js`: the current username returned from the database now takes priority over potentially stale Auth metadata, so editing a teacher username does not keep the old username in the dashboard session.
+- Replaced Teacher Portal's self-managed localStorage class/subject list with the official read-only `teacher_assignments` Supabase data.
+- Replaced Teacher Portal routine add/list/delete handlers with Supabase `class_routines` queries; teachers can choose only active assigned class/subject/year combinations.
+- Added and verified RLS INSERT, SELECT, and DELETE policies on `class_routines`, binding routine ownership to the signed-in active teacher and the exact active assignment.
 - Adjusted teacher account editing so an internal synthetic login email is not required to be entered manually.
 - Updated migration notes to describe the actual roll-number + password student login and the user's decision not to migrate legacy website data.
 - JavaScript syntax checks passed for the audited API and portal scripts after these fixes. This is a syntax check, not a live integration test.
