@@ -38,3 +38,37 @@ document.getElementById('menu')?.addEventListener('click',()=>document.getElemen
     console.error('Public Supabase notices could not be loaded; keeping local fallback.', error);
   }
 })();
+
+
+/* Central public content from Supabase; no browser-local admin content is required. */
+(async function loadMhsPublicSettingsAndHero(){
+ try{
+  const sb=window.mhsSupabaseReady?await window.mhsSupabaseReady:null;
+  if(!sb)return;
+  const [{data:settings,error:settingsError},{data:tickers,error:tickerError},{data:heroRows,error:heroError}] = await Promise.all([
+   sb.from('school_settings').select('school_name,school_name_en,eiin,established_year,slogan,headmaster_name,student_count,teacher_count,service_years,ssc_pass_rate,address,about_text,logo_url,favicon_url').order('updated_at',{ascending:false}).limit(1),
+   sb.from('notice_tickers').select('message,link_url').eq('is_active',true).order('display_order').limit(1),
+   sb.from('gallery').select('image_url,title').eq('is_published',true).eq('category','hero').order('display_order').limit(10)
+  ]);
+  if(settingsError)throw settingsError;if(tickerError)throw tickerError;if(heroError)throw heroError;
+  const s=settings?.[0];
+  if(s){
+   const title=document.querySelector('.hero h1');if(title&&s.school_name_en)title.textContent=s.school_name_en;
+   const bn=document.querySelector('.hero h2');if(bn&&s.school_name)bn.textContent=s.school_name;
+   const pill=document.querySelector('.hero-content .pill');if(pill)pill.textContent='Estd. '+(s.established_year||'')+(s.eiin?' · EIIN '+s.eiin:'');
+   const about=document.getElementById('aboutText');if(about&&s.about_text)about.textContent=s.about_text;
+   const stats=document.querySelectorAll('.stats strong');
+   if(stats.length>=4){if(s.student_count!=null)stats[0].textContent=s.student_count;if(s.teacher_count!=null)stats[1].textContent=String(s.teacher_count).padStart(2,'0');if(s.service_years!=null)stats[2].textContent=s.service_years;if(s.ssc_pass_rate)stats[3].textContent=s.ssc_pass_rate;}
+   const info=document.querySelectorAll('.info-card span');if(info.length>=2){if(s.headmaster_name)info[0].textContent=s.headmaster_name;if(s.address)info[1].textContent=s.address;}
+   if(s.logo_url){document.querySelectorAll('.site-logo img,.brand img,header img.logo').forEach(img=>img.src=s.logo_url);}
+   if(s.favicon_url){let icon=document.querySelector('link[rel="icon"]');if(icon)icon.href=s.favicon_url;}
+  }
+  const ticker=tickers?.[0],tickerItems=document.getElementById('tickerItems');
+  if(ticker&&tickerItems){const span=document.createElement('span');span.textContent=ticker.message;if(ticker.link_url){const a=document.createElement('a');a.href=ticker.link_url;a.textContent=ticker.message;a.rel='noopener noreferrer';span.replaceChildren(a);}tickerItems.replaceChildren(span);}
+  if(heroRows?.length){
+   document.querySelectorAll('.hero-slide').forEach(img=>img.remove());
+   const bg=document.querySelector('.hero-bg');
+   if(bg){const slides=heroRows.map((row,i)=>{const img=document.createElement('img');img.src=row.image_url;img.alt=row.title||'School hero image';img.className='hero-slide'+(i===0?' on':'');bg.before(img);return img;});bg.remove();if(slides.length>1){let i=0;setInterval(()=>{slides[i].classList.remove('on');i=(i+1)%slides.length;slides[i].classList.add('on');},5000);}}
+  }
+ }catch(error){console.error('Could not load public school settings from Supabase:',error);}
+})();
