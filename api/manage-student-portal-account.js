@@ -62,6 +62,28 @@ module.exports = async (req, res) => {
       return res.status(201).json({success:true,message:'Student login account created and activated. Sign in using Roll Number and the password you set.',student:{id:student.id,student_id:student.student_id,name:student.name,roll:student.roll}});
     }
 
+    // Password reset for an existing Supabase-linked student, identified by the school Student ID.
+    if (typeof body.password === 'string') {
+      const studentNumber = String(body.student_id || '').trim();
+      if (!studentNumber || body.password.length < 8) {
+        return res.status(400).json({success:false,error:'Student ID and a password of at least 8 characters are required.'});
+      }
+      const studentResponse = await fetch(rest+'/students?student_id=eq.'+encodeURIComponent(studentNumber)+'&select=id',{headers});
+      const studentRows = await parse(studentResponse);
+      if (!studentResponse.ok) return res.status(500).json({success:false,error:'Could not look up the student.'});
+      if (!studentRows?.[0]) return res.status(404).json({success:false,error:'No Supabase student record found for this Student ID.'});
+      const profileResponse = await fetch(rest+'/user_profiles?student_id=eq.'+encodeURIComponent(studentRows[0].id)+'&role=eq.student&select=id,is_active',{headers});
+      const profileRows = await parse(profileResponse);
+      if (!profileResponse.ok) return res.status(500).json({success:false,error:'Could not look up the student login profile.'});
+      if (!profileRows?.[0]) return res.status(404).json({success:false,error:'This student does not have a Supabase portal login yet.'});
+      const passwordResponse = await fetch(url+'/auth/v1/admin/users/'+encodeURIComponent(profileRows[0].id),{
+        method:'PUT',headers,body:JSON.stringify({password:body.password})
+      });
+      const passwordResult = await parse(passwordResponse);
+      if (!passwordResponse.ok) return res.status(400).json({success:false,error:passwordResult?.message||'Could not reset the student portal password.'});
+      return res.status(200).json({success:true,message:'Student portal password reset successfully.'});
+    }
+
     const profileId = String(body.profile_id||'').trim();
     const isActive = body.is_active;
     if (!profileId || typeof isActive !== 'boolean') return res.status(400).json({success:false,error:'Profile ID and boolean is_active are required.'});
