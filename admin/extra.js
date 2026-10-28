@@ -204,7 +204,65 @@ async admissions(){
   }));
  }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Online Admission Applications</h2><p class="hint">Could not load applications: ${AESC(error.message||String(error))}</p></div></div>`;}
 },
-promotion(){ensureStudentIds();const year=new Date().getFullYear();mhsEnsureAcademicStructure(year);let students=mhsGet('mhs_students',[]);app.innerHTML=`<div class="panel"><div class="box"><h2>Class Promotion</h2><p class="hint">Promotion is now subject-complete. A student becomes eligible only when every registered subject for that academic year has a Final Exam result and no registered subject has failed.</p><div class="form"><label>Academic Year<select id="pyear">${[year,year-1,year+1].map(y=>`<option>${y}</option>`).join('')}</select></label><label>Current Class<select id="pclass">${CLS.map(c=>`<option>${c}</option>`).join('')}</select></label><label>Next Class<input id="pnext" readonly></label></div><div id="promoList"></div></div></div>`;const list=()=>{const src=pclass.value,yr=Number(pyear.value),next=Number(src)+1;pnext.value=next<=10?'Class '+next:'Graduated';mhsEnsureAcademicStructure(yr);const classStudents=students.filter(st=>String(st.class)===String(src));let rows=classStudents.map(st=>{const q=mhsFinalStatus(st,yr),status=!q.result?'No Final Result':q.missing.length?`Pending · ${q.missing.map(x=>x.name).join(', ')}`:q.failed.length?`Failed · ${q.failed.map(x=>x.name).join(', ')}`:'Eligible';const ok=q.passed;return `<tr><td><input type="checkbox" class="promote-check" value="${esc(st.studentId)}" ${ok?'checked':''} ${ok?'':'disabled'}></td><td>${esc(st.studentId)}</td><td>${esc(st.name)}</td><td>${esc(st.roll)}</td><td>${q.subjects.length}</td><td>${q.result?.subjects?.length||0}</td><td>${esc(status)}</td></tr>`}).join('');promoList.innerHTML=`<div class="toolbar"><h3>Class ${esc(src)} → ${esc(pnext.value)}</h3><span>${classStudents.length} student(s)</span></div><div class="table-wrap"><table class="table"><tr><th>Select</th><th>Student ID</th><th>Name</th><th>Roll</th><th>Registered Subjects</th><th>Results Published</th><th>Promotion Status</th></tr>${rows||'<tr><td colspan="7" class="empty-admin">No students in this class.</td></tr>'}</table></div><p><button class="btn-small" id="selectAllPass">Select Eligible</button> <button id="promoteBtn">Promote Selected</button></p>`;document.getElementById('selectAllPass')?.addEventListener('click',()=>document.querySelectorAll('.promote-check').forEach(x=>{if(!x.disabled)x.checked=true}));document.getElementById('promoteBtn')?.addEventListener('click',()=>{const ids=[...document.querySelectorAll('.promote-check:checked')].map(x=>x.value);if(!ids.length)return alert('No eligible students selected.');const all=mhsGet('mhs_students',[]),target=next<=10?String(next):'Graduated';for(const id of ids){const st=all.find(x=>String(x.studentId)===String(id));if(!st)continue;const q=mhsFinalStatus(st,yr);if(!q.passed)return alert(`${st.name} is not eligible because all registered subjects do not have a passing Final Exam result.`);st.classHistory=Array.isArray(st.classHistory)?st.classHistory:[];st.classHistory.push({year:yr,class:st.class,roll:st.roll,status:'promoted',subjects:q.subjectIds});st.class=target;st.academicYear=yr+1;st.subjectSelections=Array.isArray(st.subjectSelections)?st.subjectSelections:[];if(target==='Graduated')st.status='graduated'}if(confirm(`Promote ${ids.length} eligible student(s) from Class ${src} to ${target} for ${yr+1}?`)){mhsSet('mhs_students',all);students=all;alert(`Promotion completed for ${ids.length} student(s).`);list()}})};pclass.onchange=list;pyear.onchange=list;list()},
+async promotion(){
+ const box=app;box.innerHTML='<div class="panel"><div class="box"><h2>Class Promotion</h2><p class="hint">Loading enrollment and published final results from Supabase…</p></div></div>';
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data:authData,error:authError}=await sb.auth.getUser();if(authError||!authData?.user)throw new Error('Admin session expired.');
+  const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',authData.user.id).single();
+  if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access required.');
+  const [{data:students,error:studentsError},{data:classes,error:classesError},{data:years,error:yearsError},{data:classSubjects,error:csError},{data:selections,error:selectionsError},{data:results,error:resultsError},{data:enrollments,error:enrollmentsError}]=await Promise.all([
+   sb.from('students').select('id,student_id,name,roll,class_id,academic_year_id,status,classes(name,class_number),academic_years(year,name)').eq('status',true),
+   sb.from('classes').select('id,name,class_number,status').eq('status',true).order('class_number'),
+   sb.from('academic_years').select('id,year,name').order('year',{ascending:false}),
+   sb.from('class_subjects').select('id,class_id,subject_id,academic_year_id,is_compulsory,subjects(name)'),
+   sb.from('student_subjects').select('id,student_id,class_subject_id,is_optional'),
+   sb.from('results').select('id,student_id,class_subject_id,academic_year_id,exam_name,marks,status'),
+   sb.from('student_enrollments').select('id,student_id,academic_year_id,class_id,roll,enrollment_status')
+  ]);
+  if(studentsError)throw studentsError;if(classesError)throw classesError;if(yearsError)throw yearsError;if(csError)throw csError;if(selectionsError)throw selectionsError;if(resultsError)throw resultsError;if(enrollmentsError)throw enrollmentsError;
+  const currentYear=(years||[]).find(y=>Number(y.year)===new Date().getFullYear())||(years||[])[0];
+  box.innerHTML=`<div class="panel"><div class="box"><h2>Class Promotion</h2><p class="hint">A student is eligible only when every registered subject has a published Final Exam mark of at least 33. No localStorage records are used.</p>
+   <div class="form"><label>Academic Year<select id="promoYear">${(years||[]).map(y=>`<option value="${AESC(y.id)}" ${y.id===currentYear?.id?'selected':''}>${AESC(y.year||y.name)}</option>`).join('')}</select></label><label>Current Class<select id="promoClass">${(classes||[]).map(cl=>`<option value="${AESC(cl.id)}">${AESC(cl.name||('Class '+cl.class_number))}</option>`).join('')}</select></label><label>Next Academic Year<input id="promoNextYear" readonly></label><label>Next Class<input id="promoNextClass" readonly></label></div>
+   <div id="promoStatus" class="hint"></div><div id="promoList"></div></div></div>`;
+  const yearSelect=document.getElementById('promoYear'),classSelect=document.getElementById('promoClass'),nextYearBox=document.getElementById('promoNextYear'),nextClassBox=document.getElementById('promoNextClass'),statusBox=document.getElementById('promoStatus'),listBox=document.getElementById('promoList');
+  const draw=()=>{
+   const yearId=yearSelect.value,year=years.find(y=>y.id===yearId),classId=classSelect.value,cl=classes.find(x=>x.id===classId),nextYear=years.find(y=>Number(y.year)===Number(year?.year)+1),nextClass=classes.find(x=>Number(x.class_number)===Number(cl?.class_number)+1);
+   nextYearBox.value=nextYear?String(nextYear.year):'Not configured';
+   nextClassBox.value=nextClass?(nextClass.name||('Class '+nextClass.class_number)):(Number(cl?.class_number)===10?'Graduation workflow required':'Not configured');
+   const groupStudents=(students||[]).filter(s=>s.class_id===classId&&s.academic_year_id===yearId);
+   const evaluate=st=>{
+    const csRows=(classSubjects||[]).filter(cs=>cs.class_id===classId&&cs.academic_year_id===yearId);
+    const selected=(selections||[]).filter(x=>x.student_id===st.id&&csRows.some(cs=>cs.id===x.class_subject_id));
+    const required=selected.length?selected.map(x=>csRows.find(cs=>cs.id===x.class_subject_id)).filter(Boolean):csRows.filter(cs=>cs.is_compulsory);
+    const finals=required.map(cs=>({subject:cs.subjects?.name||'Subject',result:(results||[]).find(r=>r.student_id===st.id&&r.class_subject_id===cs.id&&r.academic_year_id===yearId&&r.exam_name==='Final Exam'&&r.status==='published')}));
+    const missing=finals.filter(x=>!x.result),failed=finals.filter(x=>x.result&&Number(x.result.marks)<33);
+    return {required,missing,failed,eligible:required.length>0&&missing.length===0&&failed.length===0};
+   };
+   const evaluated=groupStudents.map(st=>({st,...evaluate(st)}));
+   listBox.innerHTML=`<div class="toolbar"><h3>${AESC(cl?.name||'Class')} · ${AESC(year?.year||year?.name||'')}</h3><span>${groupStudents.length} student(s)</span></div><div class="table-wrap"><table class="table"><tr><th>Select</th><th>Student ID</th><th>Name</th><th>Roll</th><th>Subjects</th><th>Final Results</th><th>Eligibility</th></tr>${evaluated.map(x=>{const details=x.missing.length?'Missing: '+x.missing.map(y=>y.subject).join(', '):x.failed.length?'Failed: '+x.failed.map(y=>y.subject).join(', '):x.eligible?'Eligible':'No registered subjects';return `<tr><td><input class="promo-check" type="checkbox" value="${AESC(x.st.id)}" ${x.eligible&&nextYear&&nextClass?'':'disabled'}></td><td>${AESC(x.st.student_id)}</td><td>${AESC(x.st.name)}</td><td>${AESC(x.st.roll??'—')}</td><td>${x.required.length}</td><td>${x.required.length-x.missing.length} / ${x.required.length}</td><td>${AESC(details)}</td></tr>`}).join('')||'<tr><td colspan="7">No active students in this class/year.</td></tr>'}</table></div><p><button type="button" class="btn-small" id="promoSelect">Select Eligible</button> <button type="button" id="promoRun" ${nextYear&&nextClass?'':'disabled'}>Promote Selected</button></p>`;
+   statusBox.textContent=nextYear&&nextClass?'Only eligible students can be promoted. Existing historical enrollment rows are preserved.':Number(cl?.class_number)===10?'Class 10 graduation is not enabled in the current database schema.':'Create the next academic year and/or next class in Supabase before promoting students.';
+   document.getElementById('promoSelect').onclick=()=>listBox.querySelectorAll('.promo-check:not(:disabled)').forEach(b=>b.checked=true);
+   document.getElementById('promoRun').onclick=async()=>{
+    const ids=[...listBox.querySelectorAll('.promo-check:checked')].map(b=>b.value);
+    if(!ids.length)return alert('Select at least one eligible student.');
+    if(!confirm('Promote '+ids.length+' student(s) to '+(nextClass.name||('Class '+nextClass.class_number))+' for academic year '+nextYear.year+'?'))return;
+    const button=document.getElementById('promoRun');button.disabled=true;
+    try{
+     for(const id of ids){
+      const item=evaluated.find(x=>x.st.id===id);if(!item?.eligible)throw new Error('A selected student is no longer eligible.');
+      const existing=(enrollments||[]).find(e=>e.student_id===id&&e.academic_year_id===nextYear.id);
+      if(existing&&existing.class_id!==nextClass.id)throw new Error(item.st.name+' already has a different enrollment in the next academic year.');
+      if(!existing){const {error}=await sb.from('student_enrollments').insert({student_id:id,academic_year_id:nextYear.id,class_id:nextClass.id,roll:item.st.roll,enrollment_status:'active',remarks:'Promoted from '+(cl.name||cl.class_number)+' for academic year '+year.year});if(error)throw error;}
+      const {error:updateError}=await sb.from('students').update({class_id:nextClass.id,academic_year_id:nextYear.id,updated_at:new Date().toISOString()}).eq('id',id);if(updateError)throw updateError;
+     }
+     mhsToast('Student promotion saved to Supabase');await window.MHS_EXTRA.promotion();
+    }catch(error){alert('Promotion stopped: '+(error.message||String(error))+'. Review the Supabase enrollment rows before retrying.');button.disabled=false;}
+   };
+  };
+  yearSelect.addEventListener('change',draw);classSelect.addEventListener('change',draw);draw();
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Class Promotion</h2><p class="hint">Could not load promotion data: ${AESC(error.message||String(error))}</p></div></div>`;}
+},
 async fees(){
  const box=app;
  box.innerHTML='<div class="panel"><div class="box"><h2>Fees & Payments</h2><p class="hint">Loading fee records from Supabase…</p></div></div>';
