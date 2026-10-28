@@ -38,7 +38,8 @@ Migration must be staged module by module with read-only comparison tests before
 
 ## Super Admin account activation controls (added to feature branch)
 - Teacher Accounts now offers Activate for inactive database-backed teacher records. The server API synchronizes `teachers.status` and the linked teacher `user_profiles.is_active`; deactivation preserves the records.
-- Added a Student Portal Accounts admin section and server-only API to create Supabase Auth login accounts for existing Supabase student records, link them to `user_profiles`, and activate/deactivate their portal access.
+- Added a Student Portal Accounts admin section and server-only API to create Supabase Auth login accounts for existing Supabase student records, link them to `user_profiles`, and activate/deactivate their portal access. Students sign in with roll number and password; an internal synthetic Auth email is never shown to them.
 - Student portal access activation is kept separate from the student's underlying enrollment record status.
-- These controls require the Vercel environment variables `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to be configured. The service key remains server-side only.
-- Demo account creation and real login tests remain blocked until the feature branch is deployed to a test environment and a Super Admin signs in to create a test account. Do not use an existing real student's identity for a demo.
+- The Admin → Student Database creation form now writes new students to Supabase and creates the linked Auth account/profile in one server-side workflow, then mirrors the newly created record in localStorage for legacy modules. Password must be at least 8 characters.
+- Teacher username/email login and student roll-number login API routes require Vercel Preview environment variables `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. See `supabase/VERCEL_ENV_SETUP.md`; the service-role key remains server-side only.
+- Demo account creation and real login tests remain pending. After setting Vercel Preview environment variables and redeploying, create a new test teacher and a new test student using unique test details. Do not use an existing real student's identity for a demo.
