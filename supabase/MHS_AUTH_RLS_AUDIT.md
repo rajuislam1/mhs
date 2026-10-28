@@ -36,6 +36,9 @@ The latest Security Advisor result contains one warning:
 - Replaced Teacher Portal's self-managed localStorage class/subject list with the official read-only `teacher_assignments` Supabase data.
 - Replaced Teacher Portal routine add/list/delete handlers with Supabase `class_routines` queries; teachers can choose only active assigned class/subject/year combinations.
 - Added and verified RLS INSERT, SELECT, and DELETE policies on `class_routines`, binding routine ownership to the signed-in active teacher and the exact active assignment.
+- Replaced Teacher Portal result entry with Supabase queries for active assignments, assigned students, subjects and academic years. New results are saved as drafts; published-result corrections are blocked until an Admin approves an edit request.
+- Replaced Admin result management with Supabase-backed result listing, publish/unpublish, deletion, and result-edit-request approval/rejection. Student-facing RLS remains restricted to published results owned by the signed-in student.
+- Added and verified result RLS policies: teachers may insert assigned draft results and update assigned draft results or published results with an approved edit request; active Super Admins can manage all results.
 - Adjusted teacher account editing so an internal synthetic login email is not required to be entered manually.
 - Updated migration notes to describe the actual roll-number + password student login and the user's decision not to migrate legacy website data.
 - JavaScript syntax checks passed for the audited API and portal scripts after these fixes. This is a syntax check, not a live integration test.
@@ -45,7 +48,7 @@ The current Supabase teacher row returned by the read-only audit has username `t
 
 ## Remaining blockers before production merge
 1. The Vercel Preview environment must contain `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`; the previously reported server-configuration error indicates at least one deployment was missing these variables. Preview and Production are separate environment scopes.
-2. Real browser tests remain outstanding: admin login, teacher username login, student roll + password login, incorrect password, inactive account, wrong role, logout, direct portal URL, student ownership isolation, and admin/teacher feature regression.
+2. Real browser tests remain outstanding: admin login, teacher username login, student roll + password login, incorrect password, inactive account, wrong role, logout, direct portal URL, student ownership isolation, result draft/publish flow, edit approval/rejection, and admin/teacher feature regression.
 3. Teacher routines, assignments, results and result-edit request flows still contain localStorage-backed implementation. These are not fully migrated to Supabase. The request to avoid legacy data migration does not mean those feature implementations have already been rewritten to database-backed workflows.
 4. Admin admission approval (`window.apOk` in `admin/extra.js`) still creates only a localStorage student record and does not provision a Supabase student/Auth record. It must be wired to a database-backed admission/student workflow before the full student workflow can be called migrated.
 5. Teacher routines, assigned classes, student lists, results and some edit-request UI still read/write localStorage; the result-edit page includes a Supabase path, but the complete teacher workflow is not migrated.
