@@ -1,118 +1,50 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Teacher Portal | Mokhleshpur High School</title>
-
-    <link rel="icon" href="../assets/images/logo.svg">
-    <link rel="stylesheet" href="../css/admin.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Portal | Mokhleshpur High School</title>
+  <link rel="icon" href="../assets/images/logo.svg">
+  <link rel="stylesheet" href="../css/admin.css">
 </head>
-
 <body>
-    <div class="admin-shell">
-
-        <!-- Sidebar -->
-        <aside>
-            <a class="side-brand" href="../index.html">
-                <img src="../assets/images/logo.svg" alt="School Logo">
-                <span>Teacher Portal</span>
-            </a>
-
-            <nav>
-                <button type="button" data-tab="dash" class="active">
-                    Dashboard
-                </button>
-
-                <button type="button" data-tab="routine">
-                    Class Routine
-                </button>
-
-                <button type="button" data-tab="classes">
-                    My Classes
-                </button>
-
-                <button type="button" data-tab="results">
-                    Publish Results
-                </button>
-                <button type="button" data-tab="notifications">
-                 Result Edit Requests
-                </button>
-
-
-                <button type="button" data-tab="students">
-                    Student Results
-                </button>
-
-                <button type="button" data-tab="classstudents">
-                    Class Students
-                </button>
-            </nav>
-
-            <button type="button" id="logout" class="logout">
-                Logout
-            </button>
-        </aside>
-
-        <!-- Main Content -->
-        <main>
-            <header class="admin-head">
-                <div>
-                    <span id="teacherName">Teacher</span>
-                    <h1 id="title">Dashboard</h1>
-                </div>
-
-                <a href="../index.html">View Website ↗</a>
-            </header>
-
-            <section id="app"></section>
-        </main>
-
-    </div>
-
-    <!-- Core Scripts -->
-    <script src="../js/core.js"></script>
-    <script src="../js/result-utils.js"></script>
-
-    <!-- Teacher Portal -->
-    <script src="../js/supabase.js"></script>
-    <script src="teacher.js"></script>
-    <script src="enhancements.js"></script>
-
-    <!-- Initialize Dashboard -->
-    <script>
-        (function () {
-            function initializeTeacherDashboard() {
-                const dashboardButton =
-                    document.querySelector('nav button[data-tab="dash"]');
-
-                if (dashboardButton) {
-                    dashboardButton.classList.add("active");
-                }
-
-                if (typeof window.render === "function") {
-                    window.render();
-                } else {
-                    console.error(
-                        "Teacher Portal: render() function was not found."
-                    );
-                }
-            }
-
-            if (document.readyState === "loading") {
-                document.addEventListener(
-                    "DOMContentLoaded",
-                    initializeTeacherDashboard,
-                    { once: true }
-                );
-            } else {
-                initializeTeacherDashboard();
-            }
-        })();
-    </script>
-<!-- Teacher Portal Result Edit Requests deployment update -->
-
+  <div class="admin-shell">
+    <aside>
+      <a class="side-brand" href="../index.html"><img src="../assets/images/logo.svg" alt="School Logo"><span>Teacher Portal</span></a>
+      <nav>
+        <button type="button" data-tab="dash" class="active">Dashboard</button>
+        <button type="button" data-tab="routine">Class Routine</button>
+        <button type="button" data-tab="classes">My Classes</button>
+        <button type="button" data-tab="results">Publish Results</button>
+        <button type="button" data-tab="notifications">Result Edit Requests</button>
+        <button type="button" data-tab="students">Student Results</button>
+        <button type="button" data-tab="classstudents">Class Students</button>
+      </nav>
+      <button type="button" id="logout" class="logout">Logout</button>
+    </aside>
+    <main>
+      <header class="admin-head"><div><span id="teacherName">Teacher</span><h1 id="title">Dashboard</h1></div><a href="../index.html">View Website ↗</a></header>
+      <section id="app"></section>
+    </main>
+  </div>
+  <script src="../js/core.js"></script>
+  <script src="../js/result-utils.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/auth-guard.js"></script>
+  <script src="teacher.js"></script>
+  <script src="enhancements.js"></script>
+  <script>
+    (function () {
+      function initializeTeacherDashboard() {
+        const button = document.querySelector('nav button[data-tab="dash"]');
+        if (button) button.classList.add("active");
+        if (typeof window.render === "function") window.render();
+        else console.error("Teacher Portal: render() function was not found.");
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initializeTeacherDashboard, { once: true });
+      } else initializeTeacherDashboard();
+    })();
+  </script>
 </body>
 </html>
