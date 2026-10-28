@@ -111,7 +111,7 @@ async function editrequests(){
   box.querySelectorAll('[data-edit-approve],[data-edit-reject]').forEach(button=>button.addEventListener('click',async()=>{
    const id=button.dataset.editApprove||button.dataset.editReject,status=button.dataset.editApprove?'approved':'rejected';
    const note=prompt(status==='approved'?'Optional approval note:':'Reason for rejecting this request:','')||null;button.disabled=true;
-   try{const {error}=await sb.from('result_edit_requests').update({status,response_note:note,responded_at:new Date().toISOString()}).eq('id',id).eq('status','pending');if(error)throw error;mhsToast('Edit request '+status);await editrequests();}
+   try{const {error}=await sb.from('result_edit_requests').update({status,response_note:note,responded_at:new Date().toISOString(),reviewed_by:authData.user.id}).eq('id',id).eq('status','pending');if(error)throw error;mhsToast('Edit request '+status);await editrequests();}
    catch(error){alert('Could not review request: '+(error.message||String(error)));button.disabled=false;}
   }));
  }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Result Edit Requests</h2><p class="hint">Could not load requests: ${esc(error.message||String(error))}</p></div></div>`;}
