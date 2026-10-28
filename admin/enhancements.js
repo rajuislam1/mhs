@@ -280,21 +280,6 @@
       );
     }
 
-    console.log('Assignment inserted into Supabase:', inserted.id);
-
-const { data: verifyRows, error: verifyError } = await sb
-  .from('teacher_assignments')
-  .select('id,teacher_id,class_id,subject_id,academic_year_id,status')
-  .eq('id', inserted.id);
-
-console.log('Assignment verification:', verifyRows, verifyError);
-
-alert(
-  'Inserted assignment ID: ' + inserted.id +
-  '\nVerification rows: ' + (verifyRows?.length ?? 0) +
-  '\nVerification error: ' + (verifyError?.message || 'None')
-);
-
     if (window.mhsSupabaseReady === false) {
       throw new Error(
         'Supabase is not ready. Reload the page and try again.'
