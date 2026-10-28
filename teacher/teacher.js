@@ -100,140 +100,147 @@ function dash(){
     </div>`;
 }
 
-function routine(){
-    let a=get('mhs_routines',[]).filter(x=>x.teacher===me.username);
-
-    view.innerHTML=`<div class="panel">
-        <div class="box">
-            <h2>Add Class Routine</h2>
-            <form class="form" id="rf">
-                <label>Day
-                    <select id="day">
-                        <option>Sunday</option><option>Monday</option>
-                        <option>Tuesday</option><option>Wednesday</option>
-                        <option>Thursday</option><option>Friday</option>
-                        <option>Saturday</option>
-                    </select>
-                </label>
-                <label>Time<input id="time" placeholder="10:00–10:45" required></label>
-                <label>Class
-                    <select id="cl">
-                        <option>6</option><option>7</option><option>8</option>
-                        <option>9</option><option>10</option>
-                    </select>
-                </label>
-                <label>Section<input id="sec" placeholder="A"></label>
-                <label>Subject<input id="sub" value="${esc(me.subject||'')}" required></label>
-                <button>Save Routine</button>
-            </form>
-        </div>
-        <div class="box">
-            <h2>My Routine</h2>
-            <table class="table">
-                <tr><th>Day</th><th>Time</th><th>Class</th><th>Subject</th><th></th></tr>
-                ${a.map((x,i)=>`<tr>
-                    <td>${esc(x.day)}</td><td>${esc(x.time)}</td>
-                    <td>${esc(x.class)}-${esc(x.section||'')}</td>
-                    <td>${esc(x.subject)}</td>
-                    <td><button class="btn-small danger" onclick="dr(${i})">Delete</button></td>
-                </tr>`).join('')||'<tr><td colspan="5" class="empty-admin">No routine added.</td></tr>'}
-            </table>
-        </div>
-    </div>`;
-
-    document.getElementById('rf').onsubmit=e=>{
-        e.preventDefault();
-        let all=get('mhs_routines',[]);
-        all.push({
-            teacher:me.username,
-            teacherName:me.name,
-            day:document.getElementById('day').value,
-            time:document.getElementById('time').value,
-            class:document.getElementById('cl').value,
-            section:document.getElementById('sec').value,
-            subject:document.getElementById('sub').value
-        });
-        set('mhs_routines',all);
-        mhsToast('Routine updated');
-        render();
-    };
+async function routine(){
+    const box = document.getElementById('view');
+    box.innerHTML = '<div class="panel"><div class="box"><h2>Class Routine</h2><p class="hint">Loading your Supabase assignments…</p></div></div>';
+    try {
+        const sb = await window.mhsSupabaseReady;
+        const { data: authData, error: authError } = await sb.auth.getUser();
+        if (authError || !authData?.user) throw new Error('Teacher session expired. Sign in again.');
+        const { data: profile, error: profileError } = await sb.from('user_profiles')
+            .select('teacher_id,role,is_active').eq('id', authData.user.id).single();
+        if (profileError || profile?.role !== 'teacher' || profile?.is_active !== true || !profile.teacher_id)
+            throw new Error('An active teacher profile was not found.');
+        const { data: assignments, error: assignmentError } = await sb.from('teacher_assignments')
+            .select('id,class_id,subject_id,academic_year_id')
+            .eq('teacher_id', profile.teacher_id).eq('status', true);
+        if (assignmentError) throw assignmentError;
+        const ids = [...new Set((assignments || []).flatMap(a => [a.class_id, a.subject_id, a.academic_year_id]).filter(Boolean))];
+        const [{data: classesData,error: classesError},{data: subjectsData,error: subjectsError},{data: yearsData,error: yearsError}] = await Promise.all([
+            sb.from('classes').select('id,name,class_number'),
+            sb.from('subjects').select('id,name'),
+            sb.from('academic_years').select('id,year')
+        ]);
+        if (classesError) throw classesError;
+        if (subjectsError) throw subjectsError;
+        if (yearsError) throw yearsError;
+        const classMap = new Map((classesData || []).map(x => [x.id, x]));
+        const subjectMap = new Map((subjectsData || []).map(x => [x.id, x]));
+        const yearMap = new Map((yearsData || []).map(x => [x.id, x]));
+        const {data: routinesData,error: routineError} = await sb.from('class_routines')
+            .select('id,day_of_week,start_time,end_time,room,class_id,subject_id,academic_year_id')
+            .eq('teacher_id', profile.teacher_id).order('day_of_week').order('start_time');
+        if (routineError) throw routineError;
+        box.innerHTML = `<div class="panel">
+            <div class="box"><h2>Add Class Routine</h2>
+                <p class="hint">Only classes and subjects assigned by the school administrator can be selected.</p>
+                <form class="form" id="sbRoutineForm">
+                    <label>Assigned Class & Subject
+                        <select name="assignment" required>
+                            <option value="">Choose assignment</option>
+                            ${(assignments || []).map(a => {
+                                const cl=classMap.get(a.class_id), sub=subjectMap.get(a.subject_id), year=yearMap.get(a.academic_year_id);
+                                return `<option value="${esc(a.id)}">${esc(cl?.name || cl?.class_number || 'Class')} · ${esc(sub?.name || 'Subject')} · ${esc(year?.year || '')}</option>`;
+                            }).join('')}
+                        </select>
+                    </label>
+                    <label>Day<select name="day" required>
+                        <option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option>
+                    </select></label>
+                    <label>Start Time<input type="time" name="start" required></label>
+                    <label>End Time<input type="time" name="end" required></label>
+                    <label>Room (optional)<input name="room" maxlength="80" placeholder="Room number"></label>
+                    <button type="submit" ${assignments?.length ? '' : 'disabled'}>Save Routine</button>
+                </form>
+                ${assignments?.length ? '' : '<p class="hint">No active class/subject assignments were found. Ask the administrator to assign your classes first.</p>'}
+            </div>
+            <div class="box"><h2>My Routine</h2>
+                <div class="table-wrap"><table class="table"><tr><th>Day</th><th>Time</th><th>Class</th><th>Subject</th><th>Year</th><th>Room</th><th></th></tr>
+                ${(routinesData || []).map(r => `<tr><td>${esc(r.day_of_week)}</td><td>${esc(String(r.start_time).slice(0,5))}–${esc(String(r.end_time).slice(0,5))}</td><td>${esc(classMap.get(r.class_id)?.name || classMap.get(r.class_id)?.class_number || '—')}</td><td>${esc(subjectMap.get(r.subject_id)?.name || '—')}</td><td>${esc(yearMap.get(r.academic_year_id)?.year || '—')}</td><td>${esc(r.room || '—')}</td><td><button class="btn-small danger" onclick="deleteSupabaseRoutine('${esc(r.id)}')">Delete</button></td></tr>`).join('') || '<tr><td colspan="7" class="empty-admin">No routines saved.</td></tr>'}
+                </table></div>
+            </div>
+        </div>`;
+        document.getElementById('sbRoutineForm').onsubmit = async event => {
+            event.preventDefault();
+            const form=event.currentTarget, button=form.querySelector('button');
+            const assignment=(assignments || []).find(a => a.id === form.elements.assignment.value);
+            if (!assignment) return alert('Choose one of your assigned classes and subjects.');
+            if (form.elements.end.value <= form.elements.start.value) return alert('End time must be later than start time.');
+            button.disabled=true;
+            try {
+                const {error} = await sb.from('class_routines').insert({
+                    teacher_id: profile.teacher_id,
+                    class_id: assignment.class_id,
+                    subject_id: assignment.subject_id,
+                    academic_year_id: assignment.academic_year_id,
+                    day_of_week: form.elements.day.value,
+                    start_time: form.elements.start.value,
+                    end_time: form.elements.end.value,
+                    room: form.elements.room.value.trim() || null,
+                    routine_status: true
+                });
+                if (error) throw error;
+                mhsToast('Routine saved to Supabase');
+                await routine();
+            } catch (error) {
+                alert('Could not save routine: ' + (error.message || String(error)));
+                button.disabled=false;
+            }
+        };
+    } catch(error) {
+        box.innerHTML = `<div class="panel"><div class="box"><h2>Class Routine</h2><p class="hint">Could not load routines: ${esc(error.message || String(error))}</p></div></div>`;
+    }
 }
 
-window.dr=i=>{
-    let all=get('mhs_routines',[]);
-    let ix=all.map((x,k)=>x.teacher===me.username?k:-1).filter(k=>k>-1)[i];
-    if(ix!==undefined){
-        all.splice(ix,1);
-        set('mhs_routines',all);
-        mhsToast('Routine updated');
-        render();
+window.deleteSupabaseRoutine = async id => {
+    if (!confirm('Delete this routine?')) return;
+    try {
+        const sb=await window.mhsSupabaseReady;
+        const {data:authData,error:authError}=await sb.auth.getUser();
+        if(authError || !authData?.user) throw new Error('Please sign in again.');
+        const {data:profile,error:profileError}=await sb.from('user_profiles').select('teacher_id,role,is_active').eq('id',authData.user.id).single();
+        if(profileError || profile?.role!=='teacher' || profile?.is_active!==true || !profile.teacher_id) throw new Error('Active teacher profile required.');
+        const {error}=await sb.from('class_routines').delete().eq('id',id).eq('teacher_id',profile.teacher_id);
+        if(error) throw error;
+        mhsToast('Routine deleted');
+        await routine();
+    } catch(error) {
+        alert('Could not delete routine: '+(error.message||String(error)));
     }
 };
 
-function classes(){
-    let a=get('mhs_teacher_classes',[]).filter(x=>x.teacher===me.username);
-
-    view.innerHTML=`<div class="panel">
-        <div class="box">
-            <h2>My Classes & Subjects</h2>
-            <p class="hint">Add every class/subject you teach. These assignments become selectable subjects in Publish Results.</p>
-            <form class="form" id="cf">
-                <label>Class
-                    <select id="cc">
-                        <option value="6">6</option><option value="7">7</option>
-                        <option value="8">8</option><option value="9">9</option>
-                        <option value="10">10</option>
-                    </select>
-                </label>
-                <label>Section<input id="cs" placeholder="A"></label>
-                <label>Subject<input id="cx" value="${esc(me.subject||'')}" required placeholder="e.g. Biology"></label>
-                <button>Add Class & Subject</button>
-            </form>
-        </div>
-        <div class="box">
-            <table class="table">
-                <tr><th>Class</th><th>Section</th><th>Subject</th><th></th></tr>
-                ${a.map((x,i)=>`<tr>
-                    <td>${esc(x.class)}</td><td>${esc(x.section||'')}</td>
-                    <td>${esc(x.subject)}</td>
-                    <td><button class="btn-small danger" onclick="dc(${i})">Delete</button></td>
-                </tr>`).join('')||'<tr><td colspan="4" class="empty-admin">No classes added.</td></tr>'}
-            </table>
-        </div>
-    </div>`;
-
-    document.getElementById('cf').onsubmit=e=>{
-        e.preventDefault();
-        let all=get('mhs_teacher_classes',[]);
-        const cls=document.getElementById('cc').value;
-        const subject=document.getElementById('cx').value.trim();
-
-        if(all.some(x=>x.teacher===me.username&&String(x.class)===String(cls)&&String(x.subject).toLowerCase()===subject.toLowerCase())){
-            return alert('This class and subject are already assigned.');
-        }
-
-        all.push({
-            teacher:me.username,
-            class:cls,
-            section:document.getElementById('cs').value,
-            subject
-        });
-        set('mhs_teacher_classes',all);
-        mhsToast('Class list updated');
-        render();
-    };
-}
-
-window.dc=i=>{
-    let all=get('mhs_teacher_classes',[]);
-    let ix=all.map((x,k)=>x.teacher===me.username?k:-1).filter(k=>k>-1)[i];
-    if(ix!==undefined){
-        all.splice(ix,1);
-        set('mhs_teacher_classes',all);
-        mhsToast('Class list updated');
-        render();
+async function classes(){
+    const box=document.getElementById('view');
+    box.innerHTML='<div class="panel"><div class="box"><h2>My Classes & Subjects</h2><p class="hint">Loading your official assignments from Supabase…</p></div></div>';
+    try {
+        const sb=await window.mhsSupabaseReady;
+        const {data:authData,error:authError}=await sb.auth.getUser();
+        if(authError || !authData?.user) throw new Error('Teacher session expired. Sign in again.');
+        const {data:profile,error:profileError}=await sb.from('user_profiles').select('teacher_id,role,is_active').eq('id',authData.user.id).single();
+        if(profileError || profile?.role!=='teacher' || profile?.is_active!==true || !profile.teacher_id) throw new Error('An active teacher profile was not found.');
+        const {data:assignments,error:assignmentError}=await sb.from('teacher_assignments').select('id,class_id,subject_id,academic_year_id,status,assigned_at').eq('teacher_id',profile.teacher_id).eq('status',true).order('assigned_at',{ascending:false});
+        if(assignmentError) throw assignmentError;
+        const [{data:classesData,error:classesError},{data:subjectsData,error:subjectsError},{data:yearsData,error:yearsError}]=await Promise.all([
+            sb.from('classes').select('id,name,class_number'),
+            sb.from('subjects').select('id,name'),
+            sb.from('academic_years').select('id,year')
+        ]);
+        if(classesError) throw classesError;
+        if(subjectsError) throw subjectsError;
+        if(yearsError) throw yearsError;
+        const classMap=new Map((classesData||[]).map(x=>[x.id,x]));
+        const subjectMap=new Map((subjectsData||[]).map(x=>[x.id,x]));
+        const yearMap=new Map((yearsData||[]).map(x=>[x.id,x]));
+        box.innerHTML=`<div class="panel"><div class="box"><h2>My Classes & Subjects</h2>
+            <p class="hint">Assignments are managed by the school administrator. Teachers cannot self-assign classes or subjects.</p>
+            <div class="table-wrap"><table class="table"><tr><th>Class</th><th>Subject</th><th>Academic Year</th><th>Status</th></tr>
+            ${(assignments||[]).map(a=>`<tr><td>${esc(classMap.get(a.class_id)?.name||classMap.get(a.class_id)?.class_number||'—')}</td><td>${esc(subjectMap.get(a.subject_id)?.name||'—')}</td><td>${esc(yearMap.get(a.academic_year_id)?.year||'—')}</td><td><span class="badge">Assigned</span></td></tr>`).join('')||'<tr><td colspan="4" class="empty-admin">No active assignments. Contact the school administrator.</td></tr>'}
+            </table></div>
+        </div></div>`;
+    } catch(error) {
+        box.innerHTML=`<div class="panel"><div class="box"><h2>My Classes & Subjects</h2><p class="hint">Could not load assignments: ${esc(error.message||String(error))}</p></div></div>`;
     }
-};
+}
 
 function results(){
     mhsEnsureAcademicStructure(new Date().getFullYear());
