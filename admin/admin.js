@@ -50,7 +50,7 @@ async function results(){
    try{
     const id=button.dataset.publish||button.dataset.unpublish;
     const status=button.dataset.publish?'published':'draft';
-    const payload={status,published_at:status==='published'?new Date().toISOString():null,published_by:status==='published'?null:null};
+    const payload={status,published_at:status==='published'?new Date().toISOString():null,published_by:status==='published'?null:null,published_by_user_id:status==='published'?authData.user.id:null};
     const {error}=await sb.from('results').update(payload).eq('id',id);
     if(error)throw error;
     mhsToast(status==='published'?'Result published to Student Portal':'Result returned to Draft');
@@ -71,7 +71,7 @@ async function results(){
    const id=button.dataset.approveRequest||button.dataset.rejectRequest,status=button.dataset.approveRequest?'approved':'rejected';
    const note=prompt(status==='approved'?'Optional approval note:':'Reason for rejecting this correction request:','')||null;
    button.disabled=true;
-   try{const {error}=await sb.from('result_edit_requests').update({status,response_note:note,responded_at:new Date().toISOString()}).eq('id',id).eq('status','pending');if(error)throw error;mhsToast('Edit request '+status);await results();}
+   try{const {error}=await sb.from('result_edit_requests').update({status,response_note:note,responded_at:new Date().toISOString(),reviewed_by:authData.user.id}).eq('id',id).eq('status','pending');if(error)throw error;mhsToast('Edit request '+status);await results();}
    catch(e){alert('Could not review request: '+(e.message||String(e)));button.disabled=false;}
   }));
  }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Student Results</h2><p class="hint">Could not load Supabase results: ${esc(error.message||String(error))}</p></div></div>`;}
