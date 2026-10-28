@@ -223,6 +223,36 @@ module.exports = async (req, res) => {
         }
       }
 
+      // If the login email changes, update Supabase Auth first so the
+      // teacher table and the actual sign-in identity stay in sync.
+      let authEmailChanged = false;
+      if (
+        linkedProfile &&
+        typeof update.email === 'string' &&
+        update.email &&
+        update.email.toLowerCase() !== String(teacher.email || '').toLowerCase()
+      ) {
+        const authEmailResponse = await fetch(
+          `${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(linkedProfile.id)}`,
+          {
+            method: 'PUT',
+            headers: adminHeaders,
+            body: JSON.stringify({
+              email: update.email.toLowerCase(),
+              email_confirm: true
+            })
+          }
+        );
+
+        if (!authEmailResponse.ok) {
+          console.error('Teacher Auth email update failed:', await authEmailResponse.text());
+          return res.status(400).json({
+            error: 'Could not update the teacher login email in Supabase Auth. The existing login email was kept.'
+          });
+        }
+        authEmailChanged = true;
+      }
+
       update.updated_at = new Date().toISOString();
 
       const updateResponse = await fetch(
@@ -241,6 +271,23 @@ module.exports = async (req, res) => {
 
       if (!updateResponse.ok) {
         console.error('Teacher update error:', updatedRows);
+
+        if (authEmailChanged && linkedProfile && teacher.email) {
+          await fetch(
+            `${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(linkedProfile.id)}`,
+            {
+              method: 'PUT',
+              headers: adminHeaders,
+              body: JSON.stringify({
+                email: teacher.email,
+                email_confirm: true
+              })
+            }
+          ).catch(rollbackError => {
+            console.error('Teacher Auth email rollback failed:', rollbackError);
+          });
+        }
+
         return res.status(400).json({
           error: 'Could not update teacher. Check duplicate username or database constraints.'
         });
