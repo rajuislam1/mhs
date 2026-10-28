@@ -39,6 +39,9 @@ The latest Security Advisor result contains one warning:
 - Replaced Teacher Portal result entry with Supabase queries for active assignments, assigned students, subjects and academic years. New results are saved as drafts; published-result corrections are blocked until an Admin approves an edit request.
 - Replaced Admin result management with Supabase-backed result listing, publish/unpublish, deletion, and result-edit-request approval/rejection. Student-facing RLS remains restricted to published results owned by the signed-in student.
 - Added and verified result RLS policies: teachers may insert assigned draft results and update assigned draft results or published results with an approved edit request; active Super Admins can manage all results.
+- Connected the public online admission form to Supabase `admission_applications`; Admin admission review now reads Supabase records, creates a student portal account on approval, and records approval/rejection status.
+- Hardened the existing `admission_applications` table after finding anonymous SELECT privileges and an unrestricted public INSERT policy: revoked anon SELECT, limited anon to INSERT, added pending-only INSERT checks, and restricted authenticated reads/updates/deletes to active Super Admins. Verified grants, RLS enablement and policies with SQL queries.
+- Student account creation API now persists a valid date of birth when supplied and returns the linked UUID needed to associate the approved application with the student record.
 - Adjusted teacher account editing so an internal synthetic login email is not required to be entered manually.
 - Updated migration notes to describe the actual roll-number + password student login and the user's decision not to migrate legacy website data.
 - JavaScript syntax checks passed for the audited API and portal scripts after these fixes. This is a syntax check, not a live integration test.
