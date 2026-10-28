@@ -1,4 +1,6 @@
 
+const crypto = require('crypto');
+
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
@@ -95,7 +97,7 @@ module.exports = async (req, res) => {
 
     // Email is optional in the school workflow. Keep a deterministic internal
     // Auth email so Supabase Auth can still authenticate username/password.
-    const email = suppliedEmail || `teacher.${username.toLowerCase()}@login.mokhleshpur-high-school.edu.bd`;
+    const email = suppliedEmail || `teacher.${crypto.createHash('sha256').update(username.toLowerCase()).digest('hex').slice(0, 32)}@login.mokhleshpur-high-school.edu.bd`;
 
     const password = typeof body.password === 'string'
       ? body.password : '';
