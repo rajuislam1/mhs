@@ -1,4 +1,3 @@
-if(sessionStorage.getItem('mhs_admin')!=='1') location.href='login.html';
 const app=document.getElementById('app'),title=document.getElementById('title');
 const get=(k,f=[])=>{try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}};
 const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
@@ -7,8 +6,25 @@ let tab='overview';
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');render()});
 logout.onclick=()=>{sessionStorage.removeItem('mhs_admin');location.href='login.html'};
 adminLang.onclick=()=>{document.documentElement.classList.toggle('bn-admin');adminLang.textContent=document.documentElement.classList.contains('bn-admin')?'English':'বাংলা'};
-function render(){title.textContent={overview:'Dashboard',notices:'Notice Management',teachers:'Teachers & Accounts',results:'Student Results',editrequests:'Result Edit Requests',gallery:'Achievements & Gallery',settings:'School Settings',students:'Student Database',subjects:'Academic Subjects',studentSubjects:'Student Subject Selection',promotion:'Class Promotion',admissions:'Admission Applications',fees:'Fees & Payments',hero:'Hero Images'}[tab];({overview,notices,teachers,results,editrequests,gallery,settings,...MHS_EXTRA}[tab])()}
-function overview(){let n=get('mhs_notices',NOTICES),t=get('mhs_teacher_accounts',[]),r=get('mhs_results',[]),g=get('mhs_gallery',[]);app.innerHTML=`<div class="panel"><div class="cards4"><div class="stat"><b>${n.length}</b><span>Notices</span></div><div class="stat"><b>${t.length}</b><span>Teacher Accounts</span></div><div class="stat"><b>${r.length}</b><span>Student Results</span></div><div class="stat"><b>${g.length}</b><span>Gallery Items</span></div></div><div class="box"><h2>Super Administrator</h2><p>Full control over notices, teachers, teacher accounts, results, achievements, gallery and school settings.</p><div class="quick-grid"><button onclick="tab='notices';render()">Manage Notices</button><button onclick="tab='teachers';render()">Teachers & Accounts</button><button onclick="tab='results';render()">Manage Results</button><button onclick="tab='gallery';render()">Manage Gallery</button><button onclick="tab='settings';render()">Edit School Information</button></div><p class="hint">This static version stores data in this browser. A central school-wide system across different devices needs a database/API later.</p></div></div>`}
+function render(){title.textContent={overview:'Dashboard',notices:'Notice Management',teachers:'Teachers & Accounts',results:'Student Results',editrequests:'Result Edit Requests',gallery:'Achievements & Gallery',settings:'School Settings',students:'Student Database',subjects:'Academic Subjects',studentSubjects:'Student Subject Selection',accountAccess:'Student Portal Accounts',promotion:'Class Promotion',admissions:'Admission Applications',fees:'Fees & Payments',hero:'Hero Images'}[tab];if(tab==='teachers'&&typeof window.teachers==='function'){window.teachers();return;}({overview,notices,teachers,results,editrequests,gallery,settings,...MHS_EXTRA}[tab])()}
+async function overview(){
+ const box=app;box.innerHTML='<div class="panel"><div class="box"><h2>Super Admin Dashboard</h2><p class="hint">Loading live Supabase totals…</p></div></div>';
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data:authData,error:authError}=await sb.auth.getUser();if(authError||!authData?.user)throw new Error('Admin session expired.');
+  const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',authData.user.id).single();
+  if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access required.');
+  const [{count:noticesCount,error:nError},{count:teacherCount,error:tError},{count:resultCount,error:rError},{count:studentCount,error:sError},{count:galleryCount,error:gError}]=await Promise.all([
+   sb.from('notices').select('id',{count:'exact',head:true}),
+   sb.from('teachers').select('id',{count:'exact',head:true}),
+   sb.from('results').select('id',{count:'exact',head:true}),
+   sb.from('students').select('id',{count:'exact',head:true}),
+   sb.from('gallery').select('id',{count:'exact',head:true})
+  ]);
+  if(nError)throw nError;if(tError)throw tError;if(rError)throw rError;if(sError)throw sError;if(gError)throw gError;
+  box.innerHTML=`<div class="panel"><div class="cards4"><div class="stat"><b>${noticesCount||0}</b><span>Notices</span></div><div class="stat"><b>${teacherCount||0}</b><span>Teachers</span></div><div class="stat"><b>${studentCount||0}</b><span>Students</span></div><div class="stat"><b>${resultCount||0}</b><span>Result Records</span></div></div><div class="box"><h2>Super Administrator</h2><p>Live counts from Supabase. Student records, results, admissions, subject selections, fees and public content are managed centrally.</p><div class="quick-grid"><button onclick="tab='notices';render()">Manage Notices</button><button onclick="tab='teachers';render()">Teachers & Accounts</button><button onclick="tab='results';render()">Manage Results</button><button onclick="tab='students';render()">Student Database</button><button onclick="tab='subjects';render()">Academic Subjects</button><button onclick="tab='admissions';render()">Admission Applications</button><button onclick="tab='fees';render()">Fees & Payments</button><button onclick="tab='settings';render()">School Settings</button></div><p class="hint">Gallery items: ${galleryCount||0}. No legacy localStorage records are imported.</p></div></div>`;
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Super Admin Dashboard</h2><p class="hint">Could not load live totals: ${esc(error.message||String(error))}</p></div></div>`;}
+}
 function notices(){let n=get('mhs_notices',NOTICES),ticker=get('mhs_ticker_notice',{text:n[0]?.title||'School notice'});app.innerHTML=`<div class="panel"><div class="box"><h2>Hero Notice Ticker</h2><p class="hint">This single message appears above the hero and continuously slides from right to left.</p><form class="form" id="tickerForm"><label class="full">Ticker Notice Text<input id="tickerText" value="${esc(ticker.text||'')}" required></label><button>Save Ticker Notice</button></form></div><div class="box"><h2>Add / Edit Notice</h2><form class="form" id="nf"><input type="hidden" id="nid"><label class="full">Notice Title<input id="nt" required></label><label>Posting Date & Time<input id="nd" type="datetime-local" required></label><label>Attachment URL<input id="nfurl" placeholder="Optional URL or relative file path"></label><label class="full">Description<textarea id="ndesc" required></textarea></label><button>Save Notice</button></form></div><div class="box"><div class="toolbar"><h2>All Notices</h2><span>${n.length} total</span></div><div class="table-wrap"><table class="table"><tr><th>Title</th><th>Posted</th><th>Attachment</th><th>Actions</th></tr>${n.map((x,i)=>`<tr><td>${esc(x.title)}</td><td>${new Date(x.date).toLocaleString()}</td><td>${x.file?`<a href="${esc(x.file)}" target="_blank">Open</a>`:'—'}</td><td><button class="btn-small" onclick="editNotice(${i})">Edit</button> <button class="btn-small danger" onclick="delNotice(${i})">Delete</button></td></tr>`).join('')||'<tr><td colspan="4" class="empty-admin">No notices.</td></tr>'}</table></div></div></div>`;
 tickerForm.onsubmit=e=>{e.preventDefault();set('mhs_ticker_notice',{text:tickerText.value.trim(),updatedAt:new Date().toISOString()});alert('Hero notice ticker updated.');render()};
 nf.onsubmit=e=>{e.preventDefault();let arr=get('mhs_notices',NOTICES),obj={title:nt.value.trim(),date:new Date(nd.value).toISOString(),description:ndesc.value.trim(),file:nfurl.value.trim()};let i=Number(nid.value);if(nid.value!=='')arr[i]=obj;else arr.unshift(obj);set('mhs_notices',arr);mhsToast('Notice saved successfully');render()}}
@@ -19,14 +35,194 @@ function teachers(){let a=get('mhs_teacher_accounts',[]),t=get('mhs_teachers',TE
  pf.onsubmit=e=>{e.preventDefault();let teachers=get('mhs_teachers',TEACHERS);teachers.push({name:pn.value.trim(),designation:pd.value.trim()||'Teacher',subject:ps.value.trim(),qualification:pq.value.trim(),photo:pphoto.value.trim()});set('mhs_teachers',teachers);alert('Teacher added to website.');render()}}
 window.delTeacher=i=>{if(confirm('Delete this teacher account?')){let a=get('mhs_teacher_accounts',[]),x=a[i];a.splice(i,1);set('mhs_teacher_accounts',a);mhsToast('Teacher account deleted');render()}};
 window.delPublicTeacher=i=>{if(confirm('Remove this teacher from the website?')){let t=get('mhs_teachers',TEACHERS);t.splice(i,1);set('mhs_teachers',t);mhsToast('Teacher removed from website');render()}};
-function results(){let r=get('mhs_results',RESULTS),accounts=get('mhs_teacher_accounts',[]);const teacherForSubject=(x,subject)=>{const hit=(x.subjects||[]).find(s=>String(s.subject).toLowerCase()===String(subject).toLowerCase());return hit?.teacher||''};app.innerHTML=`<div class="panel"><div class="box"><h2>Published Student Results</h2><p class="hint">Teachers publish subject-wise marks. Select a specific subject below if the teacher needs to edit or correct it.</p><div class="table-wrap"><table class="table"><tr><th>Student</th><th>Class</th><th>Roll</th><th>Year</th><th>Subjects</th><th>Average</th><th>GPA</th><th>Action</th></tr>${r.map((x,i)=>`<tr><td>${esc(x.name)}</td><td>${esc(x.class)}</td><td>${esc(x.roll)}</td><td>${esc(x.year)} · ${esc(x.exam||"—")}</td><td>${(x.subjects||[]).map(s=>`${esc(s.subject)} (${s.marks}, ${s.grade})`).join('<br>')}</td><td>${Number(x.average||0).toFixed(2)}</td><td><b>${Number(x.gpa||0).toFixed(2)}</b></td><td><button class="btn-small" onclick="mhsPrintMarksheet(get('mhs_results',[])[${i}])">Print</button> <button class="btn-small" onclick="requestEdit(${i})">Request Edit</button> <button class="btn-small danger" onclick="delResult(${i})">Delete</button></td></tr>`).join('')||'<tr><td colspan="8" class="empty-admin">No results published.</td></tr>'}</table></div></div><div class="box"><h2>Send Subject-Specific Edit Request</h2><form class="form" id="editRequestForm"><label>Student Result<select id="erResult" required><option value="">Select student result</option>${r.map((x,i)=>`<option value="${i}">${esc(x.name)} · Class ${esc(x.class)} · Roll ${esc(x.roll)} · ${esc(x.year)}</option>`).join('')}</select></label><label>Teacher<select id="erTeacher" required><option value="">Select teacher</option>${accounts.map(x=>`<option value="${esc(x.username)}">${esc(x.name)} (${esc(x.username)})</option>`).join('')}</select></label><label>Specific Subject<select id="erSubject" required><option value="">Select result first</option></select></label><label class="full">Message / Correction Request<textarea id="erReason" required placeholder="Example: Please correct the Biology mark from 62 to 68."></textarea></label><button>Send Edit Request</button></form></div></div>`;document.getElementById('erResult').onchange=()=>{let x=r[Number(erResult.value)];erSubject.innerHTML=x?`<option value="">Select subject</option>${(x.subjects||[]).map(s=>`<option value="${esc(s.subject)}">${esc(s.subject)} · Current Mark ${s.marks} · ${esc(s.grade)}</option>`).join('')}`:'<option value="">Select result first</option>';erTeacher.value=''};document.getElementById('erSubject').onchange=()=>{let x=r[Number(erResult.value)],u=x?teacherForSubject(x,erSubject.value):'';if(u&&accounts.some(a=>a.username===u))erTeacher.value=u;};document.getElementById('editRequestForm').onsubmit=e=>{e.preventDefault();let x=r[Number(erResult.value)],q=get('mhs_result_edit_requests',[]);if(!x)return;let teacher=accounts.find(a=>a.username===erTeacher.value);q.push({id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())),teacher:erTeacher.value,teacherName:teacher?.name||erTeacher.value,student:x.name,class:x.class,roll:x.roll,year:x.year,exam:x.exam||"",subject:erSubject.value,reason:erReason.value.trim(),status:'pending',createdAt:new Date().toISOString(),admin:'Super Admin'});set('mhs_result_edit_requests',q);alert('Edit request sent to the selected teacher.');render()}}
+async function results(){
+ const box=app;
+ box.innerHTML='<div class="panel"><div class="box"><h2>Student Results</h2><p class="hint">Loading Supabase results…</p></div></div>';
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data:authData,error:authError}=await sb.auth.getUser();
+  if(authError||!authData?.user)throw new Error('Admin session expired. Sign in again.');
+  const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',authData.user.id).single();
+  if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access is required.');
+  const [{data:rows,error},{data:teachers,error:teacherError}]=await Promise.all([
+   sb.from('results').select('id,student_id,class_subject_id,academic_year_id,exam_name,marks,grade,grade_point,status,published_at,created_at,students(student_id,name,roll),class_subjects(class_id,subject_id,academic_year_id,classes(name,class_number),subjects(name),academic_years(year,name))').order('created_at',{ascending:false}),
+   sb.from('teachers').select('id,name')
+  ]);
+  if(error)throw error;if(teacherError)throw teacherError;
+  const teacherMap=new Map((teachers||[]).map(t=>[t.id,t.name]));
+  box.innerHTML=`<div class="panel"><div class="box"><div class="toolbar"><h2>Supabase Student Results</h2><span>${(rows||[]).length} record(s)</span></div>
+  <p class="hint">Teachers submit results as drafts. Students can see only published results. Publish or unpublish results here; all changes are stored in Supabase.</p>
+  <div class="table-wrap"><table class="table"><tr><th>Student</th><th>Class / Roll</th><th>Year / Exam</th><th>Subject</th><th>Marks / Grade</th><th>Status</th><th>Action</th></tr>
+  ${(rows||[]).map(r=>{const st=r.students||{},cs=r.class_subjects||{};return `<tr><td>${esc(st.name||st.student_id||'Student')}<br><small>ID ${esc(st.student_id||'—')}</small></td><td>${esc(cs.classes?.name||cs.classes?.class_number||'—')} / ${esc(st.roll??'—')}</td><td>${esc(cs.academic_years?.year||cs.academic_years?.name||'—')} · ${esc(r.exam_name)}</td><td>${esc(cs.subjects?.name||'—')}</td><td>${esc(r.marks??'—')} · ${esc(r.grade||'—')} (${esc(r.grade_point??'—')})</td><td><span class="badge">${esc(r.status)}</span></td><td>${r.status==='published'?`<button class="btn-small" data-unpublish="${esc(r.id)}">Unpublish</button>`:`<button class="btn-small" data-publish="${esc(r.id)}">Publish</button>`} <button class="btn-small danger" data-delete-result="${esc(r.id)}">Delete</button></td></tr>`}).join('')||'<tr><td colspan="7" class="empty-admin">No Supabase results yet.</td></tr>'}
+  </table></div></div>
+  <div class="box"><h2>Result Edit Requests</h2><div id="sbAdminEditRequests"><p class="hint">Loading requests…</p></div></div></div>`;
+  async function changeStatus(id,status){
+   const payload={status,published_at:status==='published'?new Date().toISOString():null,published_by:status==='published'?(profile.teacher_id||null):null};
+   const {error}=await sb.from('results').update(payload).eq('id',id);
+   if(error)throw error;
+  }
+  box.querySelectorAll('[data-publish],[data-unpublish]').forEach(button=>button.addEventListener('click',async()=>{
+   button.disabled=true;
+   try{
+    const id=button.dataset.publish||button.dataset.unpublish;
+    const status=button.dataset.publish?'published':'draft';
+    const payload={status,published_at:status==='published'?new Date().toISOString():null,published_by:status==='published'?null:null,published_by_user_id:status==='published'?authData.user.id:null};
+    const {error}=await sb.from('results').update(payload).eq('id',id);
+    if(error)throw error;
+    mhsToast(status==='published'?'Result published to Student Portal':'Result returned to Draft');
+    await results();
+   }catch(e){alert('Could not update result: '+(e.message||String(e)));button.disabled=false;}
+  }));
+  box.querySelectorAll('[data-delete-result]').forEach(button=>button.addEventListener('click',async()=>{
+   if(!confirm('Delete this result permanently from Supabase?'))return;
+   button.disabled=true;
+   try{const {error}=await sb.from('results').delete().eq('id',button.dataset.deleteResult);if(error)throw error;mhsToast('Result deleted');await results();}
+   catch(e){alert('Could not delete result: '+(e.message||String(e)));button.disabled=false;}
+  }));
+  const {data:requests,error:requestError}=await sb.from('result_edit_requests').select('id,result_id,teacher_id,reason,status,requested_at,response_note,results:results(exam_name,marks,student_id,students(name,student_id,roll),class_subjects(classes(name),subjects(name),academic_years(year)))').order('requested_at',{ascending:false});
+  const rq=document.getElementById('sbAdminEditRequests');
+  if(requestError)throw requestError;
+  rq.innerHTML=(requests||[]).length?`<div class="table-wrap"><table class="table"><tr><th>Date</th><th>Teacher</th><th>Student / Result</th><th>Reason</th><th>Status</th><th>Review</th></tr>${requests.map(q=>{const r=q.results||{},st=r.students||{},cs=r.class_subjects||{};return `<tr><td>${esc(q.requested_at?new Date(q.requested_at).toLocaleString():'—')}</td><td>${esc(teacherMap.get(q.teacher_id)||'Teacher')}</td><td>${esc(st.name||'Student')} · ${esc(cs.subjects?.name||'Subject')} · ${esc(r.exam_name||'')}</td><td>${esc(q.reason||'')}</td><td>${esc(q.status)}</td><td>${q.status==='pending'?`<button class="btn-small" data-approve-request="${esc(q.id)}">Approve</button> <button class="btn-small danger" data-reject-request="${esc(q.id)}">Reject</button>`:'—'}</td></tr>`}).join('')}</table></div>`:'<p>No Supabase edit requests.</p>';
+  rq.querySelectorAll('[data-approve-request],[data-reject-request]').forEach(button=>button.addEventListener('click',async()=>{
+   const id=button.dataset.approveRequest||button.dataset.rejectRequest,status=button.dataset.approveRequest?'approved':'rejected';
+   const note=prompt(status==='approved'?'Optional approval note:':'Reason for rejecting this correction request:','')||null;
+   button.disabled=true;
+   try{const {error}=await sb.from('result_edit_requests').update({status,response_note:note,responded_at:new Date().toISOString(),reviewed_by:authData.user.id}).eq('id',id).eq('status','pending');if(error)throw error;mhsToast('Edit request '+status);await results();}
+   catch(e){alert('Could not review request: '+(e.message||String(e)));button.disabled=false;}
+  }));
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Student Results</h2><p class="hint">Could not load Supabase results: ${esc(error.message||String(error))}</p></div></div>`;}
+}
+async function editrequests(){
+ const box=app;box.innerHTML='<div class="panel"><div class="box"><h2>Result Edit Requests</h2><p class="hint">Loading Supabase requests…</p></div></div>';
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data:authData,error:authError}=await sb.auth.getUser();if(authError||!authData?.user)throw new Error('Admin session expired.');
+  const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',authData.user.id).single();
+  if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access required.');
+  const [{data:requests,error},{data:teachers,error:teacherError}]=await Promise.all([
+   sb.from('result_edit_requests').select('id,result_id,teacher_id,reason,status,requested_at,responded_at,response_note,results(exam_name,marks,students(name,student_id,roll),class_subjects(classes(name,class_number),subjects(name),academic_years(year,name)))').order('requested_at',{ascending:false}),
+   sb.from('teachers').select('id,name')
+  ]);
+  if(error)throw error;if(teacherError)throw teacherError;
+  const names=new Map((teachers||[]).map(t=>[t.id,t.name]));
+  box.innerHTML=`<div class="panel"><div class="box"><div class="toolbar"><h2>Supabase Result Edit Requests</h2><span>${(requests||[]).filter(r=>r.status==='pending').length} pending</span></div><p class="hint">Approve a request to allow the assigned teacher to correct a published result, or reject it with a note.</p><div class="table-wrap"><table class="table"><tr><th>Requested</th><th>Teacher</th><th>Student</th><th>Class / Subject / Exam</th><th>Current Marks</th><th>Reason</th><th>Status</th><th>Review</th></tr>
+  ${(requests||[]).map(q=>{const r=q.results||{},st=r.students||{},cs=r.class_subjects||{};return `<tr><td>${esc(q.requested_at?new Date(q.requested_at).toLocaleString():'—')}</td><td>${esc(names.get(q.teacher_id)||'Teacher')}</td><td>${esc(st.name||'Student')}<br><small>ID ${esc(st.student_id||'—')} · Roll ${esc(st.roll??'—')}</small></td><td>${esc(cs.classes?.name||cs.classes?.class_number||'—')} · ${esc(cs.subjects?.name||'—')}<br>${esc(cs.academic_years?.year||cs.academic_years?.name||'')} · ${esc(r.exam_name||'')}</td><td>${esc(r.marks??'—')}</td><td>${esc(q.reason||'')}</td><td><span class="badge">${esc(q.status)}</span>${q.response_note?'<br>'+esc(q.response_note):''}</td><td>${q.status==='pending'?`<button type="button" class="btn-small" data-edit-approve="${esc(q.id)}">Approve</button> <button type="button" class="btn-small danger" data-edit-reject="${esc(q.id)}">Reject</button>`:'—'}</td></tr>`}).join('')||'<tr><td colspan="8">No edit requests found.</td></tr>'}
+  </table></div></div></div>`;
+  box.querySelectorAll('[data-edit-approve],[data-edit-reject]').forEach(button=>button.addEventListener('click',async()=>{
+   const id=button.dataset.editApprove||button.dataset.editReject,status=button.dataset.editApprove?'approved':'rejected';
+   const note=prompt(status==='approved'?'Optional approval note:':'Reason for rejecting this request:','')||null;button.disabled=true;
+   try{const {error}=await sb.from('result_edit_requests').update({status,response_note:note,responded_at:new Date().toISOString(),reviewed_by:authData.user.id}).eq('id',id).eq('status','pending');if(error)throw error;mhsToast('Edit request '+status);await editrequests();}
+   catch(error){alert('Could not review request: '+(error.message||String(error)));button.disabled=false;}
+  }));
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Result Edit Requests</h2><p class="hint">Could not load requests: ${esc(error.message||String(error))}</p></div></div>`;}
+}
+async function gallery(){
+ const box=app;box.innerHTML='<div class="panel"><div class="box"><h2>Achievements & Gallery</h2><p class="hint">Loading public content from Supabase…</p></div></div>';
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data:authData,error:authError}=await sb.auth.getUser();if(authError||!authData?.user)throw new Error('Admin session expired.');
+  const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',authData.user.id).single();
+  if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access required.');
+  const [{data:achievements,error:aError},{data:images,error:gError}]=await Promise.all([
+   sb.from('achievements').select('id,title,description,achievement_date,image_url,category,is_published,display_order,created_at').order('display_order').order('created_at',{ascending:false}),
+   sb.from('gallery').select('id,title,description,image_url,category,is_published,display_order,created_at').order('display_order').order('created_at',{ascending:false})
+  ]);
+  if(aError)throw aError;if(gError)throw gError;
+  box.innerHTML=`<div class="panel">
+   <div class="box"><h2>Add Achievement</h2><form class="form" id="sbAchievementForm"><label>Title<input name="title" required maxlength="180"></label><label>Date<input name="date" type="date"></label><label>Category<select name="category"><option value="general">General</option><option value="academic">Academic</option><option value="sports">Sports</option><option value="cultural">Cultural</option></select></label><label>Image URL (optional)<input name="image" type="url" placeholder="https://…"></label><label class="full">Description<textarea name="description" maxlength="2000"></textarea></label><button type="submit">Save Achievement to Supabase</button></form></div>
+   <div class="box"><h2>Achievements</h2><div class="table-wrap"><table class="table"><tr><th>Date</th><th>Title</th><th>Description</th><th>Status</th><th>Actions</th></tr>${(achievements||[]).map(a=>`<tr><td>${esc(a.achievement_date||'—')}</td><td>${esc(a.title)}</td><td>${esc(a.description||'')}</td><td>${a.is_published?'Published':'Draft'}</td><td><button class="btn-small" data-ach-toggle="${esc(a.id)}" data-published="${a.is_published?'1':'0'}">${a.is_published?'Unpublish':'Publish'}</button> <button class="btn-small" data-ach-edit="${esc(a.id)}">Edit</button> <button class="btn-small danger" data-ach-delete="${esc(a.id)}">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">No achievements in Supabase yet.</td></tr>'}</table></div></div>
+   <div class="box"><h2>Add Gallery Image</h2><form class="form" id="sbGalleryForm"><label>Title / Caption<input name="title" maxlength="180"></label><label>Category<select name="category"><option value="general">General</option><option value="campus">Campus</option><option value="events">Events</option><option value="sports">Sports</option><option value="cultural">Cultural</option></select></label><label class="full">Image URL<input name="image" type="url" required placeholder="Paste a publicly accessible image URL"></label><label class="full">Description<input name="description" maxlength="500"></label><button type="submit">Save Gallery Image</button></form><p class="hint">Images must be hosted at a publicly accessible URL; this form does not store large image files in the database.</p></div>
+   <div class="box"><h2>Gallery Images</h2><div class="preview">${(images||[]).map(g=>`<div><img src="${esc(g.image_url)}" alt="${esc(g.title||'School gallery image')}" style="max-width:180px"><small>${esc(g.title||g.category)}</small><p>${g.is_published?'Published':'Draft'}</p><button class="btn-small" data-gallery-toggle="${esc(g.id)}" data-published="${g.is_published?'1':'0'}">${g.is_published?'Unpublish':'Publish'}</button> <button class="btn-small danger" data-gallery-delete="${esc(g.id)}">Delete</button></div>`).join('')||'<p>No gallery images in Supabase yet.</p>'}</div></div>
+  </div>`;
+  document.getElementById('sbAchievementForm').onsubmit=async e=>{
+   e.preventDefault();const fd=new FormData(e.currentTarget),button=e.currentTarget.querySelector('button');button.disabled=true;
+   try{const {error}=await sb.from('achievements').insert({title:String(fd.get('title')).trim(),description:String(fd.get('description')||'').trim()||null,achievement_date:String(fd.get('date')||'')||null,image_url:String(fd.get('image')||'').trim()||null,category:String(fd.get('category')||'general'),is_published:true,display_order:0});if(error)throw error;mhsToast('Achievement saved');await gallery();}
+   catch(error){alert('Could not save achievement: '+(error.message||String(error)));button.disabled=false;}
+  };
+  document.getElementById('sbGalleryForm').onsubmit=async e=>{
+   e.preventDefault();const fd=new FormData(e.currentTarget),button=e.currentTarget.querySelector('button');button.disabled=true;
+   try{const {error}=await sb.from('gallery').insert({title:String(fd.get('title')||'').trim()||null,description:String(fd.get('description')||'').trim()||null,image_url:String(fd.get('image')||'').trim(),category:String(fd.get('category')||'general'),is_published:true,display_order:0});if(error)throw error;mhsToast('Gallery image saved');await gallery();}
+   catch(error){alert('Could not save gallery image: '+(error.message||String(error)));button.disabled=false;}
+  };
+  box.querySelectorAll('[data-ach-toggle],[data-gallery-toggle]').forEach(button=>button.addEventListener('click',async()=>{
+   const achievement=button.hasAttribute('data-ach-toggle'),id=achievement?button.dataset.achToggle:button.dataset.galleryToggle,was=button.dataset.published==='1',table=achievement?'achievements':'gallery';button.disabled=true;
+   try{const {error}=await sb.from(table).update({is_published:!was,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;await gallery();}
+   catch(error){alert('Could not change publish status: '+(error.message||String(error)));button.disabled=false;}
+  }));
+  box.querySelectorAll('[data-ach-edit]').forEach(button=>button.addEventListener('click',async()=>{
+   const a=(achievements||[]).find(x=>x.id===button.dataset.achEdit);if(!a)return;
+   const title=prompt('Achievement title:',a.title);if(title===null)return;if(!title.trim())return alert('Title is required.');
+   const description=prompt('Description:',a.description||'');if(description===null)return;
+   const date=prompt('Date (YYYY-MM-DD; blank if none):',a.achievement_date||'');if(date===null)return;
+   button.disabled=true;try{const {error}=await sb.from('achievements').update({title:title.trim(),description:description.trim()||null,achievement_date:date.trim()||null,updated_at:new Date().toISOString()}).eq('id',a.id);if(error)throw error;await gallery();}
+   catch(error){alert('Could not update achievement: '+(error.message||String(error)));button.disabled=false;}
+  }));
+  box.querySelectorAll('[data-ach-delete],[data-gallery-delete]').forEach(button=>button.addEventListener('click',async()=>{
+   if(!confirm('Delete this content from Supabase?'))return;const achievement=button.hasAttribute('data-ach-delete'),id=achievement?button.dataset.achDelete:button.dataset.galleryDelete;button.disabled=true;
+   try{const {error}=await sb.from(achievement?'achievements':'gallery').delete().eq('id',id);if(error)throw error;mhsToast('Content deleted');await gallery();}
+   catch(error){alert('Could not delete content: '+(error.message||String(error)));button.disabled=false;}
+  }));
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Achievements & Gallery</h2><p class="hint">Could not load content: ${esc(error.message||String(error))}</p></div></div>`;}
+}
+async function settings(){
+ const box=app;box.innerHTML='<div class="panel"><div class="box"><h2>School Settings</h2><p class="hint">Loading settings from Supabase…</p></div></div>';
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data:authData,error:authError}=await sb.auth.getUser();if(authError||!authData?.user)throw new Error('Admin session expired.');
+  const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',authData.user.id).single();
+  if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access required.');
+  const {data:rows,error}=await sb.from('school_settings').select('*').order('updated_at',{ascending:false}).limit(1);
+  if(error)throw error;
+  const saved=rows?.[0]||null,base={
+   school_name:saved?.school_name??SITE.nameBn??'মোখলেশপুর উচ্চ বিদ্যালয়',
+   school_name_en:saved?.school_name_en??SITE.nameEn??'Mokhleshpur High School',
+   eiin:saved?.eiin??SITE.eiin??'120140',
+   established_year:saved?.established_year??SITE.estd??1962,
+   education_board:saved?.education_board??SITE.board??'Dinajpur',
+   phone:saved?.phone??SITE.phone??'',
+   email:saved?.email??SITE.email??'',
+   website_url:saved?.website_url??SITE.website??'',
+   headmaster_name:saved?.headmaster_name??SITE.headmaster??'',
+   student_count:saved?.student_count??SITE.students??120,
+   teacher_count:saved?.teacher_count??SITE.teachers??9,
+   service_years:saved?.service_years??SITE.serviceYears??64,
+   ssc_pass_rate:saved?.ssc_pass_rate??SITE.passRate??'87%',
+   address:saved?.address??SITE.address??'Mokhleshpur, Birol, Dinajpur',
+   slogan:saved?.slogan??'সবার জন্য শিক্ষা',
+   facebook_url:saved?.facebook_url??'',map_url:saved?.map_url??'',
+   about_text:saved?.about_text??SITE.about??'',
+   history_text:saved?.history_text??SITE.history??'',
+   mission_text:saved?.mission_text??SITE.mission??'',
+   vision_text:saved?.vision_text??SITE.vision??'',
+   logo_url:saved?.logo_url??'',favicon_url:saved?.favicon_url??''
+  };
+  box.innerHTML=`<div class="panel"><div class="box"><h2>School Information</h2><p class="hint">Settings are saved centrally in Supabase. No existing localStorage settings are imported automatically.</p><form class="form" id="sbSettingsForm">
+   <label>Bangla Name<input name="school_name" value="${esc(base.school_name)}" required></label><label>English Name<input name="school_name_en" value="${esc(base.school_name_en)}"></label>
+   <label>EIIN<input name="eiin" value="${esc(base.eiin)}"></label><label>Established Year<input name="established_year" type="number" value="${esc(base.established_year)}"></label>
+   <label>Education Board<input name="education_board" value="${esc(base.education_board)}"></label><label>Headmaster<input name="headmaster_name" value="${esc(base.headmaster_name)}"></label>
+   <label>Phone<input name="phone" value="${esc(base.phone)}"></label><label>Email<input name="email" type="email" value="${esc(base.email)}"></label>
+   <label>Website URL<input name="website_url" type="url" value="${esc(base.website_url)}"></label><label>Facebook URL<input name="facebook_url" type="url" value="${esc(base.facebook_url)}"></label>
+   <label>Students<input name="student_count" type="number" min="0" value="${esc(base.student_count)}"></label><label>Teachers<input name="teacher_count" type="number" min="0" value="${esc(base.teacher_count)}"></label>
+   <label>Service Years<input name="service_years" type="number" min="0" value="${esc(base.service_years)}"></label><label>SSC Pass Rate<input name="ssc_pass_rate" value="${esc(base.ssc_pass_rate)}"></label>
+   <label>School Slogan<input name="slogan" value="${esc(base.slogan)}"></label><label>Map URL<input name="map_url" type="url" value="${esc(base.map_url)}"></label>
+   <label class="full">Address<input name="address" value="${esc(base.address)}"></label><label class="full">Logo URL<input name="logo_url" type="url" value="${esc(base.logo_url)}"></label><label class="full">Favicon URL<input name="favicon_url" type="url" value="${esc(base.favicon_url)}"></label>
+   <label class="full">About<textarea name="about_text">${esc(base.about_text)}</textarea></label><label class="full">History<textarea name="history_text">${esc(base.history_text)}</textarea></label><label class="full">Mission<textarea name="mission_text">${esc(base.mission_text)}</textarea></label><label class="full">Vision<textarea name="vision_text">${esc(base.vision_text)}</textarea></label>
+   <button type="submit">Save School Settings to Supabase</button></form></div></div>`;
+  document.getElementById('sbSettingsForm').onsubmit=async event=>{
+   event.preventDefault();const fd=new FormData(event.currentTarget),payload={};
+   for(const key of ['school_name','school_name_en','eiin','education_board','phone','email','website_url','headmaster_name','ssc_pass_rate','address','slogan','facebook_url','map_url','about_text','history_text','mission_text','vision_text','logo_url','favicon_url'])payload[key]=String(fd.get(key)||'').trim()||null;
+   for(const key of ['established_year','student_count','teacher_count','service_years'])payload[key]=String(fd.get(key)||'').trim()===''?null:Number(fd.get(key));
+   payload.updated_at=new Date().toISOString();
+   const button=event.currentTarget.querySelector('button[type="submit"]');button.disabled=true;
+   try{
+    const response=saved?await sb.from('school_settings').update(payload).eq('id',saved.id):await sb.from('school_settings').insert(payload);
+    if(response.error)throw response.error;mhsToast('School settings saved to Supabase');alert('School settings saved successfully.');
+   }catch(error){alert('Could not save settings: '+(error.message||String(error)));}
+   finally{button.disabled=false;}
+  };
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>School Settings</h2><p class="hint">Could not load settings: ${esc(error.message||String(error))}</p></div></div>`;}
+}
 
-window.requestEdit=i=>{let r=get('mhs_results',RESULTS),x=r[i],accounts=get('mhs_teacher_accounts',[]);if(!x)return;let subject=prompt('Specific subject to edit:\n'+(x.subjects||[]).map((a,n)=>`${n+1}. ${a.subject}`).join('\n'));if(subject===null)return;let n=Number(subject)-1;let chosen=(x.subjects||[])[n]||(x.subjects||[]).find(a=>a.subject.toLowerCase()===subject.trim().toLowerCase());if(!chosen)return alert('Invalid subject selection.');let teacher=prompt('Teacher username:',x.teacher||accounts[0]?.username||'');if(!teacher)return;let reason=prompt('Correction request:',`Please review and correct ${chosen.subject} for ${x.name}.`);if(reason===null)return;let q=get('mhs_result_edit_requests',[]);q.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),teacher,student:x.name,class:x.class,roll:x.roll,year:x.year,exam:x.exam||"",subject:chosen.subject,reason,status:'pending',createdAt:new Date().toISOString(),admin:'Super Admin'});set('mhs_result_edit_requests',q);alert('Subject-specific edit request sent.');render()};
-function editrequests(){let q=get('mhs_result_edit_requests',[]);app.innerHTML=`<div class="panel"><div class="box"><div class="toolbar"><h2>Result Edit Requests</h2><span>${q.filter(x=>x.status==='pending').length} pending</span></div><div class="table-wrap"><table class="table"><tr><th>Date</th><th>Teacher</th><th>Student</th><th>Class/Roll</th><th>Subject</th><th>Message</th><th>Status</th></tr>${q.slice().reverse().map(x=>`<tr><td>${new Date(x.createdAt).toLocaleString()}</td><td>${esc(x.teacherName||x.teacher)}</td><td>${esc(x.student)}</td><td>${esc(x.class)} / ${esc(x.roll)}</td><td><b>${esc(x.subject)}</b></td><td>${esc(x.reason)}</td><td>${esc(x.status)}</td></tr>`).join('')||'<tr><td colspan="7" class="empty-admin">No edit requests yet.</td></tr>'}</table></div></div></div>`}
-window.delResult=i=>{if(confirm('Delete this complete student result?')){let r=get('mhs_results',RESULTS);r.splice(i,1);set('mhs_results',r);mhsToast('Result deleted');render()}};
-function gallery(){let a=get('mhs_achievements',[]),g=get('mhs_gallery',[]);app.innerHTML=`<div class="panel"><div class="box"><h2>Add Achievement</h2><form class="form" id="af"><label>Title<input id="at" required></label><label>Year<input id="ay"></label><label class="full">Description<textarea id="ad"></textarea></label><button>Save Achievement</button></form></div><div class="box"><h2>Achievements</h2>${a.map((x,i)=>`<div class="notice-admin box"><b>${esc(x.title)}</b> · ${esc(x.year)}<p>${esc(x.description)}</p><button class="btn-small" onclick="editAch(${i})">Edit</button> <button class="btn-small danger" onclick="delAch(${i})">Delete</button></div>`).join('')||'<div class="empty-admin">No achievements.</div>'}</div><div class="box"><h2>Gallery Image Upload</h2><form class="form" id="gf"><label class="full">Select Image<input id="gfile" type="file" accept="image/*" required></label><label class="full">Caption<input id="gc"></label><button>Add Image</button></form><div class="preview">${g.map((x,i)=>`<div><img src="${x.url}" alt=""><small>${esc(x.caption||'')}</small><button class="btn-small danger" onclick="delGal(${i})">Delete</button></div>`).join('')||'<div class="empty-admin">No gallery images.</div>'}</div></div></div>`;af.onsubmit=e=>{e.preventDefault();let x=get('mhs_achievements',[]);x.unshift({title:at.value.trim(),year:ay.value.trim(),description:ad.value.trim()});set('mhs_achievements',x);mhsToast('Achievement saved');render()};gf.onsubmit=e=>{e.preventDefault();let file=gfile.files[0];if(!file)return;let rd=new FileReader();rd.onload=()=>{let x=get('mhs_gallery',[]);x.unshift({url:rd.result,caption:gc.value.trim(),name:file.name});set('mhs_gallery',x);mhsToast('Image added to gallery');render()};rd.readAsDataURL(file)}}
-window.editAch=i=>{let a=get('mhs_achievements',[]),x=a[i],title=prompt('Achievement title',x.title),year=prompt('Year',x.year),desc=prompt('Description',x.description);if(title!==null){a[i]={title,year:year??x.year,description:desc??x.description};set('mhs_achievements',a);mhsToast('Achievement updated');render()}};window.delAch=i=>{let a=get('mhs_achievements',[]);a.splice(i,1);set('mhs_achievements',a);mhsToast('Achievement updated');render()};window.delGal=i=>{let g=get('mhs_gallery',[]);g.splice(i,1);set('mhs_gallery',g);mhsToast('Image deleted');render()};
-function settings(){let s=get('mhs_site_settings',SITE);app.innerHTML=`<div class="panel"><div class="box"><h2>Edit School Information</h2><form class="form" id="sf"><label>Bangla Name<input id="sbn" value="${esc(s.nameBn)}"></label><label>English Name<input id="sen" value="${esc(s.nameEn)}"></label><label>EIIN<input id="sei" value="${esc(s.eiin)}"></label><label>Established<input id="ses" value="${esc(s.estd)}"></label><label>Board<input id="sbo" value="${esc(s.board)}"></label><label>Phone<input id="sph" value="${esc(s.phone)}"></label><label>Email<input id="sem" value="${esc(s.email)}"></label><label>Website<input id="sweb" value="${esc(s.website)}"></label><label>Headmaster<input id="shm" value="${esc(s.headmaster)}"></label><label>Students<input id="sst" type="number" value="${esc(s.students)}"></label><label>Teachers<input id="ste" type="number" value="${esc(s.teachers)}"></label><label>Service Years<input id="ssv" type="number" value="${esc(s.serviceYears)}"></label><label>SSC Pass Rate<input id="spr" value="${esc(s.passRate)}"></label><label class="full">Address<input id="sad" value="${esc(s.address)}"></label><label class="full">About<textarea id="sab">${esc(s.about)}</textarea></label><label class="full">History<textarea id="shi">${esc(s.history)}</textarea></label><label class="full">Mission<textarea id="smi">${esc(s.mission)}</textarea></label><label class="full">Vision<textarea id="svi">${esc(s.vision)}</textarea></label><button>Save School Information</button></form></div></div>`;sf.onsubmit=e=>{e.preventDefault();let x={...SITE,nameBn:sbn.value,nameEn:sen.value,eiin:sei.value,estd:ses.value,board:sbo.value,phone:sph.value,email:sem.value,website:sweb.value,headmaster:shm.value,students:Number(sst.value),teachers:Number(ste.value),serviceYears:Number(ssv.value),passRate:spr.value,address:sad.value,about:sab.value,history:shi.value,mission:smi.value,vision:svi.value};set('mhs_site_settings',x);alert('School information saved.');render()}}
 render();
 
 
@@ -38,6 +234,7 @@ render();
    ============================================================ */
 let mhsNoticeRows = [];
 let mhsNoticeTickerText = '';
+let mhsNoticeTickerRow = null;
 
 async function mhsGetNoticeClient() {
   if (!window.mhsSupabaseReady) {
@@ -73,16 +270,18 @@ async function notices() {
       .order('published_at', { ascending: false });
     if (error) throw error;
     mhsNoticeRows = (data || []).map(mhsNoticeFromDb);
+    const tickerResult = await sb.from('notice_tickers').select('id,message,link_url,is_active,display_order').eq('is_active', true).order('display_order').limit(1);
+    if (tickerResult.error) throw tickerResult.error;
+    mhsNoticeTickerRow = tickerResult.data?.[0] || null;
   } catch (error) {
     console.error('Could not load notices from Supabase:', error);
     app.innerHTML = `<div class="panel"><div class="box"><h2>Could not load notices</h2><p>${esc(error?.message || 'Supabase request failed.')}</p><p class="hint">Check that you are signed in as an active Super Admin and the notices policies are enabled. No local-only save has been performed.</p><button type="button" onclick="notices()">Retry</button></div></div>`;
     return;
   }
 
-  let ticker = get('mhs_ticker_notice', { text: mhsNoticeRows[0]?.title || 'School notice' });
-  mhsNoticeTickerText = ticker.text || mhsNoticeRows[0]?.title || 'School notice';
+  mhsNoticeTickerText = mhsNoticeTickerRow?.message || mhsNoticeRows[0]?.title || 'School notice';
   app.innerHTML = `<div class="panel">
-    <div class="box"><h2>Hero Notice Ticker</h2><p class="hint">This message appears above the hero and slides from right to left. Ticker settings remain saved in this browser in this version.</p>
+    <div class="box"><h2>Hero Notice Ticker</h2><p class="hint">This message is saved centrally in Supabase and appears in the public website header.</p>
       <form class="form" id="mhsTickerForm"><label class="full">Ticker Notice Text<input id="mhsTickerText" value="${esc(mhsNoticeTickerText)}" required></label><button type="submit">Save Ticker Notice</button></form>
     </div>
     <div class="box"><h2>Add / Edit Notice</h2><form class="form" id="mhsNoticeForm"><input type="hidden" id="mhsNoticeId">
@@ -98,10 +297,23 @@ async function notices() {
       </tbody></table></div>
     </div></div>`;
 
-  document.getElementById('mhsTickerForm').onsubmit = e => {
+  document.getElementById('mhsTickerForm').onsubmit = async e => {
     e.preventDefault();
-    set('mhs_ticker_notice', { text: document.getElementById('mhsTickerText').value.trim(), updatedAt: new Date().toISOString() });
-    mhsNoticeMessage('Ticker text saved in this browser. Ticker database sync is not part of this update.');
+    const button=e.currentTarget.querySelector('button[type="submit"]');
+    const message=document.getElementById('mhsTickerText').value.trim();
+    if(!message)return mhsNoticeMessage('Ticker message is required.',true);
+    button.disabled=true;
+    try{
+      const sb=await mhsGetNoticeClient();
+      const payload={message,is_active:true,display_order:0,updated_at:new Date().toISOString()};
+      const result=mhsNoticeTickerRow
+        ? await sb.from('notice_tickers').update(payload).eq('id',mhsNoticeTickerRow.id).select('id,message,link_url,is_active,display_order').single()
+        : await sb.from('notice_tickers').insert(payload).select('id,message,link_url,is_active,display_order').single();
+      if(result.error)throw result.error;
+      mhsNoticeTickerRow=result.data;mhsNoticeTickerText=result.data.message;
+      mhsNoticeMessage('Ticker message saved to Supabase.');
+    }catch(error){mhsNoticeMessage('Could not save ticker: '+(error.message||String(error)),true);}
+    finally{button.disabled=false;}
   };
 
   document.getElementById('mhsNoticeCancel').onclick = () => {

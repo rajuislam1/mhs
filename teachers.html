@@ -91,18 +91,7 @@
         }).join('');
       }
 
-      // Local fallback while Supabase loads.
-      const localTeachers = (() => {
-        try {
-          return JSON.parse(
-            localStorage.getItem('mhs_teachers') || 'null'
-          ) || (typeof TEACHERS !== 'undefined' ? TEACHERS : []);
-        } catch {
-          return typeof TEACHERS !== 'undefined' ? TEACHERS : [];
-        }
-      })();
-
-      renderTeachers(localTeachers);
+      grid.innerHTML = '<p class="hint">Loading published teacher profiles from Supabase…</p>';
 
       try {
         if (!window.mhsSupabaseReady) {
@@ -124,7 +113,7 @@
       } catch (error) {
         console.error('Could not load public teachers from Supabase:', error);
 
-        // The previously rendered local fallback remains visible.
+        grid.innerHTML = '<p class="hint">Teacher profiles are temporarily unavailable. Please refresh later.</p>';
       }
     })();
   </script>

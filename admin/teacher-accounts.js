@@ -1,4 +1,3 @@
-```javascript
 /* MHS V17 — Supabase Teacher Accounts, Public Profiles & Assignments */
 (function () {
   'use strict';
@@ -111,6 +110,22 @@
     if (name === null) return;
     if (!name.trim()) return alert('Teacher name cannot be empty.');
 
+    const username = prompt('Login Username:', teacher.username || '');
+    if (username === null) return;
+    if (!/^[a-zA-Z0-9._-]{3,40}$/.test(username.trim())) {
+      return alert('Username must be 3-40 characters using letters, numbers, dots, underscores or hyphens.');
+    }
+
+    const internalEmail = String(teacher.email || '').endsWith('@login.mokhleshpur-high-school.edu.bd');
+    const email = prompt(
+      'Login Email (optional; leave blank to keep current login email):',
+      internalEmail ? '' : (teacher.email || '')
+    );
+    if (email === null) return;
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return alert('Please enter a valid login email, or leave it blank to keep the current one.');
+    }
+
     const designation = prompt('Designation:', teacher.designation || 'Teacher');
     if (designation === null) return;
 
@@ -130,6 +145,8 @@
       await teacherApi('PATCH', {
         id,
         name: name.trim(),
+        username: username.trim(),
+        ...(email.trim() ? { email: email.trim().toLowerCase() } : {}),
         designation: designation.trim(),
         subject: subject.trim(),
         qualification: qualification.trim(),
@@ -166,6 +183,22 @@
       await window.teachers();
     } catch (error) {
       showError('Could not deactivate teacher.', error);
+    }
+  };
+
+  // --------------------------------------------------
+  // Activate teacher login account
+  // --------------------------------------------------
+  window.activateSupabaseTeacher = async function (id) {
+    const teacher = findAccount(id);
+    if (!teacher) return alert('Teacher record not found. Reload and try again.');
+    if (!confirm('Activate login access for ' + teacher.name + '?')) return;
+    try {
+      await teacherApi('PATCH', { id, status: true });
+      alert('Teacher login activated. The teacher can sign in again.');
+      await window.teachers();
+    } catch (error) {
+      showError('Could not activate teacher account.', error);
     }
   };
 
@@ -516,9 +549,6 @@
               <input id="tu" required minlength="3" maxlength="40"
                 pattern="[A-Za-z0-9._-]{3,40}">
             </label>
-            <label>Personal Email
-              <input id="te" type="email" required>
-            </label>
             <label>Password
               <input id="tp" type="password" required minlength="8"
                 autocomplete="new-password">
@@ -560,7 +590,7 @@
                   <tr>
                     <td>${escTeacher(x.name)}</td>
                     <td>${escTeacher(x.username)}</td>
-                    <td>${escTeacher(x.email || '—')}</td>
+                    <td>${x.email && !x.email.endsWith('@login.mokhleshpur-high-school.edu.bd') ? escTeacher(x.email) : '—'}</td>
                     <td>${isActive ? 'Active' : 'Inactive'}</td>
                     <td>${assignmentSummary(x.username)}</td>
                     <td>
@@ -570,7 +600,10 @@
                         ${isActive ? `
                           <button type="button" class="btn-small danger"
                             onclick="deactivateSupabaseTeacher('${escTeacher(x.id)}')">Deactivate</button>
-                        ` : ''}
+                        ` : `
+                          <button type="button" class="btn-small"
+                            onclick="activateSupabaseTeacher('${escTeacher(x.id)}')">Activate</button>
+                        `}
                       ` : '<span class="hint">Legacy account</span>'}
                       <button type="button" class="btn-small"
                         onclick="manageTeacherAssignments(${i})">Manage Classes & Subjects</button>
@@ -689,7 +722,6 @@
         subject: document.getElementById('ts').value.trim(),
         qualification: document.getElementById('tq').value.trim(),
         username: document.getElementById('tu').value.trim(),
-        email: document.getElementById('te').value.trim().toLowerCase(),
         password: document.getElementById('tp').value,
         mobile: document.getElementById('tmobile').value.trim(),
         photo: document.getElementById('tphoto').value.trim()
@@ -920,4 +952,3 @@
     }
   };
 })();
-```

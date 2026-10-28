@@ -1,4 +1,6 @@
 
+const crypto = require('crypto');
+
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
@@ -87,11 +89,15 @@ module.exports = async (req, res) => {
     const name = typeof body.name === 'string'
       ? body.name.trim() : '';
 
-    const email = typeof body.email === 'string'
-      ? body.email.trim().toLowerCase() : '';
-
     const username = typeof body.username === 'string'
       ? body.username.trim() : '';
+
+    const suppliedEmail = typeof body.email === 'string'
+      ? body.email.trim().toLowerCase() : '';
+
+    // Email is optional in the school workflow. Keep a deterministic internal
+    // Auth email so Supabase Auth can still authenticate username/password.
+    const email = suppliedEmail || `teacher.${crypto.createHash('sha256').update(username.toLowerCase()).digest('hex').slice(0, 32)}@login.mokhleshpur-high-school.edu.bd`;
 
     const password = typeof body.password === 'string'
       ? body.password : '';
@@ -108,13 +114,13 @@ module.exports = async (req, res) => {
     const photo = typeof body.photo === 'string'
       ? body.photo : null;
 
-    if (!name || !username || !email || !password) {
+    if (!name || !username || !password) {
       return res.status(400).json({
-        error: 'Name, username, email and password are required.'
+        error: 'Name, username and password are required.'
       });
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (suppliedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(suppliedEmail)) {
       return res.status(400).json({
         error: 'Please provide a valid email address.'
       });

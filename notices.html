@@ -42,10 +42,7 @@
         renderRows(data || []);
       } catch (error) {
         console.error('Could not load public notices from Supabase:', error);
-        // If Supabase is temporarily unavailable, retain the old local/demo notices as a fallback.
-        let fallback = [];
-        try { fallback = JSON.parse(localStorage.getItem('mhs_notices') || 'null') || (typeof NOTICES !== 'undefined' ? NOTICES : []); } catch (_) {}
-        renderRows(fallback);
+        target.innerHTML = '<div class="empty">Notices are temporarily unavailable. Please refresh later.</div>';
       }
     })();
   </script>

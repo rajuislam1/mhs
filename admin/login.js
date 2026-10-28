@@ -37,6 +37,7 @@ document.getElementById('login').addEventListener('submit', async (e) => {
       .maybeSingle();
 
     if (profileError) {
+      await supabase.auth.signOut();
       console.error('Profile query failed:', profileError);
       throw new Error(
         'Profile query failed: ' + profileError.message
@@ -44,6 +45,7 @@ document.getElementById('login').addEventListener('submit', async (e) => {
     }
 
     if (!profile) {
+      await supabase.auth.signOut();
       console.error('No profile found for user ID:', data.user.id);
       throw new Error('No user profile found for this login account.');
     }
@@ -55,12 +57,14 @@ document.getElementById('login').addEventListener('submit', async (e) => {
     });
 
     if (profile.role !== 'super_admin') {
+      await supabase.auth.signOut();
       throw new Error(
         'Incorrect role returned: ' + String(profile.role)
       );
     }
 
     if (profile.is_active !== true) {
+      await supabase.auth.signOut();
       throw new Error(
         'Administrator account is inactive. Returned value: ' +
         String(profile.is_active)

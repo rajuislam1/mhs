@@ -62,212 +62,71 @@
      STUDENT SUBJECT SELECTION
      ========================================================= */
 
-  window.studentSubjects = function () {
-    const year = Number(window.__subjectYear || new Date().getFullYear());
-
-    if (window.mhsEnsureAcademicStructure) {
-      mhsEnsureAcademicStructure(year);
-    }
-
-    const cat = AGET('mhs_subject_catalog', []);
-    const students = window.ensureStudentIds
-      ? ensureStudentIds()
-      : AGET('mhs_students', []);
-
-    app.innerHTML = `
-      <div class="panel">
-        <div class="box">
-          <h2>Student Subject Selection</h2>
-          <p class="hint">
-            Search by Student ID, load the registered student, review
-            the class subject structure, then select the exact subjects
-            this student will study for the academic year.
-          </p>
-
-          <div class="form">
-            <label>Academic Year
-              <select id="ssYear">
-                <option>${year}</option>
-                <option>${year + 1}</option>
-                <option>${year - 1}</option>
-              </select>
-            </label>
-
-            <label>Student ID
-              <input id="ssStudentId" inputmode="numeric"
-                pattern="[0-9]+" placeholder="e.g. 100001">
-            </label>
-
-            <button type="button" id="ssSearch">Search Student</button>
-          </div>
-
-          <div id="ssStudentBox" style="margin-top:16px"></div>
-        </div>
-      </div>`;
-
-    const load = () => {
-      const y = Number(ssYear.value);
-      const id = ssStudentId.value.trim();
-
-      window.__subjectYear = y;
-
-      if (!/^\d+$/.test(id)) {
-        ssStudentBox.innerHTML =
-          '<div class="subject-empty">Enter a numeric Student ID.</div>';
-        return;
-      }
-
-      const st = students.find(x => String(x.studentId) === id);
-
-      if (!st) {
-        ssStudentBox.innerHTML =
-          '<div class="subject-empty">No registered student found with this Student ID.</div>';
-        return;
-      }
-
-      const master = mhsClassSubjects(y, st.class);
-      const current = new Set(mhsStudentSubjects(st, y));
-
-      if (!master.length) {
-        ssStudentBox.innerHTML =
-          '<div class="subject-empty">No subject structure is configured for Class ' +
-          AESC(st.class) + ' in ' + y +
-          '. Go to Academic Subjects first.</div>';
-        return;
-      }
-
-      const selectedCount = () =>
-        document.querySelectorAll('.ss-sub:checked').length;
-
-      ssStudentBox.innerHTML = `
-        <div class="box" style="margin-top:0">
-          <div class="toolbar">
-            <div>
-              <h3>${AESC(st.name)}</h3>
-              <span>Student ID: <b>${AESC(st.studentId)}</b>
-              · Class ${AESC(st.class)} · Roll ${AESC(st.roll)}</span>
-            </div>
-            <span id="ssCount">${current.size} selected</span>
-          </div>
-
-          <div class="subject-grid">
-            ${master.map(m => {
-              const c = cat.find(x => x.id === m.subjectId) || {
-                name: m.subjectId,
-                type: m.required === false ? 'Optional' : 'Compulsory'
-              };
-
-              return `
-                <label class="subject-row">
-                  <input class="ss-sub" type="checkbox"
-                    data-id="${AESC(m.subjectId)}"
-                    ${current.has(m.subjectId) ? 'checked' : ''}>
-                  <span>
-                    <b>${AESC(c.name)}</b>
-                    <small>${AESC(c.type || 'Compulsory')}</small>
-                  </span>
-                </label>`;
-            }).join('')}
-          </div>
-
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
-            <button type="button" class="btn-small" id="ssComp">
-              Select Compulsory
-            </button>
-            <button type="button" class="btn-small" id="ssAll">
-              Select All
-            </button>
-            <button type="button" class="btn-small" id="ssClearOpt">
-              Clear Optional
-            </button>
-            <button type="button" id="ssSave">
-              Save Subject Selection
-            </button>
-          </div>
-
-          <p class="hint" id="ssState" style="margin-top:10px">
-            Selected subjects become the student's registered subjects for ${y}.
-          </p>
-        </div>`;
-
-      const boxes = () => [...document.querySelectorAll('.ss-sub')];
-
-      const update = () => {
-        ssCount.textContent = selectedCount() + ' selected';
-      };
-
-      boxes().forEach(b => b.onchange = update);
-
-      ssComp.onclick = () => {
-        boxes().forEach(b => {
-          const m = master.find(x => x.subjectId === b.dataset.id);
-          if (m?.required !== false) b.checked = true;
-        });
-        update();
-      };
-
-      ssAll.onclick = () => {
-        boxes().forEach(b => b.checked = true);
-        update();
-      };
-
-      ssClearOpt.onclick = () => {
-        boxes().forEach(b => {
-          const m = master.find(x => x.subjectId === b.dataset.id);
-          if (m?.required === false) b.checked = false;
-        });
-        update();
-      };
-
-      ssSave.onclick = () => {
-        const ids = boxes().filter(b => b.checked).map(b => b.dataset.id);
-
-        if (!ids.length) return alert('Select at least one subject.');
-
-        const all = AGET('mhs_students', []);
-        const target = all.find(x => String(x.studentId) === id);
-
-        if (!target) return;
-
-        target.subjectSelections =
-          Array.isArray(target.subjectSelections)
-            ? target.subjectSelections.filter(x => String(x.year) !== String(y))
-            : [];
-
-        target.subjectSelections.push({
-          year: y,
-          class: String(target.class),
-          subjects: ids,
-          updatedAt: new Date().toISOString()
-        });
-
-        ASET('mhs_students', all);
-
-        ssState.textContent = '✓ Subject selection saved successfully.';
-        ssState.style.fontWeight = '700';
-
-        alert('Student subject selection saved.');
+  window.studentSubjects = async function () {
+  const box=app;
+  box.innerHTML='<div class="panel"><div class="box"><h2>Student Subject Selection</h2><p class="hint">Loading students and academic subjects from Supabase…</p></div></div>';
+  try {
+    const sb=await window.mhsSupabaseReady;
+    const {data:authData,error:authError}=await sb.auth.getUser();
+    if(authError||!authData?.user)throw new Error('Admin session expired. Sign in again.');
+    const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',authData.user.id).single();
+    if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access is required.');
+    const [{data:students,error:studentsError},{data:years,error:yearsError},{data:classesSubjects,error:csError},{data:selections,error:selectionError}] = await Promise.all([
+      sb.from('students').select('id,student_id,name,roll,class_id,academic_year_id,classes(name,class_number),academic_years(year,name)').order('student_id'),
+      sb.from('academic_years').select('id,year,name').order('year',{ascending:false}),
+      sb.from('class_subjects').select('id,class_id,subject_id,academic_year_id,is_compulsory,classes(name,class_number),subjects(name,code),academic_years(year,name)'),
+      sb.from('student_subjects').select('id,student_id,class_subject_id,is_optional')
+    ]);
+    if(studentsError)throw studentsError;if(yearsError)throw yearsError;if(csError)throw csError;if(selectionError)throw selectionError;
+    box.innerHTML=`<div class="panel"><div class="box"><h2>Student Subject Selection</h2>
+      <p class="hint">Choose the registered subjects a student studies in a selected academic year. Changes are saved to Supabase and shown in the Student Portal.</p>
+      <div class="form">
+       <label>Academic Year<select id="ssYear" required>${(years||[]).map(y=>`<option value="${AESC(y.id)}" ${Number(y.year)===new Date().getFullYear()?'selected':''}>${AESC(y.year||y.name)}</option>`).join('')}</select></label>
+       <label>Student<select id="ssStudent" required><option value="">Select student</option>${(students||[]).map(s=>`<option value="${AESC(s.id)}">${AESC(s.student_id)} · ${AESC(s.name)} · Class ${AESC(s.classes?.class_number||s.classes?.name||'—')} / Roll ${AESC(s.roll??'—')}</option>`).join('')}</select></label>
+      </div>
+      <div id="ssStudentBox" style="margin-top:16px"><p class="hint">Select a student to load their class subjects.</p></div>
+    </div></div>`;
+    const studentSelect=document.getElementById('ssStudent'),yearSelect=document.getElementById('ssYear'),studentBox=document.getElementById('ssStudentBox');
+    let selectedStudent=null;
+    const load=()=>{
+      const student=(students||[]).find(s=>s.id===studentSelect.value);
+      const yearId=yearSelect.value;
+      selectedStudent=student||null;
+      if(!student){studentBox.innerHTML='<p class="hint">Select a student first.</p>';return;}
+      const rows=(classesSubjects||[]).filter(cs=>cs.class_id===student.class_id&&cs.academic_year_id===yearId);
+      if(!rows.length){studentBox.innerHTML='<div class="subject-empty">No subjects are configured for this student’s class in the selected academic year. Configure Academic Subjects first.</div>';return;}
+      const existing=(selections||[]).filter(s=>s.student_id===student.id&&rows.some(cs=>cs.id===s.class_subject_id));
+      const current=new Set(existing.map(s=>s.class_subject_id));
+      studentBox.innerHTML=`<div class="box"><div class="toolbar"><div><h3>${AESC(student.name)}</h3><span>Student ID ${AESC(student.student_id)} · Class ${AESC(student.classes?.class_number||student.classes?.name||'—')} · Roll ${AESC(student.roll??'—')}</span></div><span id="ssCount">${current.size} selected</span></div>
+       <div class="subject-grid">${rows.map(cs=>`<label class="subject-row"><input class="ss-sub" type="checkbox" data-id="${AESC(cs.id)}" ${current.has(cs.id)?'checked':''}><span><b>${AESC(cs.subjects?.name||cs.subjects?.code||'Subject')}</b><small>${cs.is_compulsory?'Compulsory':'Optional'} · ${AESC(cs.academic_years?.year||cs.academic_years?.name||'')}</small></span></label>`).join('')}</div>
+       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button type="button" class="btn-small" id="ssComp">Select Compulsory</button><button type="button" class="btn-small" id="ssAll">Select All</button><button type="button" class="btn-small" id="ssClearOpt">Clear Optional</button><button type="button" id="ssSave">Save Subject Selection</button></div><p class="hint" id="ssState">Selections will be saved to Supabase.</p></div>`;
+      const boxes=()=>[...studentBox.querySelectorAll('.ss-sub')];
+      const update=()=>{document.getElementById('ssCount').textContent=boxes().filter(b=>b.checked).length+' selected';};
+      boxes().forEach(b=>b.addEventListener('change',update));
+      document.getElementById('ssComp').onclick=()=>{boxes().forEach(b=>{const row=rows.find(x=>x.id===b.dataset.id);if(row?.is_compulsory)b.checked=true;});update();};
+      document.getElementById('ssAll').onclick=()=>{boxes().forEach(b=>b.checked=true);update();};
+      document.getElementById('ssClearOpt').onclick=()=>{boxes().forEach(b=>{const row=rows.find(x=>x.id===b.dataset.id);if(row&&!row.is_compulsory)b.checked=false;});update();};
+      document.getElementById('ssSave').onclick=async()=>{
+        const saveButton=document.getElementById('ssSave'),ids=boxes().filter(b=>b.checked).map(b=>b.dataset.id);
+        if(!ids.length)return alert('Select at least one subject.');
+        saveButton.disabled=true;
+        try{
+          const old=existing.filter(x=>!ids.includes(x.class_subject_id));
+          const newRows=ids.filter(id=>!existing.some(x=>x.class_subject_id===id)).map(id=>({student_id:student.id,class_subject_id:id,is_optional:!rows.find(cs=>cs.id===id)?.is_compulsory}));
+          if(newRows.length){const {error}=await sb.from('student_subjects').insert(newRows);if(error)throw error;}
+          if(old.length){const {error}=await sb.from('student_subjects').delete().in('id',old.map(x=>x.id));if(error)throw error;}
+          const state=document.getElementById('ssState');state.textContent='Subject selection saved successfully to Supabase.';state.style.fontWeight='700';
+          mhsToast('Student subjects saved');
+        }catch(error){alert('Could not save subject selection: '+(error.message||String(error)));}
+        finally{saveButton.disabled=false;}
       };
     };
+    studentSelect.addEventListener('change',load);yearSelect.addEventListener('change',load);
+    setTimeout(searchTables,0);
+  }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Student Subject Selection</h2><p class="hint">Could not load subject selection: ${AESC(error.message||String(error))}</p></div></div>`;}
+};
 
-    ssSearch.onclick = load;
-
-    ssStudentId.onkeydown = e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        load();
-      }
-    };
-
-    ssYear.onchange = () => {
-      window.__subjectYear = Number(ssYear.value);
-      if (ssStudentId.value.trim()) load();
-    };
-
-    setTimeout(searchTables, 0);
-  };
-
-  /* =========================================================
+/* =========================================================
      SUPABASE HELPERS FOR TEACHER ASSIGNMENTS
      ========================================================= */
 
@@ -279,21 +138,6 @@
         'Supabase client is not initialized. Check js/supabase.js.'
       );
     }
-
-    console.log('Assignment inserted into Supabase:', inserted.id);
-
-const { data: verifyRows, error: verifyError } = await sb
-  .from('teacher_assignments')
-  .select('id,teacher_id,class_id,subject_id,academic_year_id,status')
-  .eq('id', inserted.id);
-
-console.log('Assignment verification:', verifyRows, verifyError);
-
-alert(
-  'Inserted assignment ID: ' + inserted.id +
-  '\nVerification rows: ' + (verifyRows?.length ?? 0) +
-  '\nVerification error: ' + (verifyError?.message || 'None')
-);
 
     if (window.mhsSupabaseReady === false) {
       throw new Error(
