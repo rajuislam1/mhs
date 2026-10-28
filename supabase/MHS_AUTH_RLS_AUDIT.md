@@ -1,37 +1,49 @@
-# MHS Supabase Auth and RLS hardening
+# MHS Supabase Auth and RLS audit
 
 Date: 2026-10-28
 
-## Scope
-- Protected admin and teacher portal routes with Supabase Auth session checks.
-- Require active `user_profiles` role to match the portal.
-- Fail closed if session/profile verification cannot complete.
-- Portal logout now signs out of Supabase.
-- Added scoped RLS policies to previously policy-less tables.
+## Audit scope
+- GitHub auth and account-management changes on `feature/supabase-auth-route-guards`.
+- Supabase public-schema table grants, RLS flags, policies, security-definer functions, migration history, and Security Advisor.
+- JavaScript syntax checks on the changed authentication/account API and portal scripts.
+- No browser end-to-end login test was run because this audit session cannot enter real credentials into the deployed site.
 
-## Supabase changes applied
-Migration name: `mhs_auth_rls_hardening`
+## Verified database changes
+The following migrations are present in Supabase migration history:
+- `mhs_auth_rls_hardening`
+- `mhs_student_portal_own_data_policies`
+- `secure_result_edit_request_review`
+- `mhs_restrict_anon_teacher_profile_grants`
 
-- `public.teachers`: active super admins only (this table contains legacy password fields).
-- `public.student_documents`: active super admin full access; assigned active teachers read only for their class/year.
-- `public.student_enrollments`: active super admin full access; assigned active teachers read only for their class/year.
-- `public.student_fees`: active super admin only.
-- `public.student_promotions`: active super admin only.
-- `public.student_subjects`: active super admin full access; students read their own subject selections; teachers read selections for assigned class/subject/year.
-- `public.teacher_notifications`: active super admin full access; teachers read/update only their own notifications.
-- Revoked public/anon/authenticated execute on `public.rls_auto_enable()`, an internal DDL event-trigger function.
-- Restricted `public.review_result_edit_request(uuid,text,text)` to authenticated callers; the function itself validates active super-admin role and permitted status.
+The queried public tables have RLS enabled. The relevant policy audit confirmed:
+- Students can read only their own student row, published results and fee rows when linked to an active student profile.
+- Teachers' result and attendance access is scoped to active teacher profiles and assigned classes/subjects/academic years.
+- Active Super Admin policies govern sensitive admin-managed records such as teachers, student fees, student documents and student enrollments.
+- `review_result_edit_request(uuid,text,text)` is SECURITY INVOKER, checks the active Super Admin profile in its function body, and is granted to authenticated and service_role only.
+- Public anonymous grants on `teacher_public_profiles` were broader than needed. A new migration revoked all anonymous table privileges and granted SELECT only. Re-query verified anon now has SELECT only. The existing RLS policy limits public reads to published profiles.
+- No application rows were intentionally updated or deleted by these audit changes.
 
-No application rows were intentionally changed or deleted.
+## Security Advisor
+The latest Security Advisor result contains one warning:
+- `auth_leaked_password_protection`: leaked-password protection is disabled. This was previously identified as unavailable under the project's current Free plan. No other security advisor findings were returned by the latest check.
 
-## Verification status
-- Supabase migration tool reported success.
-- Security advisor re-run: previous warnings for tables with RLS but no policies and public/anon execution of `rls_auto_enable()` no longer appear.
-- Remaining advisor warnings: `review_result_edit_request` is SECURITY DEFINER and executable by authenticated users (intentional for the admin UI; function body checks active super-admin); leaked-password protection is disabled and should be enabled in Supabase Auth settings.
-- Browser end-to-end testing (admin/teacher login, invalid roles, disabled accounts, logout, and feature regression) has not been completed from this integration.
+## Code checks and fixes made during this audit
+- Fixed over-escaped roll-number validation in `api/student-login.js`; numeric roll input now matches the intended 1–6 digit pattern.
+- Fixed over-escaped optional-email validation in `api/create-teacher.js` and `admin/teacher-accounts.js`.
+- Fixed over-escaped photo URL validation in `admin/extra.js`.
+- Fixed regular-expression parsing in `api/create-student-portal-account.js`.
+- Adjusted teacher account editing so an internal synthetic login email is not required to be entered manually.
+- Updated migration notes to describe the actual roll-number + password student login and the user's decision not to migrate legacy website data.
+- JavaScript syntax checks passed for the audited API and portal scripts after these fixes. This is a syntax check, not a live integration test.
 
-## Important limitations
-- Student portal login still uses legacy localStorage/sessionStorage and has not been migrated to Supabase Auth.
-- Teacher portal feature data still has legacy localStorage-backed sections. RLS protects Supabase data, not browser-local data.
-- This work is not a complete migration of all application modules to Supabase.
-- Do not treat the UI route guard as a substitute for RLS.
+## Important live-data observation
+The current Supabase teacher row returned by the read-only audit has username `testteacher`, no email stored, and both the teacher status and linked profile are inactive. I did not activate it or alter its data. Such a row will not be able to log in until an authorized admin provisions/activates the intended account through the new workflow.
+
+## Remaining blockers before production merge
+1. The Vercel Preview environment must contain `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`; the previously reported server-configuration error indicates at least one deployment was missing these variables. Preview and Production are separate environment scopes.
+2. Real browser tests remain outstanding: admin login, teacher username login, student roll + password login, incorrect password, inactive account, wrong role, logout, direct portal URL, student ownership isolation, and admin/teacher feature regression.
+3. Teacher routines, assignments, results and result-edit request flows still contain localStorage-backed implementation. These are not fully migrated to Supabase. The request to avoid legacy data migration does not mean those feature implementations have already been rewritten to database-backed workflows.
+4. Confirm all changed files against the production branch before merging. Do not claim full migration or production readiness based only on a successful Vercel build.
+
+## Data safety
+No legacy localStorage data was imported, overwritten or deleted. The SQL change in this audit only narrows anonymous table privileges on `teacher_public_profiles`.
