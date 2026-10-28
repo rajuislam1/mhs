@@ -12,8 +12,84 @@ studentSubjects(){const year=Number(window.__subjectYear||new Date().getFullYear
 
 hero(){let h=heroGet();app.innerHTML=`<div class="panel"><div class="box"><h2>Hero Section Images</h2><p class="hint">Images slide automatically on the home page. If you remove all images, the original default hero background is shown again.</p><form class="form" id="hf"><label class="full">Add Images (multiple allowed)<input id="hfile" type="file" accept="image/*" multiple required></label><button>Upload</button></form></div><div class="box"><div class="toolbar"><h2>Current Images</h2><span>${h.length} image(s)</span></div><div class="preview">${h.map((x,i)=>`<div><img src="${esc(x.url)}" alt=""><button class="btn-small" onclick="heroRep(${i})">Replace</button> <button class="btn-small danger" onclick="heroDel(${i})">Remove</button></div>`).join('')||'<div class="empty-admin">No images. Default hero background is showing.</div>'}</div><p><button class="btn-small danger" onclick="heroClear()">Remove All</button> <button class="btn-small" onclick="heroReset()">Restore School Photos</button></p></div></div>`;
 hf.onsubmit=e=>{e.preventDefault();const fs=[...hfile.files];let a=heroGet(),n=0;fs.forEach(f=>mhsPhoto(f,u=>{a.push({url:u,name:f.name});if(++n===fs.length){try{mhsSet('mhs_hero',a);mhsToast('Hero images uploaded successfully')}catch{alert('Storage full. Remove some images first.')}render()}},1600))}},
-students(){let s=ensureStudentIds();app.innerHTML=`<div class="panel"><div class="box"><h2>Add Student</h2><p class="hint">Student ID is generated automatically as a unique numeric ID. It is the student's permanent ID and should be used for result entry/login.</p><form class="form" id="stf"><label>Student ID<input id="sidview" value="Auto-generated" disabled></label><label>Admission No.<input id="sa" required></label><label>Name<input id="sn" required></label><label>Class<select id="sc">${opts(CLS)}</select></label><label>Gender<select id="sgd"><option>Male</option><option>Female</option><option>Other</option></select></label><label>Section<input id="ss"></label><label>Roll<input id="sr" required></label><label>Guardian<input id="sg"></label><label>Guardian Phone<input id="sp"></label><label>Login Password<input id="spw" minlength="8" required placeholder="At least 8 characters"></label><label class="full">Photo<input id="sph2" type="file" accept="image/*"></label><button>Save Student</button></form></div><div class="box"><div class="toolbar"><h2>All Students</h2><span>${s.length} total</span></div><div class="table-wrap"><table class="table"><tr><th>Photo</th><th>Student ID</th><th>Adm</th><th>Name</th><th>Class/Roll</th><th>Guardian</th><th></th></tr>${s.map((x,i)=>`<tr><td>${x.photo?`<img src="${esc(x.photo)}" width="38">`:'—'}</td><td><b>${esc(x.studentId||'—')}</b></td><td>${esc(x.adm)}</td><td>${esc(x.name)} <small>(${esc(x.gender||"")})</small></td><td>${esc(x.class)}${x.section?'-'+esc(x.section):''} / ${esc(x.roll)}</td><td>${esc(x.guardian)} ${esc(x.phone)}</td><td><button class="btn-small" onclick="stEdit(${i})">Edit</button> <button class="btn-small" onclick="stPass(${i})">Reset Pass</button> <button class="btn-small danger" onclick="stDel(${i})">Delete</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty-admin">No students.</td></tr>'}</table></div></div></div>`;
-stf.onsubmit=async e=>{e.preventDefault();let all=mhsGet('mhs_students',[]);if(all.some(x=>x.adm===sa.value.trim()))return alert('Admission no. already exists.');if(spw.value.length<8)return alert('Portal password must be at least 8 characters.');const save=async photo=>{const proposedStudentId=generateStudentId(all);try{const sb=await window.mhsSupabaseReady;const {data:{session},error:sessionError}=await sb.auth.getSession();if(sessionError||!session)throw new Error('Admin session missing. Please sign in again.');const response=await fetch('/api/create-student-portal-account',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({student_id:proposedStudentId,admission_number:sa.value.trim(),name:sn.value.trim(),class:sc.value,gender:sgd.value,section:ss.value.trim(),roll:sr.value.trim(),guardian:sg.value.trim(),guardian_phone:sp.value.trim(),password:spw.value,photo:/^https?:\/\//i.test(photo)?photo:null})});const result=await response.json().catch(()=>null);if(!response.ok||!result?.success)throw new Error(result?.error||'Could not create the student in Supabase.');const studentId=String(result.student_id||proposedStudentId);all.push({id:crypto.randomUUID(),studentId,adm:sa.value.trim(),name:sn.value.trim(),class:sc.value,gender:sgd.value,section:ss.value.trim(),roll:sr.value.trim(),guardian:sg.value.trim(),phone:sp.value.trim(),photo,academicYear:new Date().getFullYear(),classHistory:[{year:new Date().getFullYear(),class:sc.value,roll:sr.value.trim(),status:'active'}],pass:await mhsHash(spw.value)});mhsSet('mhs_students',all);alert('Student record and portal login created. Student ID: '+studentId+'\\nStudent login: use roll number and the password you set.');mhsToast('Student saved successfully');render()}catch(error){console.error('Student create/sync failed:',error);alert('Student was not saved locally because Supabase account creation failed.\\n\\n'+error.message)}};sph2.files[0]?mhsPhoto(sph2.files[0],save):save('')}},
+async students(){
+ const box=app;
+ box.innerHTML='<div class="panel"><div class="box"><h2>Student Database</h2><p class="hint">Loading students from Supabase…</p></div></div>';
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data:sessionData,error:sessionError}=await sb.auth.getSession();
+  if(sessionError||!sessionData?.session?.user)throw new Error('Admin session expired. Sign in again.');
+  const adminUser=sessionData.session.user;
+  const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',adminUser.id).single();
+  if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access is required.');
+  const [{data:students,error:studentsError},{data:classes,error:classesError},{data:years,error:yearsError},{data:profiles,error:profilesError}]=await Promise.all([
+   sb.from('students').select('id,student_id,admission_number,name,date_of_birth,gender,class_id,academic_year_id,roll,section,guardian,mobile,address,photo,status,classes(name,class_number),academic_years(year,name)').order('created_at',{ascending:false}),
+   sb.from('classes').select('id,name,class_number,status').eq('status',true).order('class_number'),
+   sb.from('academic_years').select('id,year,name').order('year',{ascending:false}),
+   sb.from('user_profiles').select('id,student_id,is_active,role').eq('role','student')
+  ]);
+  if(studentsError)throw studentsError;if(classesError)throw classesError;if(yearsError)throw yearsError;if(profilesError)throw profilesError;
+  const profileMap=new Map((profiles||[]).map(p=>[p.student_id,p]));
+  const currentYear=(years||[]).find(y=>Number(y.year)===new Date().getFullYear())||(years||[])[0];
+  box.innerHTML=`<div class="panel"><div class="box"><h2>Add Student & Portal Account</h2><p class="hint">New students are saved directly to Supabase. No legacy localStorage records are imported.</p>
+   <form class="form" id="sbStudentForm">
+    <label>Admission No.<input name="admission" required maxlength="80"></label><label>Student Name<input name="name" required maxlength="160"></label>
+    <label>Date of Birth<input name="dob" type="date"></label><label>Class<select name="class" required>${(classes||[]).map(cl=>`<option value="${AESC(cl.class_number)}">${AESC(cl.name||('Class '+cl.class_number))}</option>`).join('')}</select></label>
+    <label>Gender<select name="gender"><option>Male</option><option>Female</option><option>Other</option></select></label><label>Section<input name="section" maxlength="20"></label>
+    <label>Roll Number<input name="roll" required inputmode="numeric" pattern="[0-9]{1,4}"></label><label>Guardian Name<input name="guardian" maxlength="160"></label>
+    <label>Guardian Phone<input name="phone" inputmode="tel" pattern="01[0-9]{9}" placeholder="01XXXXXXXXX"></label><label>Academic Year<select name="year" required>${(years||[]).map(y=>`<option value="${AESC(y.id)}" ${y.id===currentYear?.id?'selected':''}>${AESC(y.year||y.name)}</option>`).join('')}</select></label>
+    <label class="full">Photo URL (optional)<input name="photo" type="url" placeholder="https://…"></label><label class="full">Initial Portal Password<input name="password" type="password" minlength="8" required placeholder="At least 8 characters"></label>
+    <button type="submit" ${classes?.length&&years?.length?'':'disabled'}>Create Student & Login</button>
+   </form></div>
+   <div class="box"><div class="toolbar"><h2>Supabase Student Records</h2><span>${(students||[]).length} total</span></div><div class="table-wrap"><table class="table"><tr><th>Student ID</th><th>Admission No.</th><th>Student</th><th>Class / Roll</th><th>Guardian</th><th>Portal</th><th>Actions</th></tr>
+   ${(students||[]).map(st=>{const p=profileMap.get(st.id);return `<tr><td><b>${AESC(st.student_id)}</b></td><td>${AESC(st.admission_number||'—')}</td><td>${AESC(st.name)}<br><small>${AESC(st.gender||'')} · DOB ${AESC(st.date_of_birth||'—')}</small></td><td>${AESC(st.classes?.class_number||st.classes?.name||'—')} / ${AESC(st.roll??'—')}${st.section?'-'+AESC(st.section):''}<br><small>${AESC(st.academic_years?.year||st.academic_years?.name||'')}</small></td><td>${AESC(st.guardian||'—')}<br><small>${AESC(st.mobile||'')}</small></td><td><span class="badge">${st.status===false?'Student inactive':p?(p.is_active?'Login active':'Login inactive'):'No portal login'}</span></td><td><button type="button" class="btn-small" data-student-edit="${AESC(st.id)}">Edit</button> ${p?`<button type="button" class="btn-small" data-student-password="${AESC(st.student_id)}">Reset Password</button><button type="button" class="btn-small" data-student-toggle="${AESC(st.id)}" data-profile-id="${AESC(p.id)}" data-active="${p.is_active&&st.status!==false?'1':'0'}">${p.is_active&&st.status!==false?'Deactivate':'Activate'}</button>`:'<small>Login not linked</small>'}</td></tr>`}).join('')||'<tr><td colspan="7" class="empty-admin">No Supabase students found.</td></tr>'}
+   </table></div></div></div>`;
+  const form=document.getElementById('sbStudentForm');
+  form.onsubmit=async event=>{
+   event.preventDefault();const fd=new FormData(form),admission=String(fd.get('admission')||'').trim(),name=String(fd.get('name')||'').trim(),classNumber=Number(fd.get('class')),roll=String(fd.get('roll')||'').trim(),password=String(fd.get('password')||'');
+   if(password.length<8)return alert('Portal password must be at least 8 characters.');
+   if((students||[]).some(s=>String(s.admission_number||'').toLowerCase()===admission.toLowerCase()))return alert('Admission number already exists in Supabase.');
+   const button=form.querySelector('button[type="submit"]');button.disabled=true;
+   try{
+    const nextId=String((students||[]).reduce((max,s)=>/^\d+$/.test(String(s.student_id||''))?Math.max(max,Number(s.student_id)):max,100000)+1);
+    const response=await fetch('/api/create-student-portal-account',{method:'POST',headers:{Authorization:'Bearer '+sessionData.session.access_token,'Content-Type':'application/json'},body:JSON.stringify({student_id:nextId,admission_number:admission,name,class:classNumber,roll,gender:String(fd.get('gender')||''),section:String(fd.get('section')||'').trim(),guardian:String(fd.get('guardian')||'').trim(),guardian_phone:String(fd.get('phone')||'').trim(),date_of_birth:String(fd.get('dob')||''),photo:String(fd.get('photo')||'').trim(),academic_year_id:String(fd.get('year')||''),password})});
+    const result=await response.json().catch(()=>null);if(!response.ok||!result?.success)throw new Error(result?.error||'Could not create student account.');
+    alert('Student record and portal login created.\nStudent ID: '+result.student_id+'\nLogin: roll number + the password you set.');
+    await window.MHS_EXTRA.students();
+   }catch(error){alert('Could not create student: '+(error.message||String(error)));button.disabled=false;}
+  };
+  box.querySelectorAll('[data-student-password]').forEach(button=>button.addEventListener('click',async()=>{
+   const password=prompt('New portal password (minimum 8 characters):');if(password===null)return;if(password.length<8)return alert('Password must be at least 8 characters.');
+   button.disabled=true;try{const response=await fetch('/api/manage-student-portal-account',{method:'PATCH',headers:{Authorization:'Bearer '+sessionData.session.access_token,'Content-Type':'application/json'},body:JSON.stringify({student_id:button.dataset.studentPassword,password})});const result=await response.json().catch(()=>null);if(!response.ok||!result?.success)throw new Error(result?.error||'Password reset failed.');alert('Student portal password reset successfully.');}
+   catch(error){alert(error.message||String(error));}finally{button.disabled=false;}
+  }));
+  box.querySelectorAll('[data-student-toggle]').forEach(button=>button.addEventListener('click',async()=>{
+   const active=button.dataset.active!=='1';if(!confirm((active?'Activate':'Deactivate')+' this student portal account?'))return;button.disabled=true;
+   try{
+    const {error:studentError}=await sb.from('students').update({status:active,updated_at:new Date().toISOString()}).eq('id',button.dataset.studentToggle);if(studentError)throw studentError;
+    const {error:profileUpdateError}=await sb.from('user_profiles').update({is_active:active,updated_at:new Date().toISOString()}).eq('id',button.dataset.profileId).eq('role','student');if(profileUpdateError)throw profileUpdateError;
+    mhsToast(active?'Student activated':'Student deactivated');await window.MHS_EXTRA.students();
+   }catch(error){alert('Could not update student status: '+(error.message||String(error)));button.disabled=false;}
+  }));
+  box.querySelectorAll('[data-student-edit]').forEach(button=>button.addEventListener('click',async()=>{
+   const st=(students||[]).find(s=>s.id===button.dataset.studentEdit);if(!st)return;
+   const name=prompt('Student name:',st.name);if(name===null)return;if(!name.trim())return alert('Student name is required.');
+   const admission=prompt('Admission number:',st.admission_number||'');if(admission===null)return;if(!admission.trim())return alert('Admission number is required.');
+   const roll=prompt('Roll number:',String(st.roll??''));if(roll===null)return;if(!/^\d{1,4}$/.test(roll.trim()))return alert('Enter a numeric roll number.');
+   const guardian=prompt('Guardian name:',st.guardian||'');if(guardian===null)return;
+   const phone=prompt('Guardian phone:',st.mobile||'');if(phone===null)return;
+   const classDefault=String(st.classes?.class_number||'');
+   const classValue=prompt('Class number (6–10):',classDefault);if(classValue===null)return;
+   const classRow=(classes||[]).find(cl=>String(cl.class_number)===classValue.trim());if(!classRow)return alert('Choose a configured class from 6 to 10.');
+   button.disabled=true;
+   try{
+    const {error}=await sb.from('students').update({name:name.trim(),admission_number:admission.trim(),roll:Number(roll),guardian:guardian.trim()||null,mobile:phone.trim()||null,class_id:classRow.id,updated_at:new Date().toISOString()}).eq('id',st.id);if(error)throw error;
+    const p=profileMap.get(st.id);if(p){const {error:profileErr}=await sb.from('user_profiles').update({display_name:name.trim(),updated_at:new Date().toISOString()}).eq('id',p.id);if(profileErr)throw profileErr;}
+    mhsToast('Student updated');await window.MHS_EXTRA.students();
+   }catch(error){alert('Could not update student: '+(error.message||String(error)));button.disabled=false;}
+  }));
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Student Database</h2><p class="hint">Could not load Supabase students: ${AESC(error.message||String(error))}</p></div></div>`;}
+},
 async admissions(){
  const box=app;
  box.innerHTML='<div class="panel"><div class="box"><h2>Online Admission Applications</h2><p class="hint">Loading applications from Supabase…</p></div></div>';
