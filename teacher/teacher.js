@@ -252,7 +252,7 @@ async function results(){
             sb.from('classes').select('id,name,class_number'),
             sb.from('subjects').select('id,name'),
             sb.from('academic_years').select('id,year,name'),
-            sb.from('results').select('id,student_id,class_subject_id,academic_year_id,exam_name,marks,grade,grade_point,status,published_at,published_by,created_at'),
+            sb.from('results').select('id,student_id,class_subject_id,academic_year_id,exam_name,marks,grade,grade_point,status,published_at,published_by,published_by_user_id,created_at'),
             sb.from('result_edit_requests').select('id,result_id,status').eq('teacher_id',profile.teacher_id).eq('status','approved')
         ]);
         if(classesError)throw classesError;if(subjectsError)throw subjectsError;if(yearsError)throw yearsError;if(resultsError)throw resultsError;if(requestsError)throw requestsError;
@@ -314,7 +314,7 @@ async function results(){
             const point=marks>=80?5:marks>=70?4:marks>=60?3.5:marks>=50?3:marks>=40?2:marks>=33?1:0;
             const button=form.querySelector('button[type="submit"]');button.disabled=true;
             try{
-                const row={student_id:student.id,class_subject_id:choice.cs.id,academic_year_id:choice.assignment.academic_year_id,exam_name:form.elements.exam.value,marks,grade,grade_point:point,status:existing?.status==='published'?'published':'draft',published_at:existing?.published_at||null,published_by:existing?.published_by||null};
+                const row={student_id:student.id,class_subject_id:choice.cs.id,academic_year_id:choice.assignment.academic_year_id,exam_name:form.elements.exam.value,marks,grade,grade_point:point,status:existing?.status==='published'?'published':'draft',published_at:existing?.published_at||null,published_by:existing?.published_by||null,published_by_user_id:existing?.published_by_user_id||null};
                 const {error}=await sb.from('results').upsert(row,{onConflict:'student_id,class_subject_id,academic_year_id,exam_name'});
                 if(error)throw error;
                 alert(existing?.status==='published'?'Approved correction saved. Published result updated.':'Result saved as Draft. Admin must publish it.');
