@@ -61,12 +61,22 @@
       document.documentElement.style.visibility = '';
     } catch (error) {
       console.error('Portal authentication check failed:', error);
-      document.documentElement.style.visibility = '';
-      const message = document.createElement('p');
+      // Fail closed: do not reveal protected content when authentication cannot be verified.
+      document.body.innerHTML = '';
+      document.documentElement.style.visibility = 'visible';
+      document.body.style.cssText = 'font-family:system-ui;min-height:100vh;display:grid;place-items:center;background:#f3f7f5;margin:0';
+      const message = document.createElement('main');
       message.setAttribute('role', 'alert');
-      message.style.cssText = 'margin:2rem;padding:1rem;color:#8b1e1e;background:#fff3f3;border-radius:8px';
-      message.textContent = 'Unable to verify your login securely. Please refresh or sign in again.';
-      document.body.prepend(message);
+      message.style.cssText = 'max-width:520px;margin:24px;padding:24px;color:#8b1e1e;background:#fff;border-radius:12px;box-shadow:0 4px 18px #0001';
+      const heading = document.createElement('h1');
+      heading.textContent = 'Secure login check unavailable';
+      const detail = document.createElement('p');
+      detail.textContent = 'Protected content is hidden because your session could not be verified. Check your connection and sign in again.';
+      const link = document.createElement('a');
+      link.href = loginPath;
+      link.textContent = 'Return to login';
+      message.append(heading, detail, link);
+      document.body.appendChild(message);
     }
   }
   protectPortal();
