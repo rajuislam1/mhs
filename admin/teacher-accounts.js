@@ -116,10 +116,14 @@
       return alert('Username must be 3-40 characters using letters, numbers, dots, underscores or hyphens.');
     }
 
-    const email = prompt('Login Email:', teacher.email || '');
+    const internalEmail = String(teacher.email || '').endsWith('@login.mokhleshpur-high-school.edu.bd');
+    const email = prompt(
+      'Login Email (optional; leave blank to keep current login email):',
+      internalEmail ? '' : (teacher.email || '')
+    );
     if (email === null) return;
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
-      return alert('Please enter a valid login email.');
+    if (email.trim() && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+      return alert('Please enter a valid login email, or leave it blank to keep the current one.');
     }
 
     const designation = prompt('Designation:', teacher.designation || 'Teacher');
@@ -142,7 +146,7 @@
         id,
         name: name.trim(),
         username: username.trim(),
-        email: email.trim().toLowerCase(),
+        ...(email.trim() ? { email: email.trim().toLowerCase() } : {}),
         designation: designation.trim(),
         subject: subject.trim(),
         qualification: qualification.trim(),
