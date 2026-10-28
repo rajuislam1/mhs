@@ -133,14 +133,16 @@ async students(){
   const adminUser=sessionData.session.user;
   const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',adminUser.id).single();
   if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access is required.');
-  const [{data:students,error:studentsError},{data:classes,error:classesError},{data:years,error:yearsError},{data:profiles,error:profilesError}]=await Promise.all([
+  const [{data:students,error:studentsError},{data:classes,error:classesError},{data:years,error:yearsError}]=await Promise.all([
    sb.from('students').select('id,student_id,admission_number,name,date_of_birth,gender,class_id,academic_year_id,roll,section,guardian,mobile,address,photo,status,classes(name,class_number),academic_years(year,name)').order('created_at',{ascending:false}),
    sb.from('classes').select('id,name,class_number,status').eq('status',true).order('class_number'),
-   sb.from('academic_years').select('id,year,name').order('year',{ascending:false}),
-   sb.from('user_profiles').select('id,student_id,is_active,role').eq('role','student')
+   sb.from('academic_years').select('id,year,name').order('year',{ascending:false})
   ]);
-  if(studentsError)throw studentsError;if(classesError)throw classesError;if(yearsError)throw yearsError;if(profilesError)throw profilesError;
-  const profileMap=new Map((profiles||[]).map(p=>[p.student_id,p]));
+  if(studentsError)throw studentsError;if(classesError)throw classesError;if(yearsError)throw yearsError;
+  const accountResponse=await fetch('/api/manage-student-portal-account',{method:'GET',headers:{Authorization:'Bearer '+sessionData.session.access_token},cache:'no-store'});
+  const accountPayload=await accountResponse.json().catch(()=>null);
+  if(!accountResponse.ok||!accountPayload?.success)throw new Error(accountPayload?.error||'Could not load student portal accounts.');
+  const profileMap=new Map((accountPayload.students||[]).filter(s=>s.account).map(s=>[s.id,s.account]));
   const currentYear=(years||[]).find(y=>Number(y.year)===new Date().getFullYear())||(years||[])[0];
   box.innerHTML=`<div class="panel"><div class="box"><h2>Add Student & Portal Account</h2><p class="hint">New students are saved directly to Supabase. No legacy localStorage records are imported.</p>
    <form class="form" id="sbStudentForm">
@@ -178,7 +180,8 @@ async students(){
    const active=button.dataset.active!=='1';if(!confirm((active?'Activate':'Deactivate')+' this student portal account?'))return;button.disabled=true;
    try{
     const {error:studentError}=await sb.from('students').update({status:active,updated_at:new Date().toISOString()}).eq('id',button.dataset.studentToggle);if(studentError)throw studentError;
-    const {error:profileUpdateError}=await sb.from('user_profiles').update({is_active:active,updated_at:new Date().toISOString()}).eq('id',button.dataset.profileId).eq('role','student');if(profileUpdateError)throw profileUpdateError;
+    const response=await fetch('/api/manage-student-portal-account',{method:'POST',headers:{Authorization:'Bearer '+sessionData.session.access_token,'Content-Type':'application/json'},body:JSON.stringify({profile_id:button.dataset.profileId,is_active:active})});
+    const result=await response.json().catch(()=>null);if(!response.ok||!result?.success)throw new Error(result?.error||'Could not update portal account status.');
     mhsToast(active?'Student activated':'Student deactivated');await window.MHS_EXTRA.students();
    }catch(error){alert('Could not update student status: '+(error.message||String(error)));button.disabled=false;}
   }));
@@ -195,7 +198,7 @@ async students(){
    button.disabled=true;
    try{
     const {error}=await sb.from('students').update({name:name.trim(),admission_number:admission.trim(),roll:Number(roll),guardian:guardian.trim()||null,mobile:phone.trim()||null,class_id:classRow.id,updated_at:new Date().toISOString()}).eq('id',st.id);if(error)throw error;
-    const p=profileMap.get(st.id);if(p){const {error:profileErr}=await sb.from('user_profiles').update({display_name:name.trim(),updated_at:new Date().toISOString()}).eq('id',p.id);if(profileErr)throw profileErr;}
+    const p=profileMap.get(st.id);if(p){const response=await fetch('/api/manage-student-portal-account',{method:'PATCH',headers:{Authorization:'Bearer '+sessionData.session.access_token,'Content-Type':'application/json'},body:JSON.stringify({profile_id:p.id,display_name:name.trim()})});const result=await response.json().catch(()=>null);if(!response.ok||!result?.success)throw new Error(result?.error||'Student profile name update failed.');}
     mhsToast('Student updated');await window.MHS_EXTRA.students();
    }catch(error){alert('Could not update student: '+(error.message||String(error)));button.disabled=false;}
   }));
