@@ -1,4 +1,3 @@
-if(sessionStorage.getItem('mhs_admin')!=='1') location.href='login.html';
 const app=document.getElementById('app'),title=document.getElementById('title');
 const get=(k,f=[])=>{try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}};
 const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
