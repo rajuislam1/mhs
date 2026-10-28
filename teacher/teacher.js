@@ -242,206 +242,103 @@ async function classes(){
     }
 }
 
-function results(){
-    mhsEnsureAcademicStructure(new Date().getFullYear());
-
-    let own=get('mhs_results',[])
-        .map((x,i)=>({...x,_i:i}))
-        .filter(x=>mhsOwn(x,me.username));
-
-    let assignments=get('mhs_teacher_classes',[])
-        .filter(x=>x.teacher===me.username);
-
-    view.innerHTML=`<div class="panel">
-        <div class="box">
-            <h2>Publish Student Result</h2>
-            <p class="hint">Enter the registered Student ID first. Name, Class and Roll will automatically load from the Student Database.</p>
-            <form class="form" id="resultForm">
-                <label>Student ID<input id="rsid" inputmode="numeric" pattern="[0-9]+" maxlength="12" placeholder="Enter numeric Student ID" required></label>
-                <label>Student Name<input id="rn" readonly></label>
-                <label>Class<select id="rc" disabled required><option value="">Auto-loaded</option></select></label>
-                <label>Roll<input id="rr" readonly></label>
-                <label>Year<select id="ry"><option>2026</option><option>2027</option><option>2025</option><option>2024</option><option>2023</option></select></label>
-                <label>Exam<select id="rx"><option>Half Yearly</option><option>Final Exam</option><option>Class Test</option><option>Lab Test</option></select></label>
-                <div class="full" id="studentStatus"></div>
-                <div class="full" id="subjectArea"><div class="subject-empty">Enter a valid Student ID to load assigned subjects.</div></div>
-                <div class="full result-live" id="liveSummary"></div>
-                <button id="publishBtn">Publish Result</button>
+async function results(){
+    const box=document.getElementById('view');
+    box.innerHTML='<div class="panel"><div class="box"><h2>Publish Results</h2><p class="hint">Loading your assigned classes and students from Supabase…</p></div></div>';
+    try{
+        const sb=await window.mhsSupabaseReady;
+        const {data:authData,error:authError}=await sb.auth.getUser();
+        if(authError||!authData?.user)throw new Error('Teacher session expired. Sign in again.');
+        const {data:profile,error:profileError}=await sb.from('user_profiles').select('teacher_id,role,is_active').eq('id',authData.user.id).single();
+        if(profileError||profile?.role!=='teacher'||profile?.is_active!==true||!profile.teacher_id)throw new Error('Active teacher profile required.');
+        const {data:assignments,error:assignmentError}=await sb.from('teacher_assignments').select('id,class_id,subject_id,academic_year_id').eq('teacher_id',profile.teacher_id).eq('status',true);
+        if(assignmentError)throw assignmentError;
+        const [{data:classesData,error:classesError},{data:subjectsData,error:subjectsError},{data:yearsData,error:yearsError},{data:allResults,error:resultsError},{data:requests,error:requestsError}] = await Promise.all([
+            sb.from('classes').select('id,name,class_number'),
+            sb.from('subjects').select('id,name'),
+            sb.from('academic_years').select('id,year,name'),
+            sb.from('results').select('id,student_id,class_subject_id,academic_year_id,exam_name,marks,grade,grade_point,status,created_at'),
+            sb.from('result_edit_requests').select('id,result_id,status').eq('teacher_id',profile.teacher_id).eq('status','approved')
+        ]);
+        if(classesError)throw classesError;if(subjectsError)throw subjectsError;if(yearsError)throw yearsError;if(resultsError)throw resultsError;if(requestsError)throw requestsError;
+        const classMap=new Map((classesData||[]).map(x=>[x.id,x]));
+        const subjectMap=new Map((subjectsData||[]).map(x=>[x.id,x]));
+        const yearMap=new Map((yearsData||[]).map(x=>[x.id,x]));
+        const approvedResultIds=new Set((requests||[]).map(x=>x.result_id));
+        const choices=[];
+        for(const a of assignments||[]){
+            const {data:csRows,error:csError}=await sb.from('class_subjects').select('id,class_id,subject_id,academic_year_id').eq('class_id',a.class_id).eq('subject_id',a.subject_id).eq('academic_year_id',a.academic_year_id);
+            if(csError)throw csError;
+            for(const cs of csRows||[]){
+                const {data:studentsData,error:studentsError}=await sb.from('students').select('id,student_id,name,roll,section,class_id,academic_year_id').eq('class_id',a.class_id).eq('academic_year_id',a.academic_year_id).eq('status',true).order('roll');
+                if(studentsError)throw studentsError;
+                const {data:selected,error:selectedError}=await sb.from('student_subjects').select('student_id').eq('class_subject_id',cs.id);
+                if(selectedError)throw selectedError;
+                const selectedIds=new Set((selected||[]).map(x=>x.student_id));
+                choices.push({assignment:a,cs,students:(studentsData||[]).filter(st=>selectedIds.size===0||selectedIds.has(st.id)),className:classMap.get(a.class_id)?.name||classMap.get(a.class_id)?.class_number||'Class',subjectName:subjectMap.get(a.subject_id)?.name||'Subject',year:yearMap.get(a.academic_year_id)?.year||yearMap.get(a.academic_year_id)?.name||''});
+            }
+        }
+        const studentMap=new Map();
+        for(const choice of choices)for(const st of choice.students)studentMap.set(st.id,st);
+        const examOptions=['Half Yearly','Final Exam','Class Test','Lab Test'];
+        box.innerHTML=`<div class="panel">
+          <div class="box"><h2>Enter Student Marks</h2><p class="hint">New marks are saved as Draft. The school administrator must publish them before students can see them. Published marks can be corrected only after an Admin approves an edit request.</p>
+            <form class="form" id="sbResultForm">
+              <label>Assigned Class / Subject / Year<select name="choice" required><option value="">Select assignment</option>${choices.map((x,i)=>`<option value="${i}">${esc(x.className)} · ${esc(x.subjectName)} · ${esc(x.year)}</option>`).join('')}</select></label>
+              <label>Student<select name="student" required><option value="">Select class/subject first</option></select></label>
+              <label>Exam<select name="exam" required>${examOptions.map(x=>`<option>${esc(x)}</option>`).join('')}</select></label>
+              <label>Marks (0–100)<input name="marks" type="number" min="0" max="100" step="0.01" required></label>
+              <button type="submit" ${choices.length?'':'disabled'}>Save Result Draft</button>
             </form>
-        </div>
-        <div class="box">
-            <h2>My Published Results</h2>
-            <div class="table-wrap">
-                <table class="table">
-                    <tr><th>Student ID</th><th>Student</th><th>Class</th><th>Roll</th><th>Year</th><th>Subjects</th><th>GPA</th><th>Action</th></tr>
-                    ${own.map(x=>`<tr>
-                        <td>${esc(x.studentId||'—')}</td><td>${esc(x.name)}</td>
-                        <td>${esc(x.class)}</td><td>${esc(x.roll)}</td>
-                        <td>${esc(x.year)} · ${esc(x.exam||'—')}</td>
-                        <td>${(x.subjects||[]).map(s=>`${esc(s.subject)}: ${esc(s.marks)} (${esc(s.grade)})`).join('<br>')}</td>
-                        <td><b>${Number(x.gpa||0).toFixed(2)}</b></td>
-                        <td><button class="btn-small" onclick="mhsPrintMarksheet(get('mhs_results',[])[${x._i}])">Print</button> <button class="btn-small" onclick="editRes(${x._i})">Edit</button> <button class="btn-small danger" onclick="delRes(${x._i})">Delete</button></td>
-                    </tr>`).join('')||'<tr><td colspan="8" class="empty-admin">No results published.</td></tr>'}
-                </table>
-            </div>
-        </div>
-    </div>`;
-
-    const rc=document.getElementById('rc');
-    const subjectArea=document.getElementById('subjectArea');
-    const summary=document.getElementById('liveSummary');
-    const status=document.getElementById('studentStatus');
-    const rsid=document.getElementById('rsid');
-    const rn=document.getElementById('rn');
-    const rr=document.getElementById('rr');
-    const ry=document.getElementById('ry');
-    const rx=document.getElementById('rx');
-
-    function loadStudent(){
-        const id=rsid.value.trim();
-
-        if(!/^\d+$/.test(id)){
-            rn.value='';
-            rr.value='';
-            rc.innerHTML='<option value="">Auto-loaded</option>';
-            subjectArea.innerHTML='<div class="subject-empty">Enter numeric Student ID.</div>';
-            status.innerHTML='';
-            return;
-        }
-
-        const st=get('mhs_students',[]).find(x=>String(x.studentId)===id);
-
-        if(!st){
-            rn.value='';
-            rr.value='';
-            rc.innerHTML='<option value="">Not found</option>';
-            subjectArea.innerHTML='<div class="subject-empty">No registered student found with this Student ID.</div>';
-            status.innerHTML='<span class="pill-status">Student not found</span>';
-            return;
-        }
-
-        rn.value=st.name;
-        rr.value=st.roll;
-        rc.innerHTML='<option value="'+esc(st.class)+'">Class '+esc(st.class)+(st.section?' · '+esc(st.section):'')+'</option>';
-        status.innerHTML='<span class="pill-status">Registered student loaded successfully</span>';
-        loadSubjects(st);
-    }
-
-    function loadSubjects(st){
-        const year=Number(ry.value||new Date().getFullYear());
-        mhsEnsureAcademicStructure(year);
-
-        const selectedIds=new Set(mhsStudentSubjects(st,year));
-        const selectedNames=mhsSubjectNames([...selectedIds]);
-
-        const mine=assignments.filter(x=>
-            String(x.class)===String(st.class)&&
-            selectedNames.some(n=>String(n.name).toLowerCase()===String(x.subject).toLowerCase())
-        );
-
-        subjectArea.innerHTML=mine.length
-            ? `<div class="subject-grid">${mine.map(x=>{
-                const existing=get('mhs_results',[]).find(r=>
-                    String(r.studentId)===String(st.studentId)&&
-                    String(r.year)===String(year)&&
-                    String(r.exam||'')===String(rx.value)
-                );
-                const old=(existing?.subjects||[]).find(s=>String(s.subject).toLowerCase()===String(x.subject).toLowerCase());
-
-                return `<label class="subject-row">
-                    <input type="checkbox" class="subject-check" value="${esc(x.subject)}" ${old?'checked':''}>
-                    <span><b>${esc(x.subject)}</b><small>Registered subject</small></span>
-                    <input class="mark-input" type="number" min="0" max="100" placeholder="Marks" value="${old?esc(old.marks):''}" ${old?'':'disabled'}>
-                </label>`;
-            }).join('')}</div>`
-            : '<div class="subject-empty">No subject assigned to you for this student. The Admin must assign the class subject and you must have that subject in My Classes.</div>';
-
-        document.querySelectorAll('.subject-check').forEach(ch=>{
-            ch.onchange=()=>{
-                ch.closest('.subject-row').querySelector('.mark-input').disabled=!ch.checked;
-                updateSummary();
-            };
+            ${choices.length?'':'<p class="hint">No active assignments were found. Ask the administrator to assign your class and subject first.</p>'}
+          </div>
+          <div class="box"><h2>My Results</h2><div class="table-wrap"><table class="table"><tr><th>Student</th><th>Class / Subject</th><th>Year / Exam</th><th>Marks</th><th>Status</th><th>Action</th></tr>
+          ${(allResults||[]).map(r=>{
+            const choice=choices.find(x=>x.cs.id===r.class_subject_id&&x.assignment.academic_year_id===r.academic_year_id);
+            if(!choice)return '';
+            const st=studentMap.get(r.student_id);
+            const editable=r.status==='draft'||approvedResultIds.has(r.id);
+            return `<tr><td>${esc(st?.name||'Student')} · Roll ${esc(st?.roll??'—')}</td><td>${esc(choice.className)} · ${esc(choice.subjectName)}</td><td>${esc(choice.year)} · ${esc(r.exam_name)}</td><td>${esc(r.marks??'—')}</td><td><span class="badge">${esc(r.status)}</span></td><td>${editable?`<button type="button" class="btn-small" data-edit-result="${esc(r.id)}">Load</button>`:'Waiting for Admin-approved correction'}</td></tr>`;
+          }).join('')||'<tr><td colspan="6" class="empty-admin">No results found for your assigned subjects.</td></tr>'}
+          </table></div></div>
+        </div>`;
+        const form=document.getElementById('sbResultForm');
+        const fillStudents=()=>{
+            const choice=choices[Number(form.elements.choice.value)];
+            form.elements.student.innerHTML=choice?`<option value="">Select student</option>${choice.students.map(st=>`<option value="${esc(st.id)}">${esc(st.student_id)} · ${esc(st.name)} · Roll ${esc(st.roll??'—')}</option>`).join('')}`:'<option value="">Select class/subject first</option>';
+        };
+        form.elements.choice.addEventListener('change',fillStudents);
+        form.addEventListener('submit',async event=>{
+            event.preventDefault();
+            const choice=choices[Number(form.elements.choice.value)],student=studentMap.get(form.elements.student.value),marks=Number(form.elements.marks.value);
+            if(!choice||!student)return alert('Choose an assigned class/subject and student.');
+            if(!Number.isFinite(marks)||marks<0||marks>100)return alert('Marks must be between 0 and 100.');
+            const existing=(allResults||[]).find(r=>r.student_id===student.id&&r.class_subject_id===choice.cs.id&&r.academic_year_id===choice.assignment.academic_year_id&&r.exam_name===form.elements.exam.value);
+            if(existing&&existing.status!=='draft'&&!approvedResultIds.has(existing.id))return alert('This result is already published. Ask the administrator to approve a correction request first.');
+            const grade=marks>=80?'A+':marks>=70?'A':marks>=60?'A-':marks>=50?'B':marks>=40?'C':marks>=33?'D':'F';
+            const point=marks>=80?5:marks>=70?4:marks>=60?3.5:marks>=50?3:marks>=40?2:marks>=33?1:0;
+            const button=form.querySelector('button[type="submit"]');button.disabled=true;
+            try{
+                const row={student_id:student.id,class_subject_id:choice.cs.id,academic_year_id:choice.assignment.academic_year_id,exam_name:form.elements.exam.value,marks,grade,grade_point:point,status:existing?.status==='published'?'published':'draft'};
+                const {error}=await sb.from('results').upsert(row,{onConflict:'student_id,class_subject_id,academic_year_id,exam_name'});
+                if(error)throw error;
+                alert(existing?.status==='published'?'Approved correction saved. Published result updated.':'Result saved as Draft. Admin must publish it.');
+                await results();
+            }catch(error){alert('Could not save result: '+(error.message||String(error)));button.disabled=false;}
         });
-
-        document.querySelectorAll('.mark-input').forEach(m=>m.oninput=updateSummary);
-        updateSummary();
-    }
-
-    function updateSummary(){
-        let rows=[...document.querySelectorAll('.subject-row')]
-            .filter(r=>r.querySelector('.subject-check')?.checked);
-
-        let subjects=rows.map(r=>({
-            subject:r.querySelector('.subject-check').value,
-            marks:r.querySelector('.mark-input').value
-        })).filter(x=>x.marks!=='');
-
-        let c=mhsBuildResult(subjects);
-
-        summary.innerHTML=subjects.length
-            ? `<b>Selected:</b> ${subjects.map(x=>`${esc(x.subject)} — ${esc(x.marks)} (${mhsGrade(x.marks).grade})`).join(' · ')}<br><b>Total:</b> ${c.total} &nbsp; <b>Average:</b> ${c.average.toFixed(2)} &nbsp; <b>GPA:</b> ${c.gpa.toFixed(2)}`
-            :'';
-    }
-
-    rsid.addEventListener('input',loadStudent);
-    ry.addEventListener('change',()=>{
-        const st=get('mhs_students',[]).find(x=>String(x.studentId)===rsid.value.trim());
-        if(st)loadSubjects(st);
-    });
-    rx.addEventListener('change',()=>{
-        const st=get('mhs_students',[]).find(x=>String(x.studentId)===rsid.value.trim());
-        if(st)loadSubjects(st);
-    });
-
-    document.getElementById('resultForm').onsubmit=e=>{
-        e.preventDefault();
-
-        const st=get('mhs_students',[]).find(x=>String(x.studentId)===rsid.value.trim());
-        if(!st)return alert('Enter a valid registered numeric Student ID.');
-
-        let rows=[...document.querySelectorAll('.subject-row')]
-            .filter(r=>r.querySelector('.subject-check')?.checked);
-
-        let subjects=rows.map(r=>({
-            subject:r.querySelector('.subject-check').value,
-            marks:r.querySelector('.mark-input').value
+        box.querySelectorAll('[data-edit-result]').forEach(button=>button.addEventListener('click',()=>{
+            const r=(allResults||[]).find(x=>x.id===button.dataset.editResult);
+            const choice=r&&choices.find(x=>x.cs.id===r.class_subject_id&&x.assignment.academic_year_id===r.academic_year_id);
+            if(!r||!choice)return;
+            if(r.status!=='draft'&&!approvedResultIds.has(r.id))return alert('Published result edits require Admin approval.');
+            form.elements.choice.value=String(choices.indexOf(choice));fillStudents();form.elements.student.value=r.student_id;form.elements.exam.value=r.exam_name;form.elements.marks.value=r.marks??'';
+            form.querySelector('button[type="submit"]').textContent='Save Result';
+            form.scrollIntoView({behavior:'smooth',block:'start'});
         }));
-
-        if(!subjects.length)return alert('Select at least one subject and enter marks.');
-        if(subjects.some(x=>x.marks===''||Number(x.marks)<0||Number(x.marks)>100)){
-            return alert('Enter valid marks from 0 to 100 for every selected subject.');
-        }
-
-        try{
-            mhsSaveStudentResult({
-                studentId:st.studentId,
-                year:ry.value,
-                exam:rx.value,
-                subjects
-            },me.username);
-            alert('Result published successfully.');
-            render();
-        }catch(err){
-            alert(err.message);
-        }
-    };
+    }catch(error){
+        box.innerHTML=`<div class="panel"><div class="box"><h2>Publish Results</h2><p class="hint">Could not load results: ${esc(error.message||String(error))}</p></div></div>`;
+    }
 }
-
-window.delRes=i=>{
-    if(!confirm('Delete your published subject marks for this student?'))return;
-
-    let all=get('mhs_results',[]);
-    let x=all[i];
-    if(!x)return;
-
-    x.subjects=(x.subjects||[]).filter(s=>s.teacher!==me.username);
-
-    if(x.subjects.length)Object.assign(x,mhsBuildResult(x.subjects));
-    else all.splice(i,1);
-
-    set('mhs_results',all);
-    render();
-};
 
 function students(){
     let c=get('mhs_teacher_classes',[]).filter(x=>x.teacher===me.username);
