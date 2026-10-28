@@ -1,5 +1,4 @@
-const me=JSON.parse(sessionStorage.getItem('mhs_teacher')||'null');
-if(!me)location.href='login.html';
+let me=JSON.parse(sessionStorage.getItem('mhs_teacher')||'null');
 
 const app=document.getElementById('app');
 const title=document.getElementById('title');
@@ -652,4 +651,23 @@ async function classStudents(){
 }
 
 
-render();
+
+async function initializeTeacherPortal(){
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data:authData,error:authError}=await sb.auth.getUser();
+  if(authError||!authData?.user)throw new Error('Teacher session expired. Sign in again.');
+  const {data:profile,error:profileError}=await sb.from('user_profiles').select('teacher_id,role,is_active,display_name').eq('id',authData.user.id).single();
+  if(profileError||profile?.role!=='teacher'||profile?.is_active!==true||!profile.teacher_id)throw new Error('An active teacher profile was not found.');
+  const {data:teacher,error:teacherError}=await sb.from('teachers').select('id,name,username,subject,designation').eq('id',profile.teacher_id).single();
+  if(teacherError||!teacher)throw new Error('Teacher record could not be loaded.');
+  me={id:teacher.id,teacher_id:teacher.id,name:teacher.name||profile.display_name||'Teacher',username:teacher.username||'',subject:teacher.subject||'',designation:teacher.designation||''};
+  sessionStorage.setItem('mhs_teacher',JSON.stringify(me));
+  teacherName.textContent=me.name;
+  render();
+ }catch(error){
+  console.error('Teacher portal initialization failed:',error);
+  app.innerHTML='<div class="panel"><div class="box"><h2>Teacher Portal</h2><p class="hint">'+esc(error.message||String(error))+'</p><a href="login.html">Return to login</a></div></div>';
+ }
+}
+initializeTeacherPortal();
