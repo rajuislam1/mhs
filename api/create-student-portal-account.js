@@ -37,6 +37,7 @@ module.exports = async (req, res) => {
     const roll = Number(b.roll);
     const password = String(b.password || '');
     const section = String(b.section || '').trim();
+    const dateOfBirth = /^\d{4}-\d{2}-\d{2}$/.test(String(b.date_of_birth || '')) ? String(b.date_of_birth) : null;
     const gender = String(b.gender || '').trim();
     const guardian = String(b.guardian || '').trim();
     const mobile = String(b.guardian_phone || '').trim();
@@ -75,6 +76,7 @@ module.exports = async (req, res) => {
         student_id: finalStudentId,
         admission_number: admission,
         name,
+        date_of_birth: dateOfBirth,
         class_id: classes[0].id,
         academic_year_id: years[0].id,
         roll,
@@ -124,7 +126,7 @@ module.exports = async (req, res) => {
       return res.status(500).json({ success: false, error: profileData?.message || 'Could not link student login to profile. Student and Auth account rollback was attempted.' });
     }
 
-    return res.status(201).json({ success: true, message: 'Student record and portal login created successfully.', student_id: finalStudentId, roll, login: 'Use Roll Number and the password you set.' });
+    return res.status(201).json({ success: true, message: 'Student record and portal login created successfully.', student_id: finalStudentId, student_record_id: student.id, roll, login: 'Use Roll Number and the password you set.' });
   } catch (error) {
     console.error('Create student portal account error:', error);
     return res.status(500).json({ success: false, error: 'Unexpected server error while creating student.' });
