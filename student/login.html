@@ -1,1 +1,33 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Student Login | MHS</title><style>body{font-family:system-ui;background:#f3f7f5;display:grid;place-items:center;min-height:100vh;margin:0}form{background:#fff;padding:28px;border-radius:14px;box-shadow:0 8px 30px #0001;width:min(340px,90vw);display:grid;gap:12px}input,button{padding:11px;font:inherit;border-radius:7px;border:1px solid #ccd8d3}button{background:#0b6b4a;color:#fff;border:0;cursor:pointer}#msg{color:#b00020;font-size:14px}</style></head><body><form id="login"><h2>Student Login</h2><input id="u" placeholder="Student ID or Admission No." required><input id="p" type="password" placeholder="Password" required><button>Login</button><div id="msg"></div><a href="../student.html">← Student Portal</a></form><script src="../js/core.js"></script><script>login.onsubmit=async e=>{e.preventDefault();const h=await mhsHash(p.value),s=mhsGet('mhs_students',[]).find(x=>(x.studentId===u.value.trim()||x.adm===u.value.trim())&&x.pass===h);if(s){const{pass,...safe}=s;sessionStorage.setItem('mhs_student',JSON.stringify(safe));location.href='index.html'}else msg.textContent='Invalid Student ID/Admission No. or password.'}</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Student Login | Mokhleshpur High School</title>
+<style>
+*{box-sizing:border-box}body{font-family:system-ui;background:#f3f7f5;display:grid;place-items:center;min-height:100vh;margin:0;padding:18px}.card{background:#fff;padding:30px;border-radius:16px;box-shadow:0 8px 30px #0001;width:min(390px,100%);display:grid;gap:14px}.brand{text-align:center;color:#0b6b4a}.brand img{width:70px;height:70px}.brand h1{font-size:22px;margin:6px 0}.brand p{margin:0;color:#66756d}label{display:grid;gap:6px;font-size:14px;font-weight:600}input,button{padding:12px;font:inherit;border-radius:8px;border:1px solid #ccd8d3;width:100%}button{background:#0b6b4a;color:#fff;border:0;cursor:pointer;font-weight:700}button:disabled{opacity:.6}#msg{font-size:14px;color:#b00020;overflow-wrap:anywhere}.back{text-align:center;color:#0b6b4a}
+</style>
+</head><body><main class="card">
+<div class="brand"><img src="../assets/images/logo.svg" alt="School logo"><h1>Student Portal</h1><p>মোখলেশপুর উচ্চ বিদ্যালয়</p></div>
+<form id="login" style="display:grid;gap:13px">
+<label>Registered Email<input id="email" type="email" autocomplete="username" required placeholder="Enter registered email"></label>
+<label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+<button id="submit" type="submit">Sign In</button><div id="msg" role="alert"></div>
+</form><a class="back" href="../student.html">← Back to Student Portal</a>
+</main>
+<script src="../js/supabase.js"></script>
+<script>
+document.getElementById('login').addEventListener('submit',async function(e){
+ e.preventDefault();const btn=document.getElementById('submit'),msg=document.getElementById('msg');
+ btn.disabled=true;msg.textContent='Verifying account…';
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data,error}=await sb.auth.signInWithPassword({email:document.getElementById('email').value.trim(),password:document.getElementById('password').value});
+  if(error)throw error;
+  const {data:profile,error:pe}=await sb.from('user_profiles').select('id,role,is_active,student_id').eq('id',data.user.id).maybeSingle();
+  if(pe)throw new Error('Could not verify student profile.');
+  if(!profile||profile.role!=='student'||profile.is_active!==true||!profile.student_id){await sb.auth.signOut();throw new Error('This account does not have active student access. Please contact the school office.');}
+  location.replace('index.html');
+ }catch(err){console.error('Student login failed:',err);msg.textContent=err.message||'Sign in failed. Check your email and password.';}
+ finally{btn.disabled=false;}
+});
+</script></body></html>
