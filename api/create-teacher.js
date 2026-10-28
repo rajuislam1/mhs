@@ -87,8 +87,12 @@ module.exports = async (req, res) => {
     const name = typeof body.name === 'string'
       ? body.name.trim() : '';
 
-    const email = typeof body.email === 'string'
+    const suppliedEmail = typeof body.email === 'string'
       ? body.email.trim().toLowerCase() : '';
+
+    // Email is optional in the school workflow. Keep a deterministic internal
+    // Auth email so Supabase Auth can still authenticate username/password.
+    const email = suppliedEmail || `teacher.${username.toLowerCase()}@login.mokhleshpur-high-school.edu.bd`;
 
     const username = typeof body.username === 'string'
       ? body.username.trim() : '';
