@@ -36,6 +36,8 @@ Teacher portal still stores these modules in localStorage and they are not yet w
 - Teacher `Publish Results` now reads active teacher assignments, assigned students, subjects and years from Supabase and writes result rows to `public.results`. New rows are saved as drafts; published rows cannot be changed unless an Admin-approved edit request exists.
 - Admin `Student Results` now reads Supabase results and supports publish, unpublish, delete, and approve/reject of Supabase result edit requests.
 - Result RLS now restricts teacher inserts to drafts for assigned students/subjects; teacher updates require a draft or an approved correction request; active Super Admins can manage results; students can read only their own published results.
+- Public admission submissions and Admin admission review now use the existing `admission_applications` table. Approval calls the authenticated student-account API and links the resulting student UUID to the application; rejection records a review note.
+- Hardened admission application table access: anonymous users can submit pending applications but cannot read them; only active Super Admin profiles can read or review applications.
 - RLS now constrains teacher routine INSERT/SELECT/DELETE to the authenticated active teacher and the exact matching active assignment. Policies were queried after migration to verify they are present.
 - Student lookup and marksheet data: read from `students`, `student_enrollments`, `results`, and related academic tables under RLS.
 
