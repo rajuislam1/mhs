@@ -1,4 +1,3 @@
-```javascript
 /* MHS V17 — Supabase Teacher Accounts, Public Profiles & Assignments */
 (function () {
   'use strict';
@@ -546,9 +545,6 @@
               <input id="tu" required minlength="3" maxlength="40"
                 pattern="[A-Za-z0-9._-]{3,40}">
             </label>
-            <label>Personal Email
-              <input id="te" type="email" required>
-            </label>
             <label>Password
               <input id="tp" type="password" required minlength="8"
                 autocomplete="new-password">
@@ -722,7 +718,6 @@
         subject: document.getElementById('ts').value.trim(),
         qualification: document.getElementById('tq').value.trim(),
         username: document.getElementById('tu').value.trim(),
-        email: document.getElementById('te').value.trim().toLowerCase(),
         password: document.getElementById('tp').value,
         mobile: document.getElementById('tmobile').value.trim(),
         photo: document.getElementById('tphoto').value.trim()
@@ -953,4 +948,3 @@
     }
   };
 })();
-```
