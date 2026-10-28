@@ -32,6 +32,7 @@ The latest Security Advisor result contains one warning:
 - Fixed over-escaped optional-email validation in `api/create-teacher.js` and `admin/teacher-accounts.js`.
 - Fixed over-escaped photo URL validation in `admin/extra.js`.
 - Fixed regular-expression parsing in `api/create-student-portal-account.js`.
+- Fixed teacher session username precedence in `teacher/login.js`: the current username returned from the database now takes priority over potentially stale Auth metadata, so editing a teacher username does not keep the old username in the dashboard session.
 - Adjusted teacher account editing so an internal synthetic login email is not required to be entered manually.
 - Updated migration notes to describe the actual roll-number + password student login and the user's decision not to migrate legacy website data.
 - JavaScript syntax checks passed for the audited API and portal scripts after these fixes. This is a syntax check, not a live integration test.
@@ -43,7 +44,9 @@ The current Supabase teacher row returned by the read-only audit has username `t
 1. The Vercel Preview environment must contain `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`; the previously reported server-configuration error indicates at least one deployment was missing these variables. Preview and Production are separate environment scopes.
 2. Real browser tests remain outstanding: admin login, teacher username login, student roll + password login, incorrect password, inactive account, wrong role, logout, direct portal URL, student ownership isolation, and admin/teacher feature regression.
 3. Teacher routines, assignments, results and result-edit request flows still contain localStorage-backed implementation. These are not fully migrated to Supabase. The request to avoid legacy data migration does not mean those feature implementations have already been rewritten to database-backed workflows.
-4. Confirm all changed files against the production branch before merging. Do not claim full migration or production readiness based only on a successful Vercel build.
+4. Admin admission approval (`window.apOk` in `admin/extra.js`) still creates only a localStorage student record and does not provision a Supabase student/Auth record. It must be wired to a database-backed admission/student workflow before the full student workflow can be called migrated.
+5. Teacher routines, assigned classes, student lists, results and some edit-request UI still read/write localStorage; the result-edit page includes a Supabase path, but the complete teacher workflow is not migrated.
+6. Confirm all changed files against the production branch before merging. Do not claim full migration or production readiness based only on a successful Vercel build.
 
 ## Data safety
 No legacy localStorage data was imported, overwritten or deleted. The SQL change in this audit only narrows anonymous table privileges on `teacher_public_profiles`.
