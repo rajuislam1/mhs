@@ -111,6 +111,18 @@
     if (name === null) return;
     if (!name.trim()) return alert('Teacher name cannot be empty.');
 
+    const username = prompt('Login Username:', teacher.username || '');
+    if (username === null) return;
+    if (!/^[a-zA-Z0-9._-]{3,40}$/.test(username.trim())) {
+      return alert('Username must be 3-40 characters using letters, numbers, dots, underscores or hyphens.');
+    }
+
+    const email = prompt('Login Email:', teacher.email || '');
+    if (email === null) return;
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+      return alert('Please enter a valid login email.');
+    }
+
     const designation = prompt('Designation:', teacher.designation || 'Teacher');
     if (designation === null) return;
 
@@ -130,6 +142,8 @@
       await teacherApi('PATCH', {
         id,
         name: name.trim(),
+        username: username.trim(),
+        email: email.trim().toLowerCase(),
         designation: designation.trim(),
         subject: subject.trim(),
         qualification: qualification.trim(),
