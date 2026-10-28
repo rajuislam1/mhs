@@ -32,9 +32,9 @@ Teacher portal still stores these modules in localStorage and they are not yet m
 Migration must be staged module by module with read-only comparison tests before writes are switched. Do not copy old browser localStorage automatically or overwrite database rows. The current Teacher dashboard still has localStorage-backed modules; the new guard is not a substitute for data migration.
 
 ## Remaining security configuration
-- Enable leaked-password protection in Supabase Dashboard > Authentication > Settings / Password Security (exact label may vary), then rerun security advisors.
-- `public.review_result_edit_request(uuid,text,text)` remains a SECURITY DEFINER function callable by authenticated users because the admin UI uses it. Its body should be re-reviewed and tested to ensure it checks `auth.uid()`, active super-admin role, allowed status values and pending request state before any changes. The advisor warning is therefore still open.
-- Do not merge/deploy until real-account browser tests and feature regression checks pass.
+- Leaked-password protection is not available on the current Free Plan. The project will remain on Free Plan; this feature is an acknowledged limitation, not a reason to upgrade. Keep password length/strength settings as strong as the dashboard permits and use unique passwords.
+- Reviewed the current definition of `public.review_result_edit_request(uuid,text,text)`: it rejects missing authentication, requires an active `super_admin` profile, permits only `approved` or `rejected`, and updates only a request still in `pending` state. The function is `SECURITY DEFINER` and executable by authenticated users, so Supabase's advisor warning remains. The admin UI needs this RPC because the table's RLS intentionally does not allow direct updates; retain the function only with this role check and verify with a non-admin browser test that the call is rejected.
+- Before production merge/deploy, run real-account browser tests and feature regression checks. Do not treat client-side route guards as the data-security boundary; RLS and server-side authorization must enforce access.
 
 ## Super Admin account activation controls (added to feature branch)
 - Teacher Accounts now offers Activate for inactive database-backed teacher records. The server API synchronizes `teachers.status` and the linked teacher `user_profiles.is_active`; deactivation preserves the records.
