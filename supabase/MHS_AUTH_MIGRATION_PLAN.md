@@ -35,3 +35,10 @@ Migration must be staged module by module with read-only comparison tests before
 - Enable leaked-password protection in Supabase Dashboard > Authentication > Settings / Password Security (exact label may vary), then rerun security advisors.
 - `public.review_result_edit_request(uuid,text,text)` remains a SECURITY DEFINER function callable by authenticated users because the admin UI uses it. Its body should be re-reviewed and tested to ensure it checks `auth.uid()`, active super-admin role, allowed status values and pending request state before any changes. The advisor warning is therefore still open.
 - Do not merge/deploy until real-account browser tests and feature regression checks pass.
+
+## Super Admin account activation controls (added to feature branch)
+- Teacher Accounts now offers Activate for inactive database-backed teacher records. The server API synchronizes `teachers.status` and the linked teacher `user_profiles.is_active`; deactivation preserves the records.
+- Added a Student Portal Accounts admin section and server-only API to create Supabase Auth login accounts for existing Supabase student records, link them to `user_profiles`, and activate/deactivate their portal access.
+- Student portal access activation is kept separate from the student's underlying enrollment record status.
+- These controls require the Vercel environment variables `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to be configured. The service key remains server-side only.
+- Demo account creation and real login tests remain blocked until the feature branch is deployed to a test environment and a Super Admin signs in to create a test account. Do not use an existing real student's identity for a demo.
