@@ -246,6 +246,26 @@ module.exports = async (req, res) => {
         });
       }
 
+      // Keep the login profile activation state synchronized with the teacher record.
+      if (linkedProfile && typeof update.status === 'boolean') {
+        const activationResponse = await fetch(
+          `${rest}/user_profiles?id=eq.${encodeURIComponent(linkedProfile.id)}`,
+          {
+            method: 'PATCH',
+            headers: { ...adminHeaders, Prefer: 'return=minimal' },
+            body: JSON.stringify({
+              is_active: update.status,
+              updated_at: new Date().toISOString()
+            })
+          }
+        );
+        if (!activationResponse.ok) {
+          return res.status(500).json({
+            error: 'Teacher record updated but login activation could not be synchronized. Please refresh and verify account status.'
+          });
+        }
+      }
+
       // Keep the public profile display name in sync.
       if (
         linkedProfile &&
