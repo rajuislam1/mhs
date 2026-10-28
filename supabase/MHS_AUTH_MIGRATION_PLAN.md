@@ -33,7 +33,7 @@ Migration must be staged module by module with read-only comparison tests before
 
 ## Remaining security configuration
 - Leaked-password protection is not available on the current Free Plan. The project will remain on Free Plan; this feature is an acknowledged limitation, not a reason to upgrade. Keep password length/strength settings as strong as the dashboard permits and use unique passwords.
-- Reviewed the current definition of `public.review_result_edit_request(uuid,text,text)`: it rejects missing authentication, requires an active `super_admin` profile, permits only `approved` or `rejected`, and updates only a request still in `pending` state. The function is `SECURITY DEFINER` and executable by authenticated users, so Supabase's advisor warning remains. The admin UI needs this RPC because the table's RLS intentionally does not allow direct updates; retain the function only with this role check and verify with a non-admin browser test that the call is rejected.
+- Hardened `public.review_result_edit_request(uuid,text,text)`: changed it to `SECURITY INVOKER`, added an RLS UPDATE policy limited to active Super Admins reviewing pending requests, and revoked PUBLIC/anon execution while retaining authenticated execution for the admin UI. Supabase Security Advisor no longer reports the SECURITY DEFINER warning. Browser tests must still verify teacher/unauthorized requests cannot approve or reject requests.
 - Before production merge/deploy, run real-account browser tests and feature regression checks. Do not treat client-side route guards as the data-security boundary; RLS and server-side authorization must enforce access.
 
 ## Super Admin account activation controls (added to feature branch)
