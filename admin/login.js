@@ -55,12 +55,14 @@ document.getElementById('login').addEventListener('submit', async (e) => {
     });
 
     if (profile.role !== 'super_admin') {
+      await supabase.auth.signOut();
       throw new Error(
         'Incorrect role returned: ' + String(profile.role)
       );
     }
 
     if (profile.is_active !== true) {
+      await supabase.auth.signOut();
       throw new Error(
         'Administrator account is inactive. Returned value: ' +
         String(profile.is_active)
