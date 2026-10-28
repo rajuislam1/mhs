@@ -122,7 +122,7 @@
       internalEmail ? '' : (teacher.email || '')
     );
     if (email === null) return;
-    if (email.trim() && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return alert('Please enter a valid login email, or leave it blank to keep the current one.');
     }
 
