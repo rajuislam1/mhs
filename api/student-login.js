@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
   try {
     const rollInput = String(req.body?.roll || '').trim();
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
-    if (!/^\\d{1,6}$/.test(rollInput) || !password || password.length > 1024) {
+    if (!/^\d{1,6}$/.test(rollInput) || !password || password.length > 1024) {
       return res.status(400).json({ success: false, error: 'Enter your roll number and password.' });
     }
 
