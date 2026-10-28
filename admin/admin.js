@@ -218,6 +218,7 @@ render();
    ============================================================ */
 let mhsNoticeRows = [];
 let mhsNoticeTickerText = '';
+let mhsNoticeTickerRow = null;
 
 async function mhsGetNoticeClient() {
   if (!window.mhsSupabaseReady) {
@@ -253,16 +254,18 @@ async function notices() {
       .order('published_at', { ascending: false });
     if (error) throw error;
     mhsNoticeRows = (data || []).map(mhsNoticeFromDb);
+    const tickerResult = await sb.from('notice_tickers').select('id,message,link_url,is_active,display_order').eq('is_active', true).order('display_order').limit(1);
+    if (tickerResult.error) throw tickerResult.error;
+    mhsNoticeTickerRow = tickerResult.data?.[0] || null;
   } catch (error) {
     console.error('Could not load notices from Supabase:', error);
     app.innerHTML = `<div class="panel"><div class="box"><h2>Could not load notices</h2><p>${esc(error?.message || 'Supabase request failed.')}</p><p class="hint">Check that you are signed in as an active Super Admin and the notices policies are enabled. No local-only save has been performed.</p><button type="button" onclick="notices()">Retry</button></div></div>`;
     return;
   }
 
-  let ticker = get('mhs_ticker_notice', { text: mhsNoticeRows[0]?.title || 'School notice' });
-  mhsNoticeTickerText = ticker.text || mhsNoticeRows[0]?.title || 'School notice';
+  mhsNoticeTickerText = mhsNoticeTickerRow?.message || mhsNoticeRows[0]?.title || 'School notice';
   app.innerHTML = `<div class="panel">
-    <div class="box"><h2>Hero Notice Ticker</h2><p class="hint">This message appears above the hero and slides from right to left. Ticker settings remain saved in this browser in this version.</p>
+    <div class="box"><h2>Hero Notice Ticker</h2><p class="hint">This message is saved centrally in Supabase and appears in the public website header.</p>
       <form class="form" id="mhsTickerForm"><label class="full">Ticker Notice Text<input id="mhsTickerText" value="${esc(mhsNoticeTickerText)}" required></label><button type="submit">Save Ticker Notice</button></form>
     </div>
     <div class="box"><h2>Add / Edit Notice</h2><form class="form" id="mhsNoticeForm"><input type="hidden" id="mhsNoticeId">
@@ -278,10 +281,23 @@ async function notices() {
       </tbody></table></div>
     </div></div>`;
 
-  document.getElementById('mhsTickerForm').onsubmit = e => {
+  document.getElementById('mhsTickerForm').onsubmit = async e => {
     e.preventDefault();
-    set('mhs_ticker_notice', { text: document.getElementById('mhsTickerText').value.trim(), updatedAt: new Date().toISOString() });
-    mhsNoticeMessage('Ticker text saved in this browser. Ticker database sync is not part of this update.');
+    const button=e.currentTarget.querySelector('button[type="submit"]');
+    const message=document.getElementById('mhsTickerText').value.trim();
+    if(!message)return mhsNoticeMessage('Ticker message is required.',true);
+    button.disabled=true;
+    try{
+      const sb=await mhsGetNoticeClient();
+      const payload={message,is_active:true,display_order:0,updated_at:new Date().toISOString()};
+      const result=mhsNoticeTickerRow
+        ? await sb.from('notice_tickers').update(payload).eq('id',mhsNoticeTickerRow.id).select('id,message,link_url,is_active,display_order').single()
+        : await sb.from('notice_tickers').insert(payload).select('id,message,link_url,is_active,display_order').single();
+      if(result.error)throw result.error;
+      mhsNoticeTickerRow=result.data;mhsNoticeTickerText=result.data.message;
+      mhsNoticeMessage('Ticker message saved to Supabase.');
+    }catch(error){mhsNoticeMessage('Could not save ticker: '+(error.message||String(error)),true);}
+    finally{button.disabled=false;}
   };
 
   document.getElementById('mhsNoticeCancel').onclick = () => {
