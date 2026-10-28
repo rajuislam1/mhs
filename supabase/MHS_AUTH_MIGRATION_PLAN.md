@@ -27,6 +27,11 @@ Teacher portal still stores these modules in localStorage and they are not yet w
 - `mhs_teacher_classes`: replace teacher-created class/subject entries with `teacher_assignments` managed by an active super admin; teachers should not self-assign subjects.
 - `mhs_results`: move to `results` + `class_subjects`, with server-side ownership checks; map exam names to `exam_types` where possible.
 - `mhs_result_edit_requests`: move to result-edit request table/function and teacher notifications, preserving admin approval.
+
+### Newly completed in this audit pass
+- Teacher `My Classes & Subjects` is now read-only and based on active `teacher_assignments` from Supabase; teachers can no longer self-assign a class/subject in the UI.
+- Teacher `Class Routine` now creates, lists, and deletes `class_routines` records in Supabase, using only active class/subject/year assignments.
+- RLS now constrains teacher routine INSERT/SELECT/DELETE to the authenticated active teacher and the exact matching active assignment. Policies were queried after migration to verify they are present.
 - Student lookup and marksheet data: read from `students`, `student_enrollments`, `results`, and related academic tables under RLS.
 
 These modules need new Supabase-backed implementations and role/RLS checks if they are included in the requested scope. Do not copy old browser localStorage automatically or overwrite database rows. The current Teacher dashboard still has localStorage-backed modules; the new guard is not a substitute for moving their read/write logic to Supabase.
