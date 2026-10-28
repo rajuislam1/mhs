@@ -38,6 +38,7 @@ module.exports = async (req, res) => {
     const password = String(b.password || '');
     const section = String(b.section || '').trim();
     const dateOfBirth = /^\d{4}-\d{2}-\d{2}$/.test(String(b.date_of_birth || '')) ? String(b.date_of_birth) : null;
+    const requestedAcademicYearId = String(b.academic_year_id || '').trim();
     const gender = String(b.gender || '').trim();
     const guardian = String(b.guardian || '').trim();
     const mobile = String(b.guardian_phone || '').trim();
@@ -61,7 +62,7 @@ module.exports = async (req, res) => {
 
     const [classResponse, yearResponse] = await Promise.all([
       fetch(rest + '/classes?class_number=eq.' + encodeURIComponent(classNumber) + '&status=eq.true&select=id,class_number,name&limit=1', { headers }),
-      fetch(rest + '/academic_years?year=eq.' + encodeURIComponent(new Date().getFullYear()) + '&select=id,year&limit=1', { headers })
+      fetch(requestedAcademicYearId ? rest + '/academic_years?id=eq.' + encodeURIComponent(requestedAcademicYearId) + '&select=id,year&limit=1' : rest + '/academic_years?year=eq.' + encodeURIComponent(new Date().getFullYear()) + '&select=id,year&limit=1', { headers })
     ]);
     const classes = await parse(classResponse);
     const years = await parse(yearResponse);
