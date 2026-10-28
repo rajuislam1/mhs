@@ -76,8 +76,34 @@ async subjects(){
 studentSubjects(){return window.studentSubjects();},
 studentSubjects(){const year=Number(window.__subjectYear||new Date().getFullYear()),students=ensureStudentIds(),cat=mhsGetSubjectCatalog();mhsEnsureAcademicStructure(year);app.innerHTML=`<div class="panel"><div class="box"><h2>Student Subject Selection</h2><p class="hint">Select a student to assign the subjects they actually study in the running academic year. Compulsory class subjects are pre-selected; optional subjects are selected by the Admin.</p><label style="display:block;margin-bottom:12px">Academic Year<select id="ssYear"><option ${year===new Date().getFullYear()?'selected':''}>${new Date().getFullYear()}</option><option ${year===new Date().getFullYear()+1?'selected':''}>${new Date().getFullYear()+1}</option><option ${year===new Date().getFullYear()-1?'selected':''}>${new Date().getFullYear()-1}</option></select></label><div class="table-wrap"><table class="table"><tr><th>Student ID</th><th>Student</th><th>Class</th><th>Roll</th><th>Selected Subjects</th><th>Action</th></tr>${students.map((x,i)=>{const ids=mhsStudentSubjects(x,year);return `<tr><td><b>${esc(x.studentId)}</b></td><td>${esc(x.name)}</td><td>${esc(x.class)}</td><td>${esc(x.roll)}</td><td>${ids.length?ids.map(id=>esc((cat.find(c=>c.id===id)||{name:id}).name)).join(', '):'Not configured'}</td><td><button class="btn-small" onclick="editStudentSubjects(${i})">Select Subjects</button></td></tr>`}).join('')||'<tr><td colspan="6" class="empty-admin">No students.</td></tr>'}</table></div></div></div>`;window.__subjectYear=year;ssYear.onchange=()=>{window.__subjectYear=Number(ssYear.value);render()}},
 
-hero(){let h=heroGet();app.innerHTML=`<div class="panel"><div class="box"><h2>Hero Section Images</h2><p class="hint">Images slide automatically on the home page. If you remove all images, the original default hero background is shown again.</p><form class="form" id="hf"><label class="full">Add Images (multiple allowed)<input id="hfile" type="file" accept="image/*" multiple required></label><button>Upload</button></form></div><div class="box"><div class="toolbar"><h2>Current Images</h2><span>${h.length} image(s)</span></div><div class="preview">${h.map((x,i)=>`<div><img src="${esc(x.url)}" alt=""><button class="btn-small" onclick="heroRep(${i})">Replace</button> <button class="btn-small danger" onclick="heroDel(${i})">Remove</button></div>`).join('')||'<div class="empty-admin">No images. Default hero background is showing.</div>'}</div><p><button class="btn-small danger" onclick="heroClear()">Remove All</button> <button class="btn-small" onclick="heroReset()">Restore School Photos</button></p></div></div>`;
-hf.onsubmit=e=>{e.preventDefault();const fs=[...hfile.files];let a=heroGet(),n=0;fs.forEach(f=>mhsPhoto(f,u=>{a.push({url:u,name:f.name});if(++n===fs.length){try{mhsSet('mhs_hero',a);mhsToast('Hero images uploaded successfully')}catch{alert('Storage full. Remove some images first.')}render()}},1600))}},
+async hero(){
+ const box=app;box.innerHTML='<div class="panel"><div class="box"><h2>Hero Images</h2><p class="hint">Loading homepage hero images from Supabase…</p></div></div>';
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data:authData,error:authError}=await sb.auth.getUser();if(authError||!authData?.user)throw new Error('Admin session expired.');
+  const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',authData.user.id).single();
+  if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access required.');
+  const {data:images,error}=await sb.from('gallery').select('id,title,image_url,is_published,display_order,created_at').eq('category','hero').order('display_order').order('created_at',{ascending:false});
+  if(error)throw error;
+  box.innerHTML=`<div class="panel"><div class="box"><h2>Homepage Hero Images</h2><p class="hint">Add a public image URL. Published hero images rotate automatically on the homepage. Existing localStorage images are not imported.</p>
+   <form class="form" id="sbHeroForm"><label>Image Title<input name="title" maxlength="180"></label><label class="full">Image URL<input name="url" type="url" required placeholder="https://…"></label><button type="submit">Add Hero Image</button></form></div>
+   <div class="box"><div class="toolbar"><h2>Current Hero Images</h2><span>${(images||[]).length} image(s)</span></div><div class="preview">${(images||[]).map(img=>`<div><img src="${AESC(img.image_url)}" alt="${AESC(img.title||'Hero image')}" style="max-width:220px"><small>${AESC(img.title||'Hero image')}</small><p>${img.is_published?'Published':'Draft'}</p><button type="button" class="btn-small" data-hero-toggle="${AESC(img.id)}" data-published="${img.is_published?'1':'0'}">${img.is_published?'Unpublish':'Publish'}</button> <button type="button" class="btn-small danger" data-hero-delete="${AESC(img.id)}">Remove</button></div>`).join('')||'<div class="empty-admin">No hero images configured. The default school photos will display.</div>'}</div></div></div>`;
+  document.getElementById('sbHeroForm').onsubmit=async event=>{
+   event.preventDefault();const fd=new FormData(event.currentTarget),button=event.currentTarget.querySelector('button');
+   button.disabled=true;try{const {error}=await sb.from('gallery').insert({title:String(fd.get('title')||'').trim()||null,image_url:String(fd.get('url')||'').trim(),category:'hero',is_published:true,display_order:(images||[]).length});if(error)throw error;mhsToast('Hero image saved to Supabase');await window.MHS_EXTRA.hero();}
+   catch(error){alert('Could not add hero image: '+(error.message||String(error)));button.disabled=false;}
+  };
+  box.querySelectorAll('[data-hero-toggle]').forEach(button=>button.addEventListener('click',async()=>{
+   button.disabled=true;try{const {error}=await sb.from('gallery').update({is_published:button.dataset.published!=='1',updated_at:new Date().toISOString()}).eq('id',button.dataset.heroToggle);if(error)throw error;await window.MHS_EXTRA.hero();}
+   catch(error){alert('Could not update hero image: '+(error.message||String(error)));button.disabled=false;}
+  }));
+  box.querySelectorAll('[data-hero-delete]').forEach(button=>button.addEventListener('click',async()=>{
+   if(!confirm('Remove this hero image from Supabase?'))return;button.disabled=true;
+   try{const {error}=await sb.from('gallery').delete().eq('id',button.dataset.heroDelete);if(error)throw error;mhsToast('Hero image removed');await window.MHS_EXTRA.hero();}
+   catch(error){alert('Could not remove hero image: '+(error.message||String(error)));button.disabled=false;}
+  }));
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Hero Images</h2><p class="hint">Could not load hero images: ${AESC(error.message||String(error))}</p></div></div>`;}
+},
 async students(){
  const box=app;
  box.innerHTML='<div class="panel"><div class="box"><h2>Student Database</h2><p class="hint">Loading students from Supabase…</p></div></div>';
