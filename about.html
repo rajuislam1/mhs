@@ -1,1 +1,17 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>About | Mokhleshpur High School</title><link rel="icon" href="assets/images/logo.svg"><link rel="stylesheet" href="css/style.css"></head><body><script src="js/header.js"></script><main class="page"><div class="page-hero"><span data-i18n="ABOUT OUR SCHOOL">ABOUT OUR SCHOOL</span><h1>মোখলেশপুর উচ্চ বিদ্যালয়</h1><p>Established in 1962 · EIIN 120140</p></div><section class="section prose"><h2 data-i18n="About School">About School</h2><p id="about"></p><h2 data-i18n="History">History</h2><p id="history"></p><div class="mission-grid"><div><h3 data-i18n="Mission">Mission</h3><p id="mission"></p></div><div><h3 data-i18n="Vision">Vision</h3><p id="vision"></p></div></div></section></main><script src="js/data.js"></script><script>const S=JSON.parse(localStorage.getItem('mhs_site_settings')||'null')||SITE;document.getElementById('about').textContent=S.about;document.getElementById('history').textContent=S.history;document.getElementById('mission').textContent=S.mission;document.getElementById('vision').textContent=S.vision;</script><script src="js/footer.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>About | Mokhleshpur High School</title><link rel="icon" href="assets/images/logo.svg"><link rel="stylesheet" href="css/style.css"></head><body><script src="js/header.js"></script><main class="page"><div class="page-hero"><span data-i18n="ABOUT OUR SCHOOL">ABOUT OUR SCHOOL</span><h1>মোখলেশপুর উচ্চ বিদ্যালয়</h1><p>Established in 1962 · EIIN 120140</p></div><section class="section prose"><h2 data-i18n="About School">About School</h2><p id="about"></p><h2 data-i18n="History">History</h2><p id="history"></p><div class="mission-grid"><div><h3 data-i18n="Mission">Mission</h3><p id="mission"></p></div><div><h3 data-i18n="Vision">Vision</h3><p id="vision"></p></div></div></section></main><script src="js/data.js"></script><script src="js/supabase.js"></script><script>
+(async function(){
+ const set=(id,value,fallback)=>{document.getElementById(id).textContent=value||fallback||'';};
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data,error}=await sb.from('school_settings').select('school_name,school_name_en,eiin,established_year,about_text,history_text,mission_text,vision_text').order('updated_at',{ascending:false}).limit(1);
+  if(error)throw error;
+  const s=data?.[0];
+  if(s){
+   const h=document.querySelector('.page-hero h1'),p=document.querySelector('.page-hero p');
+   if(h&&s.school_name)h.textContent=s.school_name;
+   if(p)p.textContent='Established in '+(s.established_year||'')+(s.eiin?' · EIIN '+s.eiin:'');
+   set('about',s.about_text,SITE.about);set('history',s.history_text,SITE.history);set('mission',s.mission_text,SITE.mission);set('vision',s.vision_text,SITE.vision);
+  }else{set('about',SITE.about);set('history',SITE.history);set('mission',SITE.mission);set('vision',SITE.vision);}
+ }catch(error){console.error('Could not load school profile:',error);set('about',SITE.about);set('history',SITE.history);set('mission',SITE.mission);set('vision',SITE.vision);}
+})();
+</script><script src="js/footer.js"></script></body></html>
