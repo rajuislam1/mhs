@@ -34,10 +34,10 @@ module.exports = async (req, res) => {
     const body = req.body || {};
     if (req.method === 'POST') {
       const studentId = String(body.student_id||'').trim();
-      const email = String(body.email||'').trim().toLowerCase();
+      const email = ''; // Student portal credentials use roll number; internal Auth email is never shown.
       const password = String(body.password||'');
       if (!studentId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 8) return res.status(400).json({success:false,error:'Choose a student, enter a valid email and password of at least 8 characters.'});
-      const sr = await fetch(rest+'/students?id=eq.'+encodeURIComponent(studentId)+'&select=id,student_id,name,status',{headers});
+      const sr = await fetch(rest+'/students?id=eq.'+encodeURIComponent(studentId)+'&select=id,student_id,name,roll,status',{headers});
       const students = await parse(sr);
       const student = students?.[0];
       if (!sr.ok) return res.status(500).json({success:false,error:'Could not verify student record.'});
@@ -48,7 +48,8 @@ module.exports = async (req, res) => {
       if (!existing.ok) return res.status(500).json({success:false,error:'Could not check existing student login.'});
       if (existingProfiles?.some(p=>p.role==='student')) return res.status(409).json({success:false,error:'This student already has a login profile. Use Activate/Deactivate instead.'});
 
-      const cr = await fetch(url+'/auth/v1/admin/users',{method:'POST',headers,body:JSON.stringify({email,password,email_confirm:true,user_metadata:{role:'student',student_id:student.id,display_name:student.name}})});
+      const authEmail = 'student.' + student.id + '@login.mokhleshpur-high-school.edu.bd';
+      const cr = await fetch(url+'/auth/v1/admin/users',{method:'POST',headers,body:JSON.stringify({email:authEmail,password,email_confirm:true,user_metadata:{role:'student',student_id:student.id,student_number:student.student_id,roll:student.roll,display_name:student.name}})});
       const created = await parse(cr);
       if (!cr.ok || !created?.id) return res.status(400).json({success:false,error:created?.msg||created?.message||created?.error_description||'Could not create Supabase Auth account. Check duplicate email and password rules.'});
 
@@ -58,7 +59,7 @@ module.exports = async (req, res) => {
         await fetch(url+'/auth/v1/admin/users/'+encodeURIComponent(created.id),{method:'DELETE',headers});
         return res.status(500).json({success:false,error:'Auth user was created but profile linking failed; rollback was attempted. '+(profileResult?.message||'Please inspect Supabase Auth users.')});
       }
-      return res.status(201).json({success:true,message:'Student login account created and activated.',student:{id:student.id,student_id:student.student_id,name:student.name},email});
+      return res.status(201).json({success:true,message:'Student login account created and activated. Sign in using Roll Number and the password you set.',student:{id:student.id,student_id:student.student_id,name:student.name,roll:student.roll}});
     }
 
     const profileId = String(body.profile_id||'').trim();
