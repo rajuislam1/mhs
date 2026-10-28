@@ -1,20 +1,19 @@
 /*
  * MHS protected portal guard.
- * Browser route checks improve navigation UX; Supabase RLS must secure data access.
- * sessionStorage flags are retained only for legacy UI compatibility, never as proof of auth.
+ * Client-side checks are for route UX; RLS is the actual data-security boundary.
  */
 (function () {
   'use strict';
   const path = window.location.pathname.toLowerCase();
   const isAdmin = /\/admin\/(index\.html)?$/.test(path);
   const isTeacher = /\/teacher\/(index\.html)?$/.test(path);
-  if (!isAdmin && !isTeacher) return;
+  const isStudent = /\/student\/(index\.html)?$/.test(path);
+  if (!isAdmin && !isTeacher && !isStudent) return;
 
   document.documentElement.style.visibility = 'hidden';
   const expectedRole = isAdmin ? 'super_admin' : (isTeacher ? 'teacher' : 'student');
   const loginPath = './login.html';
 
-  // Use Supabase Auth logout even if legacy portal scripts also register a click handler.
   document.addEventListener('click', async function (event) {
     const button = event.target.closest('#logout');
     if (!button) return;
@@ -27,6 +26,7 @@
       if (error) throw error;
       sessionStorage.removeItem('mhs_admin');
       sessionStorage.removeItem('mhs_teacher');
+      sessionStorage.removeItem('mhs_student');
       window.location.replace(loginPath);
     } catch (error) {
       console.error('Logout failed:', error);
@@ -49,19 +49,18 @@
         .select('id, role, is_active')
         .eq('id', session.user.id)
         .maybeSingle();
-
       if (error || !profile || profile.id !== session.user.id ||
           profile.role !== expectedRole || profile.is_active !== true) {
         await sb.auth.signOut();
         sessionStorage.removeItem('mhs_admin');
         sessionStorage.removeItem('mhs_teacher');
+        sessionStorage.removeItem('mhs_student');
         window.location.replace(loginPath);
         return;
       }
       document.documentElement.style.visibility = '';
     } catch (error) {
       console.error('Portal authentication check failed:', error);
-      // Fail closed: do not reveal protected content when authentication cannot be verified.
       document.body.innerHTML = '';
       document.documentElement.style.visibility = 'visible';
       document.body.style.cssText = 'font-family:system-ui;min-height:100vh;display:grid;place-items:center;background:#f3f7f5;margin:0';
