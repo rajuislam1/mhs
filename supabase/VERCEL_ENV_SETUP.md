@@ -13,10 +13,10 @@ Save the variables, then redeploy the latest preview deployment. Vercel does not
 
 ## Test after redeploy
 
-1. Admin → Teachers & Accounts: create a test teacher with a unique username, valid email and password of at least 8 characters.
-2. Teacher Portal: test username + password and email + password.
+1. Admin → Teachers & Accounts: create a test teacher with a unique username and password of at least 8 characters. Email is optional; if supplied, it must be valid.
+2. Teacher Portal: test username + password. If an external login email was supplied, test email + password too.
 3. Admin → Student Database: create a test student with a unique admission number, class, roll and password of at least 8 characters.
-4. Student Portal: test roll number + password.
+4. Student Portal: test roll number + password (the student does not need an email).
 5. Deactivate each account and confirm login is rejected; reactivate and confirm login works.
 6. Check direct portal URLs without a session, wrong-role access, logout, and that one student's session cannot read another student's data.
 
