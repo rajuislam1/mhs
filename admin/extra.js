@@ -26,7 +26,26 @@ async subjects(){
   box.innerHTML=`<div class="panel"><div class="box"><h2>Academic Subject Catalog</h2><p class="hint">Subjects and class-wise subject structures are stored in Supabase. Existing result or teacher-assignment references are protected from accidental deletion.</p>
    <form class="form" id="sbSubjectForm"><label>Subject Name<input name="name" required maxlength="100"></label><label>Subject Code<input name="code" maxlength="20" placeholder="Optional"></label><button type="submit">Add Subject</button></form>
    <div class="table-wrap"><table class="table"><tr><th>Code</th><th>Subject</th><th>Status</th></tr>${(subjects||[]).map(s=>`<tr><td>${AESC(s.code||'—')}</td><td>${AESC(s.name)}</td><td><span class="badge">${s.status?'Active':'Inactive'}</span></td></tr>`).join('')||'<tr><td colspan="3">No subjects configured.</td></tr>'}</table></div>
-  </div><div class="box"><h2>Class-wise Subject Structure</h2><div class="form"><label>Academic Year<select id="sbCsYear">${(years||[]).map(y=>`<option value="${AESC(y.id)}" ${y.id===currentYear?.id?'selected':''}>${AESC(y.year||y.name)}</option>`).join('')}</select></label><label>Class<select id="sbCsClass">${(classes||[]).map(cl=>`<option value="${AESC(cl.id)}">${AESC(cl.name||('Class '+cl.class_number))}</option>`).join('')}</select></label></div><div id="sbClassSubjectEditor"></div></div></div>`;
+  </div><div class="box"><h2>Academic Year Management</h2><form class="form" id="sbYearForm"><label>Year<input name="year" type="number" min="2000" max="2100" required placeholder="2027"></label><label>Year Name<input name="name" maxlength="80" placeholder="Academic Year 2027"></label><button type="submit">Add Academic Year</button></form><div class="table-wrap"><table class="table"><tr><th>Year</th><th>Name</th><th>Status</th><th>Action</th></tr>${(years||[]).map(y=>`<tr><td>${AESC(y.year)}</td><td>${AESC(y.name)}</td><td>${y.is_active?'Active':'Inactive'}</td><td><button type="button" class="btn-small" data-year-active="${AESC(y.id)}" data-active="${y.is_active?'1':'0'}">${y.is_active?'Active Year':'Set Active'}</button></td></tr>`).join('')}</table></div></div>
+  <div class="box"><h2>Class-wise Subject Structure</h2><div class="form"><label>Academic Year<select id="sbCsYear">${(years||[]).map(y=>`<option value="${AESC(y.id)}" ${y.id===currentYear?.id?'selected':''}>${AESC(y.year||y.name)}</option>`).join('')}</select></label><label>Class<select id="sbCsClass">${(classes||[]).map(cl=>`<option value="${AESC(cl.id)}">${AESC(cl.name||('Class '+cl.class_number))}</option>`).join('')}</select></label></div><div id="sbClassSubjectEditor"></div></div></div>`;
+  document.getElementById('sbYearForm').onsubmit=async event=>{
+   event.preventDefault();const fd=new FormData(event.currentTarget),year=Number(fd.get('year')),name=String(fd.get('name')||'').trim()||'Academic Year '+year;
+   if(!Number.isInteger(year)||year<2000||year>2100)return alert('Enter a valid academic year.');
+   if((years||[]).some(y=>Number(y.year)===year))return alert('This academic year already exists.');
+   const button=event.currentTarget.querySelector('button');button.disabled=true;
+   try{const {error}=await sb.from('academic_years').insert({year,name,is_active:false});if(error)throw error;mhsToast('Academic year created');await window.MHS_EXTRA.subjects();}
+   catch(error){alert('Could not create academic year: '+(error.message||String(error)));button.disabled=false;}
+  };
+  box.querySelectorAll('[data-year-active]').forEach(button=>button.addEventListener('click',async()=>{
+   if(button.dataset.active==='1')return;
+   if(!confirm('Set this as the active academic year? Other years will be marked inactive.'))return;
+   button.disabled=true;
+   try{
+    const {error:offError}=await sb.from('academic_years').update({is_active:false}).neq('id',button.dataset.yearActive);if(offError)throw offError;
+    const {error:onError}=await sb.from('academic_years').update({is_active:true}).eq('id',button.dataset.yearActive);if(onError)throw onError;
+    mhsToast('Active academic year updated');await window.MHS_EXTRA.subjects();
+   }catch(error){alert('Could not change active year: '+(error.message||String(error)));button.disabled=false;}
+  }));
   const editor=document.getElementById('sbClassSubjectEditor'),yearSelect=document.getElementById('sbCsYear'),classSelect=document.getElementById('sbCsClass');
   const draw=()=>{
    const yearId=yearSelect.value,classId=classSelect.value;
