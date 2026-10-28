@@ -80,24 +80,19 @@ function render(){
     }
 }
 
-function dash(){
-    let r=get('mhs_results',[]).filter(x=>mhsOwn(x,me.username));
-    let c=get('mhs_teacher_classes',[]).filter(x=>x.teacher===me.username);
-    let rt=get('mhs_routines',[]).filter(x=>x.teacher===me.username);
-
-    view.innerHTML=`<div class="panel">
-        <div class="cards4">
-            <div class="stat"><b>${r.length}</b><span>My Results</span></div>
-            <div class="stat"><b>${c.length}</b><span>My Classes</span></div>
-            <div class="stat"><b>${rt.length}</b><span>Routine Entries</span></div>
-            <div class="stat"><b>${esc(me.subject||'—')}</b><span>Subject</span></div>
-        </div>
-        <div class="box">
-            <h2>Welcome, ${esc(me.name)}</h2>
-            <p>You can manage assigned classes, routine and subject-wise student results.</p>
-            <p class="hint">When you publish another subject for the same student, the system combines it automatically by Class + Roll + Year.</p>
-        </div>
-    </div>`;
+async function dash(){
+ const box=document.getElementById('view');
+ box.innerHTML='<div class="panel"><div class="box"><h2>Teacher Dashboard</h2><p class="hint">Loading Supabase summary…</p></div></div>';
+ try{
+  const ctx=await loadAssignedStudentContext();
+  const [{count:resultCount,error:resultError},{count:routineCount,error:routineError}]=await Promise.all([
+   ctx.sb.from('results').select('id',{count:'exact',head:true}),
+   ctx.sb.from('class_routines').select('id',{count:'exact',head:true}).eq('teacher_id',ctx.profile.teacher_id)
+  ]);
+  if(resultError)throw resultError;if(routineError)throw routineError;
+  const subjects=[...new Set(ctx.choices.map(x=>x.subjectName))];
+  box.innerHTML=`<div class="panel"><div class="cards4"><div class="stat"><b>${resultCount||0}</b><span>My Result Records</span></div><div class="stat"><b>${ctx.assignments.length}</b><span>Active Assignments</span></div><div class="stat"><b>${routineCount||0}</b><span>Routine Entries</span></div><div class="stat"><b>${ctx.students.length}</b><span>Assigned Students</span></div></div><div class="box"><h2>Welcome, ${esc(me?.name||'Teacher')}</h2><p>Manage your assigned classes, routines, student marks and result correction requests.</p><p class="hint">Assigned subjects: ${subjects.map(esc).join(', ')||'No active subject assignment'}.</p><p class="hint">New results are saved as drafts and become visible to students only after the Super Admin publishes them.</p></div></div>`;
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Teacher Dashboard</h2><p class="hint">Could not load dashboard: ${esc(error.message||String(error))}</p></div></div>`;}
 }
 
 async function routine(){
