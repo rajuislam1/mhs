@@ -9,7 +9,7 @@
 </head><body><main class="card">
 <div class="brand"><img src="../assets/images/logo.svg" alt="School logo"><h1>Student Portal</h1><p>মোখলেশপুর উচ্চ বিদ্যালয়</p></div>
 <form id="login" style="display:grid;gap:13px">
-<label>Registered Email<input id="email" type="email" autocomplete="username" required placeholder="Enter registered email"></label>
+<label>Roll Number<input id="roll" type="text" inputmode="numeric" autocomplete="username" required placeholder="Enter your roll number"></label>
 <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
 <button id="submit" type="submit">Sign In</button><div id="msg" role="alert"></div>
 </form><a class="back" href="../student.html">← Back to Student Portal</a>
@@ -21,9 +21,14 @@ document.getElementById('login').addEventListener('submit',async function(e){
  btn.disabled=true;msg.textContent='Verifying account…';
  try{
   const sb=await window.mhsSupabaseReady;
-  const {data,error}=await sb.auth.signInWithPassword({email:document.getElementById('email').value.trim(),password:document.getElementById('password').value});
-  if(error)throw error;
-  const {data:profile,error:pe}=await sb.from('user_profiles').select('id,role,is_active,student_id').eq('id',data.user.id).maybeSingle();
+  const response=await fetch('../api/student-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({roll:document.getElementById('roll').value.trim(),password:document.getElementById('password').value})});
+  const result=await response.json().catch(()=>null);
+  if(!response.ok||!result?.success||!result?.session)throw new Error(result?.error||'Invalid roll number or password.');
+  const {error:sessionError}=await sb.auth.setSession({access_token:result.session.access_token,refresh_token:result.session.refresh_token});
+  if(sessionError)throw sessionError;
+  const {data:{user},error:userError}=await sb.auth.getUser();
+  if(userError||!user)throw new Error('Could not verify student session.');
+  const {data:profile,error:pe}=await sb.from('user_profiles').select('id,role,is_active,student_id').eq('id',user.id).maybeSingle();
   if(pe)throw new Error('Could not verify student profile.');
   if(!profile||profile.role!=='student'||profile.is_active!==true||!profile.student_id){await sb.auth.signOut();throw new Error('This account does not have active student access. Please contact the school office.');}
   location.replace('index.html');
