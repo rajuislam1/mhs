@@ -7,7 +7,73 @@ function deleteSubject(id){if(!confirm('Delete this custom subject?'))return;mhs
 function editStudentSubjects(i){const students=ensureStudentIds(),st=students[i],year=Number(window.__subjectYear||new Date().getFullYear()),master=mhsClassSubjects(year,st.class),cat=mhsGetSubjectCatalog();if(!master.length)return alert(`Class ${st.class} has no subject structure for ${year}. Configure Academic Subjects first.`);const current=new Set(mhsStudentSubjects(st,year));const o=document.createElement('div');o.className='mhsM';o.innerHTML=`<form><h3>Subjects · ${esc(st.name)} · Class ${esc(st.class)}</h3><div class="subject-grid">${master.map(m=>{const c=cat.find(x=>x.id===m.subjectId)||{name:m.subjectId,type:'Compulsory'};return `<label class="subject-row"><input type="checkbox" class="stu-sub" data-id="${esc(m.subjectId)}" ${current.has(m.subjectId)?'checked':''}><span><b>${esc(c.name)}</b><small>${esc(c.type)}</small></span></label>`}).join('')}</div><div class="b"><button type="button" class="x">Cancel</button><button>Save Changes</button></div></form>`;document.body.appendChild(o);o.querySelector('.x').onclick=()=>o.remove();o.querySelector('form').onsubmit=e=>{e.preventDefault();const ids=[...o.querySelectorAll('.stu-sub:checked')].map(x=>x.dataset.id);if(!ids.length)return alert('Select at least one subject.');st.subjectSelections=Array.isArray(st.subjectSelections)?st.subjectSelections.filter(x=>String(x.year)!==String(year)):[];st.subjectSelections.push({year,class:String(st.class),subjects:ids,updatedAt:new Date().toISOString()});mhsSet('mhs_students',students);o.remove();mhsToast('Student subjects saved');render()}}
 
 window.MHS_EXTRA={
-subjects(){const year=new Date().getFullYear();let cat=mhsGetSubjectCatalog(),map=mhsGet('mhs_class_subjects',[]);const rows=CLS.map(c=>{const active=map.filter(x=>String(x.year)===String(year)&&String(x.class)===String(c));return `<div class="box"><div class="toolbar"><h3>Class ${c} · ${year}</h3><span>${active.length} subject(s)</span></div><div class="subject-grid">${cat.map(x=>{const on=active.some(a=>a.subjectId===x.id);return `<label class="subject-row"><input type="checkbox" class="class-sub" data-class="${c}" data-id="${esc(x.id)}" ${on?'checked':''}><span><b>${esc(x.name)}</b><small>${esc(x.type)}</small></span></label>`}).join('')}</div><button class="btn-small" onclick="saveClassSubjects('${c}',${year})">Save Class ${c}</button></div>`}).join('');app.innerHTML=`<div class="panel"><div class="box"><h2>Academic Subject Structure</h2><p class="hint">Set the subjects available for each class in an academic year. Compulsory subjects are normally selected for every student; optional subjects can be selected student-by-student.</p><div class="box" style="margin-top:12px"><h3>Subject Catalog</h3><form class="form" id="subCatForm"><label>Subject Name<input id="newSubName" required placeholder="e.g. Higher Mathematics"></label><label>Subject Type<select id="newSubType"><option>Compulsory</option><option>Optional</option></select></label><button>Add Subject</button></form><div class="table-wrap"><table class="table"><tr><th>Code</th><th>Subject</th><th>Type</th><th></th></tr>${cat.map((x,i)=>`<tr><td>${esc(x.id)}</td><td>${esc(x.name)}</td><td>${esc(x.type)}</td><td>${x.id.startsWith('SYS')?`<button class="btn-small danger" onclick="deleteSubject('${esc(x.id)}')">Delete</button>`:'System'}</td></tr>`).join('')}</table></div></div><h3>Class-wise Subjects — ${year}</h3>${rows}</div></div>`;subCatForm.onsubmit=e=>{e.preventDefault();let name=newSubName.value.trim();if(!name)return;let all=mhsGetSubjectCatalog();if(all.some(x=>x.name.toLowerCase()===name.toLowerCase()))return alert('Subject already exists.');all.push({id:'SYS'+Date.now().toString().slice(-7),name,bn:name,type:newSubType.value});mhsSet('mhs_subject_catalog',all);render()}},
+async subjects(){
+ const box=app;box.innerHTML='<div class="panel"><div class="box"><h2>Academic Subjects</h2><p class="hint">Loading academic structure from Supabase…</p></div></div>';
+ try{
+  const sb=await window.mhsSupabaseReady;
+  const {data:authData,error:authError}=await sb.auth.getUser();if(authError||!authData?.user)throw new Error('Admin session expired.');
+  const {data:profile,error:profileError}=await sb.from('user_profiles').select('role,is_active').eq('id',authData.user.id).single();
+  if(profileError||profile?.role!=='super_admin'||profile?.is_active!==true)throw new Error('Active Super Admin access required.');
+  const [{data:classes,error:classError},{data:years,error:yearError},{data:subjects,error:subjectError},{data:classSubjects,error:csError}]=await Promise.all([
+   sb.from('classes').select('id,name,class_number,status').eq('status',true).order('class_number'),
+   sb.from('academic_years').select('id,year,name,is_active').order('year',{ascending:false}),
+   sb.from('subjects').select('id,name,code,status').order('name'),
+   sb.from('class_subjects').select('id,class_id,subject_id,academic_year_id,is_compulsory')
+  ]);
+  if(classError)throw classError;if(yearError)throw yearError;if(subjectError)throw subjectError;if(csError)throw csError;
+  const currentYear=(years||[]).find(y=>Number(y.year)===new Date().getFullYear())||(years||[])[0];
+  const activeSubjects=(subjects||[]).filter(s=>s.status!==false);
+  box.innerHTML=`<div class="panel"><div class="box"><h2>Academic Subject Catalog</h2><p class="hint">Subjects and class-wise subject structures are stored in Supabase. Existing result or teacher-assignment references are protected from accidental deletion.</p>
+   <form class="form" id="sbSubjectForm"><label>Subject Name<input name="name" required maxlength="100"></label><label>Subject Code<input name="code" maxlength="20" placeholder="Optional"></label><button type="submit">Add Subject</button></form>
+   <div class="table-wrap"><table class="table"><tr><th>Code</th><th>Subject</th><th>Status</th></tr>${(subjects||[]).map(s=>`<tr><td>${AESC(s.code||'—')}</td><td>${AESC(s.name)}</td><td><span class="badge">${s.status?'Active':'Inactive'}</span></td></tr>`).join('')||'<tr><td colspan="3">No subjects configured.</td></tr>'}</table></div>
+  </div><div class="box"><h2>Class-wise Subject Structure</h2><div class="form"><label>Academic Year<select id="sbCsYear">${(years||[]).map(y=>`<option value="${AESC(y.id)}" ${y.id===currentYear?.id?'selected':''}>${AESC(y.year||y.name)}</option>`).join('')}</select></label><label>Class<select id="sbCsClass">${(classes||[]).map(cl=>`<option value="${AESC(cl.id)}">${AESC(cl.name||('Class '+cl.class_number))}</option>`).join('')}</select></label></div><div id="sbClassSubjectEditor"></div></div></div>`;
+  const editor=document.getElementById('sbClassSubjectEditor'),yearSelect=document.getElementById('sbCsYear'),classSelect=document.getElementById('sbCsClass');
+  const draw=()=>{
+   const yearId=yearSelect.value,classId=classSelect.value;
+   const existing=(classSubjects||[]).filter(cs=>cs.academic_year_id===yearId&&cs.class_id===classId);
+   editor.innerHTML=`<div class="subject-grid">${activeSubjects.map(s=>{const row=existing.find(cs=>cs.subject_id===s.id);return `<label class="subject-row"><input type="checkbox" class="sb-class-sub" data-subject-id="${AESC(s.id)}" ${row?'checked':''} data-compulsory="${row?.is_compulsory?'1':'0'}"><span><b>${AESC(s.name)}</b><small>${AESC(s.code||'No code')} · ${row?(row.is_compulsory?'Compulsory':'Optional'):'Not assigned'}</small></span><select class="sb-sub-type" aria-label="Subject type"><option value="1" ${row?.is_compulsory!==false?'selected':''}>Compulsory</option><option value="0" ${row?.is_compulsory===false?'selected':''}>Optional</option></select></label>`}).join('')}</div><p class="hint">Unchecking an existing subject removes the class mapping only when no result, student-subject or teacher-assignment record depends on it.</p><button type="button" id="sbSaveClassSubjects">Save Class Subject Structure</button><p id="sbCsMessage" class="hint"></p>`;
+   document.getElementById('sbSaveClassSubjects').onclick=async()=>{
+    const button=document.getElementById('sbSaveClassSubjects');button.disabled=true;
+    const msg=document.getElementById('sbCsMessage');
+    try{
+     const selected=[...editor.querySelectorAll('.sb-class-sub:checked')].map(ch=>({subject_id:ch.dataset.subjectId,is_compulsory:ch.closest('.subject-row').querySelector('.sb-sub-type').value==='1'}));
+     const old=existing.slice();const selectedIds=new Set(selected.map(x=>x.subject_id));
+     const toInsert=selected.filter(s=>!old.some(o=>o.subject_id===s.subject_id)).map(s=>({class_id:classId,subject_id:s.subject_id,academic_year_id:yearId,is_compulsory:s.is_compulsory}));
+     if(toInsert.length){const {error}=await sb.from('class_subjects').insert(toInsert);if(error)throw error;}
+     for(const item of selected.filter(s=>old.some(o=>o.subject_id===s.subject_id))){
+      const row=old.find(o=>o.subject_id===item.subject_id);
+      if(row.is_compulsory!==item.is_compulsory){const {error}=await sb.from('class_subjects').update({is_compulsory:item.is_compulsory}).eq('id',row.id);if(error)throw error;}
+     }
+     const warnings=[];
+     for(const row of old.filter(o=>!selectedIds.has(o.subject_id))){
+      const [r,ss,ta]=await Promise.all([
+       sb.from('results').select('id',{count:'exact',head:true}).eq('class_subject_id',row.id),
+       sb.from('student_subjects').select('id',{count:'exact',head:true}).eq('class_subject_id',row.id),
+       sb.from('teacher_assignments').select('id',{count:'exact',head:true}).eq('class_id',classId).eq('subject_id',row.subject_id).eq('academic_year_id',yearId)
+      ]);
+      if(r.error)throw r.error;if(ss.error)throw ss.error;if(ta.error)throw ta.error;
+      if((r.count||0)||(ss.count||0)||(ta.count||0)){warnings.push('Kept '+(subjects||[]).find(s=>s.id===row.subject_id)?.name+' because records depend on it.');continue;}
+      const {error}=await sb.from('class_subjects').delete().eq('id',row.id);if(error)throw error;
+     }
+     msg.textContent=warnings.length?'Saved. '+warnings.join(' '):'Class subject structure saved successfully.';
+     mhsToast('Academic subject structure saved');
+     await window.MHS_EXTRA.subjects();
+    }catch(error){msg.textContent='Could not save: '+(error.message||String(error));}
+    finally{button.disabled=false;}
+   };
+  };
+  document.getElementById('sbSubjectForm').onsubmit=async event=>{
+   event.preventDefault();const fd=new FormData(event.currentTarget),name=String(fd.get('name')||'').trim();
+   if((subjects||[]).some(s=>s.name.toLowerCase()===name.toLowerCase()))return alert('This subject already exists.');
+   const rawCode=String(fd.get('code')||'').trim();const code=rawCode||name.split(/\s+/).map(w=>w[0]).join('').slice(0,8).toUpperCase();
+   const button=event.currentTarget.querySelector('button');button.disabled=true;
+   try{const {error}=await sb.from('subjects').insert({name,code,status:true});if(error)throw error;mhsToast('Subject added to Supabase');await window.MHS_EXTRA.subjects();}
+   catch(error){alert('Could not add subject: '+(error.message||String(error)));button.disabled=false;}
+  };
+  yearSelect.addEventListener('change',draw);classSelect.addEventListener('change',draw);draw();
+ }catch(error){box.innerHTML=`<div class="panel"><div class="box"><h2>Academic Subjects</h2><p class="hint">Could not load academic structure: ${AESC(error.message||String(error))}</p></div></div>`;}
+},
+studentSubjects(){return window.studentSubjects();},
 studentSubjects(){const year=Number(window.__subjectYear||new Date().getFullYear()),students=ensureStudentIds(),cat=mhsGetSubjectCatalog();mhsEnsureAcademicStructure(year);app.innerHTML=`<div class="panel"><div class="box"><h2>Student Subject Selection</h2><p class="hint">Select a student to assign the subjects they actually study in the running academic year. Compulsory class subjects are pre-selected; optional subjects are selected by the Admin.</p><label style="display:block;margin-bottom:12px">Academic Year<select id="ssYear"><option ${year===new Date().getFullYear()?'selected':''}>${new Date().getFullYear()}</option><option ${year===new Date().getFullYear()+1?'selected':''}>${new Date().getFullYear()+1}</option><option ${year===new Date().getFullYear()-1?'selected':''}>${new Date().getFullYear()-1}</option></select></label><div class="table-wrap"><table class="table"><tr><th>Student ID</th><th>Student</th><th>Class</th><th>Roll</th><th>Selected Subjects</th><th>Action</th></tr>${students.map((x,i)=>{const ids=mhsStudentSubjects(x,year);return `<tr><td><b>${esc(x.studentId)}</b></td><td>${esc(x.name)}</td><td>${esc(x.class)}</td><td>${esc(x.roll)}</td><td>${ids.length?ids.map(id=>esc((cat.find(c=>c.id===id)||{name:id}).name)).join(', '):'Not configured'}</td><td><button class="btn-small" onclick="editStudentSubjects(${i})">Select Subjects</button></td></tr>`}).join('')||'<tr><td colspan="6" class="empty-admin">No students.</td></tr>'}</table></div></div></div>`;window.__subjectYear=year;ssYear.onchange=()=>{window.__subjectYear=Number(ssYear.value);render()}},
 
 hero(){let h=heroGet();app.innerHTML=`<div class="panel"><div class="box"><h2>Hero Section Images</h2><p class="hint">Images slide automatically on the home page. If you remove all images, the original default hero background is shown again.</p><form class="form" id="hf"><label class="full">Add Images (multiple allowed)<input id="hfile" type="file" accept="image/*" multiple required></label><button>Upload</button></form></div><div class="box"><div class="toolbar"><h2>Current Images</h2><span>${h.length} image(s)</span></div><div class="preview">${h.map((x,i)=>`<div><img src="${esc(x.url)}" alt=""><button class="btn-small" onclick="heroRep(${i})">Replace</button> <button class="btn-small danger" onclick="heroDel(${i})">Remove</button></div>`).join('')||'<div class="empty-admin">No images. Default hero background is showing.</div>'}</div><p><button class="btn-small danger" onclick="heroClear()">Remove All</button> <button class="btn-small" onclick="heroReset()">Restore School Photos</button></p></div></div>`;
