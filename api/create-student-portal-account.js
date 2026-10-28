@@ -17,7 +17,7 @@ module.exports = async (req, res) => {
   const parse = async r => { try { return await r.json(); } catch { return null; } };
 
   try {
-    const token = String(req.headers.authorization || '').replace(/^Bearer\\s+/i, '');
+    const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
     if (!token) return res.status(401).json({ success: false, error: 'Admin login required.' });
     const auth = await fetch(url + '/auth/v1/user', { headers: { apikey: key, Authorization: 'Bearer ' + token } });
     if (!auth.ok) return res.status(401).json({ success: false, error: 'Admin session expired. Sign in again.' });
@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
     const gender = String(b.gender || '').trim();
     const guardian = String(b.guardian || '').trim();
     const mobile = String(b.guardian_phone || '').trim();
-    const photo = typeof b.photo === 'string' && /^https?:\\/\\//i.test(b.photo) ? b.photo : null;
+    const photo = typeof b.photo === 'string' && /^https?:\/\//i.test(b.photo) ? b.photo : null;
 
     if (!studentId || !admission || !name || !Number.isInteger(classNumber) || !Number.isInteger(roll) || roll < 0 || password.length < 8) {
       return res.status(400).json({ success: false, error: 'Enter Student ID, Admission No., name, class, roll and a password of at least 8 characters.' });
@@ -53,7 +53,7 @@ module.exports = async (req, res) => {
       return res.status(409).json({ success: false, error: 'Admission No. already exists in Supabase. Please use the existing student record instead of adding it twice.' });
     }
     if ((existingStudents || []).some(s => String(s.student_id) === studentId)) {
-      const maxId = (existingStudents || []).reduce((max, s) => /^\\d+$/.test(String(s.student_id || '')) ? Math.max(max, Number(s.student_id)) : max, 100000);
+      const maxId = (existingStudents || []).reduce((max, s) => /^\d+$/.test(String(s.student_id || '')) ? Math.max(max, Number(s.student_id)) : max, 100000);
       b.student_id = String(maxId + 1);
     }
     const finalStudentId = String(b.student_id || studentId).trim();
