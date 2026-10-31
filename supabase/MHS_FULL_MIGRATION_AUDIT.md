@@ -142,13 +142,27 @@ Implemented on branch `fix/supabase-full-migration-2026-10-31` (not yet merged t
 - Admin backup now exports central Supabase tables to JSON and deliberately omits the `teachers.password` column.
 - Fixed the public results page so it has one result handler and uses the server-side published-result endpoint.
 
-### Verification status / remaining work
+### Final implementation and verification status — 2026-10-31
 
-- Inspected actual Supabase columns and foreign-key relationships before implementing the touched workflows. Existing database objects were not dropped or truncated.
-- Code has been committed to the feature branch; it has **not** been merged or production-deployed.
-- End-to-end browser testing of create/login/deactivate/reactivate, result publish/unpublish, and backup download is still required. Vercel environment variables `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` must be present for the new server routes.
-- The Admin portal still has localStorage-based paths in class/subject setup, class promotion, and parts of teacher result-edit-request handling. Teacher dashboard routines/result entry also require further migration. Those paths must be completed before calling this a full migration.
-- Security follow-up: inspect whether the legacy `teachers.password` column contains values and plan a safe removal/clear after verifying no code depends on it. It is never selected or exported by the new admin backup.
-- No production deployment claim is made until these tests pass.
+Latest branch includes:
+- Supabase-only Admin dispatcher. The Admin page no longer loads the legacy browser data/result helper scripts.
+- Supabase CRUD for school settings, notices/ticker, public teacher profiles, gallery, achievements, hero images, students/accounts, subjects, student subject selection, class promotion/history, admissions, fees, result publication and result edit-request review.
+- Teacher Portal rewritten to use authenticated Supabase queries and RLS for active assignments, class routines, draft result submission, published-result correction requests, student lists, and result status.
+- Student Portal authentication and profile/results/subject/fee reads use Supabase Auth and RLS.
+- Public teacher profiles no longer fall back to browser LocalStorage.
+- Student and teacher account activation/deactivation are wired to the linked `user_profiles` state; teacher reactivation is included.
+- Supabase database backup covers school content, student records, teacher/profile data, assignments, results, routines, fees, promotions and other school tables; it deliberately omits `teachers.password`.
+- Added `hero_images` table with RLS policies for active public reads and active Super Admin CRUD. The public homepage hero slider now reads from this table.
+- Public result lookup filters to active students and published result rows. GPA calculation returns zero if any subject has zero grade points.
+- Legacy localStorage data is not imported, as explicitly requested.
 
-- Supabase Security Advisor was checked after the code changes. It currently warns that Auth leaked-password protection is disabled. No available connected control exposes that Auth dashboard setting, so it remains a manual dashboard action and must be enabled if available on the current plan.
+### Checks completed
+- Queried live Supabase table definitions, foreign keys, row-level-security enabled status and public/anonymous policies.
+- Confirmed all current public-schema base tables have RLS enabled.
+- Confirmed no non-null legacy values exist in `teachers.password` (the column itself has not been dropped, to avoid breaking any older deployed code before rollout).
+- Re-ran Supabase Security Advisor. The only security lint reported is that Auth leaked-password protection is disabled. No connected API in this environment can toggle that dashboard-level Auth setting.
+- Added GitHub Actions static JavaScript syntax checks for changed files.
+- GitHub PR #2 is ready for review and points to `main`; the Vercel status for the latest revision was still pending when this audit was written.
+
+### Explicit verification boundary
+The repository code and schema have been updated, but authenticated browser end-to-end tests (creating/logging in/deactivating/reactivating test accounts, saving records through every form, and downloading a backup) cannot be truthfully marked passed without a live deployed build, configured Vercel server environment variables, and a valid test administrator session. Do not label these tests passed unless they are actually executed. Production deployment should be confirmed from the Vercel status and then these role-based flows should be exercised in the browser.
