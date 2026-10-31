@@ -4,10 +4,15 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
   async function client() {
     const sb = await window.mhsSupabaseReady;
-    const {data,error} = await sb.auth.getUser();
-    if (error || !data.user) throw new Error('Admin session expired. Please sign in again.');
-    const {data:profile,error:pe} = await sb.from('user_profiles').select('role,is_active').eq('id',data.user.id).maybeSingle();
-    if (pe || !profile || profile.role !== 'super_admin' || profile.is_active !== true) throw new Error('Active Super Admin permission required.');
+    const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+    if (sessionError) throw new Error('Could not read Admin session: ' + sessionError.message);
+    if (!sessionData?.session?.user) throw new Error('Admin session expired. Please sign in again.');
+    const user = sessionData.session.user;
+    const { data: profile, error: profileError } = await sb
+      .from('user_profiles').select('role,is_active').eq('id', user.id).maybeSingle();
+    if (profileError) throw new Error('Could not verify Admin permission: ' + profileError.message);
+    if (!profile || profile.role !== 'super_admin' || profile.is_active !== true)
+      throw new Error('Active Super Admin permission required.');
     return sb;
   }
   function msg(text, bad=false) {
