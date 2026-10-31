@@ -91,9 +91,9 @@
         }).join('');
       }
 
-      // Local fallback while Supabase loads.
-      const localTeachers = (() => {
-        try {
+      grid.innerHTML = '<p class="hint">Loading teacher profiles…</p>';
+
+      try {
           return JSON.parse(
             localStorage.getItem('mhs_teachers') || 'null'
           ) || (typeof TEACHERS !== 'undefined' ? TEACHERS : []);
@@ -124,7 +124,7 @@
       } catch (error) {
         console.error('Could not load public teachers from Supabase:', error);
 
-        // The previously rendered local fallback remains visible.
+        grid.innerHTML = '<p class="hint">Teacher profiles could not be loaded. Please try again later.</p>';
       }
     })();
   </script>
