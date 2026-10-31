@@ -93,47 +93,56 @@
   // --------------------------------------------------
   window.editSupabaseTeacher = async function (id) {
     const teacher = findAccount(id);
-
     if (!teacher) {
       alert('Teacher record not found. Reload and try again.');
       return;
     }
-
-    const name = prompt('Teacher Name:', teacher.name || '');
-    if (name === null) return;
-    if (!name.trim()) return alert('Teacher name cannot be empty.');
-
-    const designation = prompt('Designation:', teacher.designation || 'Teacher');
-    if (designation === null) return;
-
-    const subject = prompt('Primary Subject:', teacher.subject || '');
-    if (subject === null) return;
-
-    const qualification = prompt('Qualification:', teacher.qualification || '');
-    if (qualification === null) return;
-
-    const mobile = prompt('Mobile Number:', teacher.mobile || '');
-    if (mobile === null) return;
-
-    const photo = prompt('Photo URL:', teacher.photo || '');
-    if (photo === null) return;
-
-    try {
-      await teacherApi('PATCH', {
-        id,
-        name: name.trim(),
-        designation: designation.trim(),
-        subject: subject.trim(),
-        qualification: qualification.trim(),
-        mobile: mobile.trim(),
-        photo: photo.trim()
-      });
-
-      alert('Teacher details updated successfully.');
-      await window.teachers();
-    } catch (error) {
-      showError('Could not update teacher.', error);
-    }
+    document.querySelector('.mhs-teacher-edit-backdrop')?.remove();
+    const backdrop = document.createElement('div');
+    backdrop.className = 'mhs-teacher-edit-backdrop';
+    backdrop.innerHTML = `
+      <section class="mhs-teacher-edit-modal" role="dialog" aria-modal="true" aria-labelledby="mhsTeacherEditTitle">
+        <header class="mhs-teacher-edit-head"><h2 id="mhsTeacherEditTitle">Edit Teacher Account</h2><p>Update the teacher profile information below.</p></header>
+        <form class="mhs-teacher-edit-form" id="mhsTeacherEditForm">
+          <label>Teacher Name<input name="name" required maxlength="150" value="${escTeacher(teacher.name || '')}"></label>
+          <label>Designation<input name="designation" maxlength="100" value="${escTeacher(teacher.designation || 'Teacher')}"></label>
+          <label>Primary Subject<input name="subject" maxlength="120" value="${escTeacher(teacher.subject || '')}"></label>
+          <label>Qualification<input name="qualification" maxlength="180" value="${escTeacher(teacher.qualification || '')}"></label>
+          <label>Mobile Number<input name="mobile" type="tel" maxlength="30" value="${escTeacher(teacher.mobile || '')}"></label>
+          <label>Photo URL<input name="photo" type="url" maxlength="1000" value="${escTeacher(teacher.photo || '')}" placeholder="https://…"></label>
+          <div class="mhs-teacher-edit-actions"><button type="button" class="mhs-teacher-edit-cancel">Cancel</button><button type="submit" class="mhs-teacher-edit-save">Save Changes</button></div>
+        </form>
+      </section>`;
+    document.body.appendChild(backdrop);
+    const form = backdrop.querySelector('form');
+    const close = () => backdrop.remove();
+    backdrop.querySelector('.mhs-teacher-edit-cancel').addEventListener('click', close);
+    backdrop.addEventListener('click', event => { if (event.target === backdrop) close(); });
+    document.addEventListener('keydown', function onEscape(event) {
+      if (event.key === 'Escape' && document.body.contains(backdrop)) {
+        close(); document.removeEventListener('keydown', onEscape);
+      }
+    });
+    form.querySelector('[name="name"]').focus();
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const save = form.querySelector('[type="submit"]');
+      const values = Object.fromEntries(new FormData(form).entries());
+      values.name = values.name.trim();
+      if (!values.name) return alert('Teacher name cannot be empty.');
+      save.disabled = true;
+      save.textContent = 'Saving…';
+      try {
+        await teacherApi('PATCH', { id, ...Object.fromEntries(Object.entries(values).map(([key,value]) => [key, value.trim()])) });
+        close();
+        alert('Teacher details updated successfully.');
+        await window.teachers();
+      } catch (error) {
+        showError('Could not update teacher.', error);
+        save.disabled = false;
+        save.textContent = 'Save Changes';
+      }
+    });
   };
 
   // --------------------------------------------------
