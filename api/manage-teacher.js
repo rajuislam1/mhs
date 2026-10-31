@@ -246,6 +246,21 @@ module.exports = async (req, res) => {
         });
       }
 
+      if (linkedProfile && typeof update.status === 'boolean') {
+        const activeResponse = await fetch(
+          `${rest}/user_profiles?id=eq.${encodeURIComponent(linkedProfile.id)}`,
+          {
+            method: 'PATCH',
+            headers: { ...adminHeaders, Prefer: 'return=minimal' },
+            body: JSON.stringify({ is_active: update.status, updated_at: new Date().toISOString() })
+          }
+        );
+        if (!activeResponse.ok) {
+          console.error('Teacher account activation sync failed:', await activeResponse.text());
+          return res.status(500).json({ error: 'Teacher record changed, but account activation did not sync. Please retry.' });
+        }
+      }
+
       // Keep the public profile display name in sync.
       if (
         linkedProfile &&
