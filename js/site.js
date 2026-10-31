@@ -10,14 +10,15 @@
 
   async function loadPublicSite() {
     const sb = await window.mhsSupabaseReady;
-    const [settingsQ, noticesQ, tickerQ, galleryQ, heroQ, achievementsQ, teachersQ] = await Promise.all([
+    const [settingsQ, noticesQ, tickerQ, galleryQ, heroQ, achievementsQ, teachersQ, statsQ] = await Promise.all([
       sb.from('school_settings').select('school_name,school_name_en,established_year,slogan,logo_url,phone,email,address,about_text,mission_text,vision_text,history_text,student_count,teacher_count,service_years,ssc_pass_rate').limit(1).maybeSingle(),
       sb.from('notices').select('id,title,content,attachment_url,published_at,created_at').eq('is_published',true).order('published_at',{ascending:false}).limit(3),
       sb.from('notice_tickers').select('message,link_url').eq('is_active',true).order('display_order').limit(1).maybeSingle(),
       sb.from('gallery').select('title,description,image_url,category').eq('is_published',true).order('display_order').limit(6),
       sb.from('hero_images').select('image_url,title,alt_text,display_order').eq('is_active',true).order('display_order'),
       sb.from('achievements').select('id',{count:'exact',head:true}).eq('is_published',true),
-      sb.from('teacher_public_profiles').select('id',{count:'exact',head:true}).eq('is_published',true)
+      sb.from('teacher_public_profiles').select('id',{count:'exact',head:true}).eq('is_published',true),
+      sb.from('public_school_statistics').select('active_students,active_teachers').single()
     ]);
     if(settingsQ.error) throw settingsQ.error;
     if(noticesQ.error) throw noticesQ.error;
@@ -26,6 +27,7 @@
     if(heroQ.error) throw heroQ.error;
     if(achievementsQ.error) throw achievementsQ.error;
     if(teachersQ.error) throw teachersQ.error;
+    if(statsQ.error) throw statsQ.error;
     const s=settingsQ.data||{};
     const about=document.getElementById('aboutText'); if(about) about.textContent=s.about_text||fallback.about||'';
     const ticker=document.getElementById('tickerItems');
@@ -35,7 +37,7 @@
     const homeGallery=document.getElementById('homeGallery');
     if(homeGallery) homeGallery.innerHTML=(galleryQ.data||[]).map(x=>'<div><img loading="lazy" src="'+E(x.image_url)+'" alt="'+E(x.title||'School gallery')+'"><small>'+E(x.title||x.description||'')+'</small></div>').join('')||'<p class="hint">Gallery photos will be published by the administration.</p>';
     const statEls=document.querySelectorAll('.stats strong');
-    if(statEls.length>=4){statEls[0].textContent=String(s.student_count??fallback.students??'—');statEls[1].textContent=String(s.teacher_count??teachersQ.count??'—').padStart(2,'0');statEls[2].textContent=String(s.service_years??fallback.serviceYears??'—');statEls[3].textContent=String(s.ssc_pass_rate??fallback.passRate??'—');}
+    if(statEls.length>=4){statEls[0].textContent=String(statsQ.data?.active_students??0);statEls[1].textContent=String(statsQ.data?.active_teachers??0).padStart(2,'0');statEls[2].textContent=String(s.service_years??fallback.serviceYears??'—');statEls[3].textContent=String(s.ssc_pass_rate??fallback.passRate??'—');}
     const hero=document.querySelector('.hero');
     if(hero){
       const slides=(heroQ.data||[]).map(x=>x.image_url).filter(Boolean);
