@@ -126,3 +126,27 @@ A working branch `fix/supabase-full-migration-2026-10-31` was created from `main
 
 ### Verification limits
 Only static JavaScript syntax checks and live Supabase schema/policy/row-count inspection were completed in this pass. Login, form submission, RLS boundaries, browser workflows, Vercel environment variables, and production deployment still need end-to-end verification.
+
+
+## Implementation progress — 2026-10-31
+
+Implemented on branch `fix/supabase-full-migration-2026-10-31` (not yet merged to production):
+
+- Added `admin/content.js`: Admin dashboard counts and School Settings, Notices/ticker, Gallery/Achievements, Student database, and Result Management now read/write Supabase instead of relying on browser-localStorage for those workflows.
+- Added secure server-side student account endpoints:
+  - `api/create-student.js`: checks the authenticated active Super Admin, creates a student record and Supabase Auth account, links the account through `user_profiles`, and rolls back the student record if account provisioning fails.
+  - `api/manage-student.js`: lets only an active Super Admin activate/deactivate a student and linked portal profile.
+  - `api/student-login.js`: accepts Student ID or Admission No. plus password, checks the active student/profile, then delegates password verification to Supabase Auth. The service-role key remains server-side.
+- Replaced the browser-localStorage Student Login with the server-assisted Supabase Auth flow; replaced the student portal page with authenticated, RLS-protected reads for the student's own profile, published results, subjects, and fees.
+- Teacher portal now revalidates the Supabase Auth user and active teacher profile before rendering the dashboard; admin and teacher logout call Supabase Auth sign-out.
+- Admin backup now exports central Supabase tables to JSON and deliberately omits the `teachers.password` column.
+- Fixed the public results page so it has one result handler and uses the server-side published-result endpoint.
+
+### Verification status / remaining work
+
+- Inspected actual Supabase columns and foreign-key relationships before implementing the touched workflows. Existing database objects were not dropped or truncated.
+- Code has been committed to the feature branch; it has **not** been merged or production-deployed.
+- End-to-end browser testing of create/login/deactivate/reactivate, result publish/unpublish, and backup download is still required. Vercel environment variables `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` must be present for the new server routes.
+- The Admin portal still has localStorage-based paths in class/subject setup, class promotion, and parts of teacher result-edit-request handling. Teacher dashboard routines/result entry also require further migration. Those paths must be completed before calling this a full migration.
+- Security follow-up: inspect whether the legacy `teachers.password` column contains values and plan a safe removal/clear after verifying no code depends on it. It is never selected or exported by the new admin backup.
+- No production deployment claim is made until these tests pass.
