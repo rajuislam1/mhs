@@ -88,7 +88,7 @@
     try {
       const sb=await client();
       const [{data:students,error},{data:classes,error:ce},{data:years,error:ye}]=await Promise.all([
-        sb.from('students').select('id,student_id,name,father_name,mother_name,class_id,academic_year_id,roll,mobile,status,admission_number').order('created_at',{ascending:false}),
+        sb.from('students').select('id,student_id,name,father_name,mother_name,date_of_birth,gender,class_id,academic_year_id,roll,mobile,address,admission_date,status,section,guardian,photo,admission_number').order('created_at',{ascending:false}),
         sb.from('classes').select('id,name,class_number').eq('status',true).order('class_number'),
         sb.from('academic_years').select('id,year,is_active').order('year',{ascending:false})
       ]);
