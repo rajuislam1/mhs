@@ -1,38 +1,25 @@
-/* MHS migration safety step: export browser-local data before any database migration. */
-(function () {
-  'use strict';
-  const button = document.getElementById('backupData');
-  if (!button) return;
-  button.addEventListener('click', function () {
-    try {
-      const data = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        data[key] = localStorage.getItem(key);
-      }
-      const payload = {
-        product: 'Mokhleshpur High School website',
-        backupType: 'browser-localStorage-export',
-        createdAt: new Date().toISOString(),
-        origin: location.origin,
-        itemCount: Object.keys(data).length,
-        localStorage: data
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-      a.href = url;
-      a.download = 'mhs-local-data-backup-' + stamp + '.json';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      if (window.mhsToast) window.mhsToast('Backup downloaded. Keep this JSON file safe.');
-      else alert('Backup downloaded. Keep this JSON file safe.');
-    } catch (error) {
-      console.error('MHS backup failed:', error);
-      alert('Backup failed: ' + (error.message || String(error)));
-    }
-  });
+/* Admin-only database export. Never exports passwords or service-role credentials. */
+(function(){
+ 'use strict';
+ const button=document.getElementById('backupData');if(!button)return;
+ const tables=[
+  ['school_settings','*'],['academic_years','*'],['classes','*'],['subjects','*'],['class_subjects','*'],
+  ['students','*'],['student_enrollments','*'],['student_promotions','*'],['student_subjects','*'],
+  ['teachers','id,teacher_id,name,designation,mobile,email,username,status,created_at,updated_at,subject,qualification,photo'],
+  ['teacher_assignments','*'],['results','*'],['result_edit_requests','*'],['class_routines','*'],
+  ['student_fees','*'],['student_attendance','*'],['student_documents','*'],['notices','*'],
+  ['notice_tickers','*'],['gallery','*'],['achievements','*'],['admission_applications','*']
+ ];
+ button.addEventListener('click',async function(){
+  const original=button.textContent;button.disabled=true;button.textContent='Preparing database backup…';
+  try{
+   const sb=await window.mhsSupabaseReady;const {data:auth,error:ae}=await sb.auth.getUser();if(ae||!auth.user)throw new Error('Please sign in as an administrator first.');
+   const {data:profile,error:pe}=await sb.from('user_profiles').select('role,is_active').eq('id',auth.user.id).maybeSingle();if(pe||!profile||profile.role!=='super_admin'||profile.is_active!==true)throw new Error('Active Super Admin permission required.');
+   const output={product:'Mokhleshpur High School',backupType:'supabase-database-export',createdAt:new Date().toISOString(),project:'wolxiieqyqeihvdefomd',tables:{}};
+   for(const [table,columns] of tables){const {data,error}=await sb.from(table).select(columns);if(error){if(error.code==='42P01'||error.code==='PGRST205'){output.tables[table]={skipped:true,reason:'Table unavailable through the Data API'};continue;}throw new Error('Could not export '+table+': '+error.message);}output.tables[table]=data||[];}
+   const blob=new Blob([JSON.stringify(output,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mhs-supabase-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+   if(window.mhsToast)window.mhsToast('Supabase data export downloaded.');else alert('Supabase data export downloaded.');
+  }catch(e){console.error('MHS database backup failed:',e);alert(e.message||'Database export failed.');}
+  finally{button.disabled=false;button.textContent=original;}
+ });
 })();
