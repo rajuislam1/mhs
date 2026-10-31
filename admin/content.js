@@ -1,0 +1,102 @@
+/* MHS shared Admin CRUD backed by Supabase. */
+(function () {
+  'use strict';
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  async function client() {
+    const sb = await window.mhsSupabaseReady;
+    const {data,error} = await sb.auth.getUser();
+    if (error || !data.user) throw new Error('Admin session expired. Please sign in again.');
+    const {data:profile,error:pe} = await sb.from('user_profiles').select('role,is_active').eq('id',data.user.id).maybeSingle();
+    if (pe || !profile || profile.role !== 'super_admin' || profile.is_active !== true) throw new Error('Active Super Admin permission required.');
+    return sb;
+  }
+  function msg(text, bad=false) {
+    let el=document.getElementById('mhsDbMessage');
+    if(!el){el=document.createElement('div');el.id='mhsDbMessage';el.className='box';document.getElementById('app')?.prepend(el);}
+    el.textContent=text;el.style.borderLeft='4px solid '+(bad?'#b42318':'#16804a');
+  }
+  const stamp = () => new Date().toISOString();
+  const dateInput = value => { try { return new Date(value || Date.now()).toISOString().slice(0,16); } catch { return new Date().toISOString().slice(0,16); } };
+
+  window.overview = async function () {
+    app.innerHTML='<div class="panel"><div class="box"><h2>Loading school database…</h2></div></div>';
+    try {
+      const sb=await client();
+      const names=['notices','teachers','students','results','gallery','achievements','admission_applications'];
+      const counts=await Promise.all(names.map(async t=>{const {count,error}=await sb.from(t).select('*',{count:'exact',head:true});if(error)throw error;return count||0;}));
+      const labels=['Notices','Teacher Accounts','Students','Result Rows','Gallery Photos','Achievements','Admissions'];
+      app.innerHTML='<div class="panel"><div class="cards4">'+labels.map((x,i)=>'<div class="stat"><b>'+counts[i]+'</b><span>'+x+'</span></div>').join('')+'</div><div class="box"><h2>Supabase Connected</h2><p>Admin overview is reading live counts from the central school database.</p><div class="quick-grid"><button onclick="tab=\'notices\';render()">Manage Notices</button><button onclick="tab=\'students\';render()">Manage Students</button><button onclick="tab=\'gallery\';render()">Manage Gallery</button><button onclick="tab=\'settings\';render()">School Settings</button></div></div></div>';
+    } catch(e){app.innerHTML='<div class="box"><h2>Database connection failed</h2><p>'+esc(e.message)+'</p></div>';}
+  };
+
+  window.notices = async function () {
+    app.innerHTML='<div class="panel"><div class="box">Loading notices…</div></div>';
+    try {
+      const sb=await client();
+      const [{data:rows,error},{data:tickers,error:te}] = await Promise.all([
+        sb.from('notices').select('id,title,content,notice_type,attachment_url,is_published,published_at').order('published_at',{ascending:false}),
+        sb.from('notice_tickers').select('id,message,link_url,is_active,display_order').order('display_order')
+      ]);
+      if(error)throw error;if(te)throw te;
+      const tick=tickers?.[0]||{};
+      app.innerHTML='<div class="panel"><div class="box"><h2>Hero Notice Ticker</h2><form id="mhsTickerForm" class="form"><label class="full">Ticker message<input id="mhsTickerText" required value="'+esc(tick.message||'')+'"></label><label>Link URL<input id="mhsTickerUrl" value="'+esc(tick.link_url||'')+'"></label><label><input type="checkbox" id="mhsTickerActive" '+(tick.is_active!==false?'checked':'')+'> Active</label><button>Save Ticker</button></form></div><div class="box"><h2>Add / Edit Notice</h2><form id="mhsNoticeForm" class="form"><input type="hidden" id="mhsNoticeId"><label class="full">Title<input id="mhsNoticeTitle" required maxlength="200"></label><label>Type<select id="mhsNoticeType"><option value="general">General</option><option value="exam">Exam</option><option value="admission">Admission</option><option value="holiday">Holiday</option></select></label><label>Attachment URL<input id="mhsNoticeAttachment" type="url"></label><label class="full">Content<textarea id="mhsNoticeContent" rows="4"></textarea></label><label><input type="checkbox" id="mhsNoticePublished" checked> Published</label><button>Save Notice</button><button type="button" id="mhsNoticeReset">Clear</button></form></div><div class="box"><h2>Notices ('+(rows||[]).length+')</h2><div class="table-wrap"><table class="table"><tr><th>Title</th><th>Type</th><th>Published</th><th>Actions</th></tr>'+((rows||[]).map(x=>'<tr><td>'+esc(x.title)+'</td><td>'+esc(x.notice_type)+'</td><td>'+(x.is_published?'Yes':'No')+'</td><td><button class="btn-small" data-edit-notice="'+x.id+'">Edit</button> <button class="btn-small danger" data-del-notice="'+x.id+'">Delete</button></td></tr>').join('')||'<tr><td colspan="4">No notices yet.</td></tr>')+'</table></div></div></div>';
+      document.getElementById('mhsTickerForm').onsubmit=async e=>{e.preventDefault();try{const payload={message:mhsTickerText.value.trim(),link_url:mhsTickerUrl.value.trim()||null,is_active:mhsTickerActive.checked,display_order:0,updated_at:stamp()};const result=tick.id?await sb.from('notice_tickers').update(payload).eq('id',tick.id):await sb.from('notice_tickers').insert(payload);if(result.error)throw result.error;msg('Ticker saved to Supabase.');await window.notices();}catch(x){msg(x.message,true);}};
+      const form=document.getElementById('mhsNoticeForm');
+      document.getElementById('mhsNoticeReset').onclick=()=>form.reset();
+      form.onsubmit=async e=>{e.preventDefault();try{const id=mhsNoticeId.value;const payload={title:mhsNoticeTitle.value.trim(),content:mhsNoticeContent.value.trim()||null,notice_type:mhsNoticeType.value,attachment_url:mhsNoticeAttachment.value.trim()||null,is_published:mhsNoticePublished.checked,published_at:stamp(),updated_at:stamp()};const result=id?await sb.from('notices').update(payload).eq('id',id):await sb.from('notices').insert(payload);if(result.error)throw result.error;msg('Notice saved to Supabase.');await window.notices();}catch(x){msg(x.message,true);}};
+      app.querySelectorAll('[data-edit-notice]').forEach(b=>b.onclick=()=>{const x=rows.find(y=>y.id===b.dataset.editNotice);if(!x)return;mhsNoticeId.value=x.id;mhsNoticeTitle.value=x.title||'';mhsNoticeContent.value=x.content||'';mhsNoticeType.value=x.notice_type||'general';mhsNoticeAttachment.value=x.attachment_url||'';mhsNoticePublished.checked=!!x.is_published;form.scrollIntoView({behavior:'smooth'});});
+      app.querySelectorAll('[data-del-notice]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this notice permanently?'))return;try{const {error}=await sb.from('notices').delete().eq('id',b.dataset.delNotice);if(error)throw error;await window.notices();msg('Notice deleted.');}catch(x){msg(x.message,true);}});
+    }catch(e){app.innerHTML='<div class="box"><h2>Notice management unavailable</h2><p>'+esc(e.message)+'</p></div>';}
+  };
+
+  window.gallery = async function () {
+    app.innerHTML='<div class="panel"><div class="box">Loading gallery…</div></div>';
+    try {
+      const sb=await client();
+      const [{data:g,error:ge},{data:a,error:ae}]=await Promise.all([
+        sb.from('gallery').select('*').order('display_order'),
+        sb.from('achievements').select('*').order('display_order')
+      ]);
+      if(ge)throw ge;if(ae)throw ae;
+      app.innerHTML='<div class="panel"><div class="box"><h2>Gallery Photos</h2><form id="mhsGalleryForm" class="form"><input type="hidden" id="mhsGalleryId"><label>Title<input id="mhsGalleryTitle" required></label><label>Category<input id="mhsGalleryCategory" value="general" required></label><label class="full">Image URL<input id="mhsGalleryUrl" type="url" required></label><label class="full">Description<textarea id="mhsGalleryDesc"></textarea></label><label><input id="mhsGalleryPublished" type="checkbox" checked> Published</label><button>Save Photo</button><button type="button" id="mhsGalleryClear">Clear</button></form><div class="table-wrap"><table class="table"><tr><th>Photo</th><th>Title</th><th>Category</th><th>Published</th><th>Action</th></tr>'+g.map(x=>'<tr><td><a href="'+esc(x.image_url)+'" target="_blank" rel="noopener">Open</a></td><td>'+esc(x.title)+'</td><td>'+esc(x.category)+'</td><td>'+(x.is_published?'Yes':'No')+'</td><td><button class="btn-small" data-edit-gallery="'+x.id+'">Edit</button> <button class="btn-small danger" data-del-gallery="'+x.id+'">Delete</button></td></tr>').join('')+'</table></div></div><div class="box"><h2>Achievements</h2><form id="mhsAchievementForm" class="form"><label>Title<input id="mhsAchTitle" required></label><label>Date<input id="mhsAchDate" type="date"></label><label>Category<input id="mhsAchCategory" value="general"></label><label class="full">Description<textarea id="mhsAchDesc"></textarea></label><label>Image URL<input id="mhsAchImage" type="url"></label><label><input type="checkbox" id="mhsAchPublished" checked> Published</label><button>Save Achievement</button></form><div class="table-wrap"><table class="table"><tr><th>Title</th><th>Date</th><th>Published</th><th>Action</th></tr>'+a.map(x=>'<tr><td>'+esc(x.title)+'</td><td>'+esc(x.achievement_date||'')+'</td><td>'+(x.is_published?'Yes':'No')+'</td><td><button class="btn-small danger" data-del-ach="'+x.id+'">Delete</button></td></tr>').join('')+'</table></div></div></div>';
+      const gf=document.getElementById('mhsGalleryForm');
+      document.getElementById('mhsGalleryClear').onclick=()=>gf.reset();
+      gf.onsubmit=async e=>{e.preventDefault();try{const id=mhsGalleryId.value;const p={title:mhsGalleryTitle.value.trim(),image_url:mhsGalleryUrl.value.trim(),description:mhsGalleryDesc.value.trim()||null,category:mhsGalleryCategory.value.trim(),is_published:mhsGalleryPublished.checked,updated_at:stamp()};const r=id?await sb.from('gallery').update(p).eq('id',id):await sb.from('gallery').insert(p);if(r.error)throw r.error;await window.gallery();msg('Gallery saved.');}catch(x){msg(x.message,true);}};
+      app.querySelectorAll('[data-edit-gallery]').forEach(b=>b.onclick=()=>{const x=g.find(y=>y.id===b.dataset.editGallery);if(!x)return;mhsGalleryId.value=x.id;mhsGalleryTitle.value=x.title||'';mhsGalleryUrl.value=x.image_url||'';mhsGalleryDesc.value=x.description||'';mhsGalleryCategory.value=x.category||'general';mhsGalleryPublished.checked=!!x.is_published;gf.scrollIntoView({behavior:'smooth'});});
+      app.querySelectorAll('[data-del-gallery]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this gallery photo?'))return;const r=await sb.from('gallery').delete().eq('id',b.dataset.delGallery);if(r.error)return msg(r.error.message,true);await window.gallery();msg('Photo deleted.');});
+      document.getElementById('mhsAchievementForm').onsubmit=async e=>{e.preventDefault();try{const p={title:mhsAchTitle.value.trim(),achievement_date:mhsAchDate.value||null,category:mhsAchCategory.value.trim()||'general',description:mhsAchDesc.value.trim()||null,image_url:mhsAchImage.value.trim()||null,is_published:mhsAchPublished.checked};const r=await sb.from('achievements').insert(p);if(r.error)throw r.error;await window.gallery();msg('Achievement saved.');}catch(x){msg(x.message,true);}};
+      app.querySelectorAll('[data-del-ach]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this achievement?'))return;const r=await sb.from('achievements').delete().eq('id',b.dataset.delAch);if(r.error)return msg(r.error.message,true);await window.gallery();msg('Achievement deleted.');});
+    }catch(e){app.innerHTML='<div class="box"><h2>Gallery management unavailable</h2><p>'+esc(e.message)+'</p></div>';}
+  };
+
+  window.settings = async function () {
+    app.innerHTML='<div class="panel"><div class="box">Loading school settings…</div></div>';
+    try {
+      const sb=await client();const {data,error}=await sb.from('school_settings').select('*').limit(1).maybeSingle();if(error)throw error;
+      const s=data||{};
+      const fields=[['school_name','School name (Bangla)','text'],['school_name_en','School name (English)','text'],['established_year','Established year','number'],['slogan','Slogan','text'],['eiin','EIIN','text'],['education_board','Education board','text'],['headmaster_name','Headmaster name','text'],['phone','Phone','text'],['email','Email','email'],['address','Address','text'],['logo_url','Logo URL','url'],['website_url','Website URL','url'],['facebook_url','Facebook URL','url'],['map_url','Map URL','url'],['student_count','Student count','number'],['teacher_count','Teacher count','number'],['service_years','Years of service','number'],['ssc_pass_rate','SSC pass rate','text']];
+      const areas=[['about_text','About'],['history_text','History'],['mission_text','Mission'],['vision_text','Vision']];
+      app.innerHTML='<div class="panel"><div class="box"><h2>School Information</h2><p>Changes are saved centrally to Supabase and used by the public website where configured.</p><form id="mhsSettingsForm" class="form">'+fields.map(([k,l,t])=>'<label>'+l+'<input name="'+k+'" type="'+t+'" value="'+esc(s[k]??'')+'"></label>').join('')+areas.map(([k,l])=>'<label class="full">'+l+'<textarea name="'+k+'" rows="3">'+esc(s[k]??'')+'</textarea></label>').join('')+'<button>Save School Settings</button></form></div></div>';
+      document.getElementById('mhsSettingsForm').onsubmit=async e=>{e.preventDefault();try{const payload={};for(const [k,l,t] of fields){const v=e.currentTarget.elements[k].value.trim();payload[k]=t==='number'?(v===''?null:Number(v)):(v||null);}for(const [k] of areas)payload[k]=e.currentTarget.elements[k].value.trim()||null;payload.updated_at=stamp();let result;if(s.id)result=await sb.from('school_settings').update(payload).eq('id',s.id);else result=await sb.from('school_settings').insert(payload);if(result.error)throw result.error;msg('School settings saved to Supabase.');await window.settings();}catch(x){msg(x.message,true);}};
+    }catch(e){app.innerHTML='<div class="box"><h2>Settings unavailable</h2><p>'+esc(e.message)+'</p></div>';}
+  };
+
+  // Supabase-backed student records and login account provisioning.
+  window.MHS_EXTRA = window.MHS_EXTRA || {};
+  window.MHS_EXTRA.students = async function () {
+    app.innerHTML='<div class="panel"><div class="box">Loading students…</div></div>';
+    try {
+      const sb=await client();
+      const [{data:students,error},{data:classes,error:ce},{data:years,error:ye}]=await Promise.all([
+        sb.from('students').select('id,student_id,name,father_name,mother_name,class_id,academic_year_id,roll,mobile,status,admission_number').order('created_at',{ascending:false}),
+        sb.from('classes').select('id,name,class_number').eq('status',true).order('class_number'),
+        sb.from('academic_years').select('id,year,is_active').order('year',{ascending:false})
+      ]);
+      if(error)throw error;if(ce)throw ce;if(ye)throw ye;
+      const className=id=>classes.find(c=>c.id===id)?.name||'—', yearName=id=>years.find(y=>y.id===id)?.year||'—';
+      app.innerHTML='<div class="panel"><div class="box"><h2>Add Student & Portal Account</h2><p class="hint">Student login is based on Student ID/Admission No. Passwords are stored by Supabase Auth, never in browser storage.</p><form id="mhsStudentForm" class="form"><label>Student name<input id="mhsStName" required></label><label>Student ID / Login ID<input id="mhsStLogin" required pattern="[A-Za-z0-9._-]{2,40}"></label><label>Father name<input id="mhsStFather"></label><label>Mother name<input id="mhsStMother"></label><label>Class<select id="mhsStClass" required>'+classes.map(c=>'<option value="'+c.id+'">Class '+esc(c.class_number)+' — '+esc(c.name)+'</option>').join('')+'</select></label><label>Academic year<select id="mhsStYear" required>'+years.map(y=>'<option value="'+y.id+'" '+(y.is_active?'selected':'')+'>'+y.year+(y.is_active?' (Active)':'')+'</option>').join('')+'</select></label><label>Roll<input id="mhsStRoll" type="number" min="1" required></label><label>Mobile<input id="mhsStMobile" type="tel"></label><label>Password<input id="mhsStPassword" type="password" minlength="8" autocomplete="new-password" required></label><button>Create Student</button></form></div><div class="box"><h2>Student Database ('+students.length+')</h2><div class="table-wrap"><table class="table"><tr><th>Student ID</th><th>Name</th><th>Class</th><th>Roll</th><th>Year</th><th>Status</th><th>Action</th></tr>'+students.map(s=>'<tr><td>'+esc(s.student_id)+'</td><td>'+esc(s.name)+'</td><td>'+esc(className(s.class_id))+'</td><td>'+esc(s.roll)+'</td><td>'+esc(yearName(s.academic_year_id))+'</td><td>'+(s.status?'Active':'Inactive')+'</td><td><button class="btn-small" data-toggle-student="'+s.id+'" data-active="'+(!s.status)+'">'+(s.status?'Deactivate':'Activate')+'</button></td></tr>').join('')+'</table></div></div></div>';
+      document.getElementById('mhsStudentForm').onsubmit=async e=>{e.preventDefault();const btn=e.currentTarget.querySelector('button');btn.disabled=true;try{const token=(await sb.auth.getSession()).data.session?.access_token;if(!token)throw new Error('Admin session expired.');const response=await fetch('/api/create-student',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({name:mhsStName.value.trim(),studentId:mhsStLogin.value.trim(),fatherName:mhsStFather.value.trim(),motherName:mhsStMother.value.trim(),classId:mhsStClass.value,academicYearId:mhsStYear.value,roll:Number(mhsStRoll.value),mobile:mhsStMobile.value.trim(),password:mhsStPassword.value})});const result=await response.json();if(!response.ok||!result.success)throw new Error(result.error||'Could not create student.');msg('Student and login account created. Give the Student ID and password securely to the guardian.');await window.MHS_EXTRA.students();}catch(x){msg(x.message,true);}finally{btn.disabled=false;}};
+      app.querySelectorAll('[data-toggle-student]').forEach(b=>b.onclick=async()=>{if(!confirm((b.dataset.active==='true'?'Activate':'Deactivate')+' this student?'))return;try{const token=(await sb.auth.getSession()).data.session?.access_token;const response=await fetch('/api/manage-student',{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({id:b.dataset.toggleStudent,status:b.dataset.active==='true'})});const result=await response.json();if(!response.ok||!result.success)throw new Error(result.error||'Update failed.');await window.MHS_EXTRA.students();msg('Student status updated.');}catch(x){msg(x.message,true);}});
+    }catch(e){app.innerHTML='<div class="box"><h2>Student management unavailable</h2><p>'+esc(e.message)+'</p></div>';}
+  };
+})();
