@@ -73,45 +73,12 @@
     </div>
 
     <!-- Core Scripts -->
-    <script src="../js/core.js"></script>
-    <script src="../js/result-utils.js"></script>
-
     <!-- Teacher Portal -->
     <script src="../js/supabase.js"></script>
     <script src="teacher.js"></script>
-    <script src="enhancements.js"></script>
 
-    <!-- Initialize Dashboard -->
-    <script>
-        (function () {
-            function initializeTeacherDashboard() {
-                const dashboardButton =
-                    document.querySelector('nav button[data-tab="dash"]');
 
-                if (dashboardButton) {
-                    dashboardButton.classList.add("active");
-                }
 
-                if (typeof window.render === "function") {
-                    window.render();
-                } else {
-                    console.error(
-                        "Teacher Portal: render() function was not found."
-                    );
-                }
-            }
-
-            if (document.readyState === "loading") {
-                document.addEventListener(
-                    "DOMContentLoaded",
-                    initializeTeacherDashboard,
-                    { once: true }
-                );
-            } else {
-                initializeTeacherDashboard();
-            }
-        })();
-    </script>
 <!-- Teacher Portal Result Edit Requests deployment update -->
 
 </body>

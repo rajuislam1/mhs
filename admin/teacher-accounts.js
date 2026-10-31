@@ -1,18 +1,10 @@
-```javascript
 /* MHS V17 — Supabase Teacher Accounts, Public Profiles & Assignments */
 (function () {
   'use strict';
 
-  const read = (key, fallback = []) => {
-    try {
-      return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback;
-    } catch {
-      return fallback;
-    }
-  };
-
-  const write = (key, value) =>
-    localStorage.setItem(key, JSON.stringify(value));
+  // Legacy browser cache intentionally disabled. Supabase is the only source of truth.
+  const read = (_key, fallback = []) => fallback;
+  const write = (_key, _value) => {};
 
   const escTeacher = value =>
     String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -147,6 +139,14 @@
   // --------------------------------------------------
   // Deactivate teacher account
   // --------------------------------------------------
+  window.activateSupabaseTeacher = async function (id) {
+    const teacher = findAccount(id);
+    if (!teacher) return alert('Teacher record not found. Reload and try again.');
+    if (!confirm('Reactivate ' + teacher.name + ' account?')) return;
+    try { await teacherApi('PATCH', { id, status: true }); alert('Teacher account reactivated.'); await window.teachers(); }
+    catch (error) { showError('Could not reactivate teacher.', error); }
+  };
+
   window.deactivateSupabaseTeacher = async function (id) {
     const teacher = findAccount(id);
 
@@ -357,10 +357,7 @@
   // --------------------------------------------------
   window.teachers = async function () {
     let accounts = read('mhs_teacher_accounts');
-    let profiles = read(
-      'mhs_teachers',
-      typeof TEACHERS !== 'undefined' ? TEACHERS : []
-    );
+    let profiles = [];
 
     let accountLoadError = '';
     let publicProfileLoadError = '';
@@ -413,10 +410,7 @@
     } catch (error) {
       console.error('Public teacher profile load error:', error);
       publicProfileLoadError = error.message || 'Could not load public profiles.';
-      profiles = read(
-        'mhs_teachers',
-        typeof TEACHERS !== 'undefined' ? TEACHERS : []
-      );
+      profiles = [];
       window.mhsPublicTeachers = [];
     }
 
@@ -433,7 +427,7 @@
       assignmentLoadError = error.message || 'Could not load assignments.';
     }
 
-    const legacyAssignments = read('mhs_teacher_classes');
+    const legacyAssignments = [];
 
     const publicProfileRows = profiles.map(x => {
       const isDatabaseProfile = Boolean(
@@ -570,7 +564,10 @@
                         ${isActive ? `
                           <button type="button" class="btn-small danger"
                             onclick="deactivateSupabaseTeacher('${escTeacher(x.id)}')">Deactivate</button>
-                        ` : ''}
+                        ` : `
+                          <button type="button" class="btn-small"
+                            onclick="activateSupabaseTeacher('${escTeacher(x.id)}')">Reactivate</button>
+                        `}
                       ` : '<span class="hint">Legacy account</span>'}
                       <button type="button" class="btn-small"
                         onclick="manageTeacherAssignments(${i})">Manage Classes & Subjects</button>
@@ -920,4 +917,3 @@
     }
   };
 })();
-```
