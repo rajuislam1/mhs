@@ -90,3 +90,39 @@ Audit scope: all tracked text files in the current repository tree, with focused
 ## Important implementation note
 
 The current application uses synchronous localStorage calls throughout many screens. A correct migration cannot be achieved by replacing a few strings or by mirroring private data into a single public JSON row. Each domain needs proper database queries, loading/error handling, and role-scoped RLS. This report records the audit baseline; it is not a claim that the migration is already implemented or tested.
+
+
+## Implementation progress — 2026-10-31
+
+A working branch `fix/supabase-full-migration-2026-10-31` was created from `main`. The changes below are on this branch only; production/main has not been changed.
+
+### Implemented on the branch
+- `js/site.js`: replaced the homepage's LocalStorage-backed settings/notices/ticker/gallery/statistics reads with Supabase queries. Language preference remains intentionally browser-local.
+- `index.html`: removed the separate homepage gallery renderer that read `mhs_gallery` from LocalStorage.
+- `about.html`: reads school profile text from `school_settings`, with static `SITE` content as a display fallback if no settings row exists.
+- `gallery.html`: reads published gallery and achievement records from the existing Supabase tables.
+- `notices.html`: removed the LocalStorage/demo-data fallback; database failures now show an explicit unavailable message.
+- `admission-apply.html`: submits applications to the existing `admission_applications` table, using the selected class ID and pending status.
+- `api/public-result.js`: added a server-side endpoint that returns only published results for the requested class/roll/year/exam; service-role credentials remain server-side.
+- `results.html` and `student.html`: public result searches now use that endpoint instead of reading browser-local results.
+- Syntax checks were run against changed inline scripts and `js/site.js`; no JavaScript parse errors were detected.
+
+### Supabase schema observations
+- The project is active and has RLS enabled on the inspected public tables.
+- Existing tables include school settings, notices/tickers, students/enrollments, teachers/public profiles, classes/subjects/class-subject mappings, results, admission applications, fees, routines, gallery, achievements, and user profiles.
+- At inspection time, several feature tables were empty (including `school_settings`, `gallery`, `achievements`, `admission_applications`, `student_fees`, and `class_routines`). The homepage/about page therefore need sensible display fallbacks until the admin UI writes these records to Supabase.
+- The existing `teachers` table contains a `password` column. This requires a security review and careful transition to Supabase Auth; do not store or use plaintext/custom password values.
+- Security/performance advisors reported multiple permissive RLS policies and unused indexes. Those findings require individual review; policies should not be dropped wholesale.
+
+### Still incomplete — do not treat this migration as finished
+- `admin/admin.js`, `admin/extra.js`, `admin/enhancements.js`, and `admin/teacher-accounts.js` still contain legacy LocalStorage CRUD paths. Admin dashboard, student CRUD, academic subjects/mappings, promotion, fees, hero management, settings, gallery/achievements, and backup are not fully migrated.
+- `teacher/teacher.js` still uses LocalStorage for routines, student lists, and result-entry paths; only some assignment/result-edit-request functionality is Supabase-backed.
+- `student/login.html` and `student/index.html` still use browser-local student credentials/session/data. Student Auth provisioning and student-only portal queries are not yet migrated end-to-end.
+- Public teacher profile management, storage upload paths, and school-settings CRUD need end-to-end testing.
+- The new public result endpoint needs runtime testing on Vercel and appropriate abuse/rate-limit controls before production.
+- Admission form field mapping and all CRUD paths need functional tests with real UI submissions.
+- No SQL schema migration was applied in this pass, and no production deployment was performed.
+- No legacy browser data is imported, as explicitly requested by the owner.
+
+### Verification limits
+Only static JavaScript syntax checks and live Supabase schema/policy/row-count inspection were completed in this pass. Login, form submission, RLS boundaries, browser workflows, Vercel environment variables, and production deployment still need end-to-end verification.
