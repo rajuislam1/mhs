@@ -150,3 +150,5 @@ Implemented on branch `fix/supabase-full-migration-2026-10-31` (not yet merged t
 - The Admin portal still has localStorage-based paths in class/subject setup, class promotion, and parts of teacher result-edit-request handling. Teacher dashboard routines/result entry also require further migration. Those paths must be completed before calling this a full migration.
 - Security follow-up: inspect whether the legacy `teachers.password` column contains values and plan a safe removal/clear after verifying no code depends on it. It is never selected or exported by the new admin backup.
 - No production deployment claim is made until these tests pass.
+
+- Supabase Security Advisor was checked after the code changes. It currently warns that Auth leaked-password protection is disabled. No available connected control exposes that Auth dashboard setting, so it remains a manual dashboard action and must be enabled if available on the current plan.
