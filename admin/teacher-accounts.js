@@ -455,9 +455,7 @@
 
     const assignmentSummary = username => {
       const account = accounts.find(x => x.username === username);
-      const teacherId = account?.teacher_id ||
-        options.teachers.find(x => x.username === username)?.teacher_id ||
-        options.teachers.find(x => x.username === username)?.id;
+      const teacherId = options.teachers.find(x => x.username === username)?.id || account?.id;
 
       const rows = assignmentRows.filter(x =>
         x.teacher_id === teacherId
@@ -823,7 +821,7 @@
           throw new Error('Selected teacher was not found in Supabase.');
         }
 
-        const linkedTeacherId = teacher.teacher_id || teacher.id;
+        const linkedTeacherId = teacher.id; // UUID FK; teacher.teacher_id is only the display/login code.
 
         const { data: profile, error: profileError } = await client
           .from('user_profiles')
