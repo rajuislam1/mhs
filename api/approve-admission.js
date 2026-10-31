@@ -5,19 +5,19 @@ module.exports = async (req,res) => {
   if(!url||!key)return res.status(500).json({success:false,error:'Supabase server configuration is missing.'});
   const base=url.endsWith('/')?url.slice(0,-1):url;const headers={apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'};
   async function rest(path,options={}){const r=await fetch(base+'/rest/v1/'+path,{...options,headers:{...headers,...options.headers}});const t=await r.text();let d;try{d=t?JSON.parse(t):null}catch{d=t}if(!r.ok)throw new Error(d?.message||d?.details||'Database request failed.');return d;}
-  let authId=null,studentUuid=null,profileMade=false,enrollmentMade=false;
+  let authId=null,studentUuid=null,profileMade=false,enrollmentMade=false,applicationMarked=false,applicationIdForRollback=null;
   try{
     const token=(req.headers.authorization||'').replace('Bearer ','');if(!token)return res.status(401).json({success:false,error:'Admin login required.'});
     const ar=await fetch(base+'/auth/v1/user',{headers:{apikey:key,Authorization:'Bearer '+token}});if(!ar.ok)return res.status(401).json({success:false,error:'Admin session expired.'});const admin=await ar.json();
     const profiles=await rest('user_profiles?id=eq.'+encodeURIComponent(admin.id)+'&select=role,is_active');
     if(!profiles[0]||profiles[0].role!=='super_admin'||profiles[0].is_active!==true)return res.status(403).json({success:false,error:'Active Super Admin permission required.'});
-    const b=req.body||{},applicationId=String(b.applicationId||''),classId=String(b.classId||''),yearId=String(b.academicYearId||''),roll=Number(b.roll),password=String(b.password||'');
+    const b=req.body||{},applicationId=String(b.applicationId||''),classId=String(b.classId||''),yearId=String(b.academicYearId||''),roll=Number(b.roll),password=String(b.password||'');applicationIdForRollback=applicationId;
     if(!/^[0-9a-f-]{36}$/i.test(applicationId)||!/^[0-9a-f-]{36}$/i.test(classId)||!/^[0-9a-f-]{36}$/i.test(yearId))return res.status(400).json({success:false,error:'Select a valid application, class and academic year.'});
     if(!Number.isInteger(roll)||roll<1)return res.status(400).json({success:false,error:'Enter a valid roll number.'});
     if(password.length<8)return res.status(400).json({success:false,error:'Password must be at least 8 characters.'});
     const apps=await rest('admission_applications?id=eq.'+encodeURIComponent(applicationId)+'&select=*');
     const app=apps[0];if(!app)return res.status(404).json({success:false,error:'Admission application not found.'});
-    if(app.application_status!=='pending')return res.status(409).json({success:false,error:'This application has already been reviewed.'});
+    if(app.application_status!=='pending')return res.status(409).json({success:false,error:'This application has already been reviewed.'});\n    if(!/^[A-Za-z0-9._-]{2,40}$/.test(String(app.application_no||'')))return res.status(400).json({success:false,error:'The application number cannot be used as a Student ID. Please correct the application number first.'});
     const [classes,years,rollDup,idDup]=await Promise.all([
       rest('classes?id=eq.'+encodeURIComponent(classId)+'&status=eq.true&select=id'),
       rest('academic_years?id=eq.'+encodeURIComponent(yearId)+'&select=id,is_active'),
@@ -40,11 +40,11 @@ module.exports = async (req,res) => {
     await rest('user_profiles',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({id:authId,role:'student',student_id:studentUuid,display_name:app.student_name,is_active:true})});profileMade=true;
     await rest('student_enrollments',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({student_id:studentUuid,academic_year_id:yearId,class_id:classId,roll,enrollment_status:'active',remarks:'Created from admission application '+app.application_no})});enrollmentMade=true;
     const reviewed=await rest('admission_applications?id=eq.'+encodeURIComponent(applicationId)+'&application_status=eq.pending',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({application_status:'approved',reviewed_at:new Date().toISOString(),reviewed_by:admin.id})});
-    if(!reviewed.length)throw new Error('Application status was not updated; please contact the administrator.');
+    if(!reviewed.length)throw new Error('Application status was not updated; please contact the administrator.');applicationMarked=true;
     return res.status(201).json({success:true,student:{id:studentUuid,student_id:app.application_no,name:app.student_name,roll}});
   }catch(e){
     console.error('Admission approval failed:',e);
-    if(studentUuid){if(enrollmentMade)await rest('student_enrollments?student_id=eq.'+encodeURIComponent(studentUuid),{method:'DELETE'}).catch(()=>{});if(profileMade)await rest('user_profiles?id=eq.'+encodeURIComponent(authId),{method:'DELETE'}).catch(()=>{});if(authId)await fetch(base+'/auth/v1/admin/users/'+encodeURIComponent(authId),{method:'DELETE',headers}).catch(()=>{});await rest('students?id=eq.'+encodeURIComponent(studentUuid),{method:'DELETE'}).catch(()=>{});}
+    if(applicationMarked&&applicationIdForRollback)await rest('admission_applications?id=eq.'+encodeURIComponent(applicationIdForRollback)+'&application_status=eq.approved',{method:'PATCH',body:JSON.stringify({application_status:'pending',reviewed_at:null,reviewed_by:null})}).catch(()=>{});\n    if(studentUuid){await rest('student_enrollments?student_id=eq.'+encodeURIComponent(studentUuid),{method:'DELETE'}).catch(()=>{});if(profileMade)await rest('user_profiles?id=eq.'+encodeURIComponent(authId),{method:'DELETE'}).catch(()=>{});if(authId)await fetch(base+'/auth/v1/admin/users/'+encodeURIComponent(authId),{method:'DELETE',headers}).catch(()=>{});await rest('students?id=eq.'+encodeURIComponent(studentUuid),{method:'DELETE'}).catch(()=>{});}
     return res.status(400).json({success:false,error:e.message||'Could not approve admission.'});
   }
 };
