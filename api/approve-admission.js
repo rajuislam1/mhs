@@ -17,7 +17,8 @@ module.exports = async (req,res) => {
     if(password.length<8)return res.status(400).json({success:false,error:'Password must be at least 8 characters.'});
     const apps=await rest('admission_applications?id=eq.'+encodeURIComponent(applicationId)+'&select=*');
     const app=apps[0];if(!app)return res.status(404).json({success:false,error:'Admission application not found.'});
-    if(app.application_status!=='pending')return res.status(409).json({success:false,error:'This application has already been reviewed.'});\n    if(!/^[A-Za-z0-9._-]{2,40}$/.test(String(app.application_no||'')))return res.status(400).json({success:false,error:'The application number cannot be used as a Student ID. Please correct the application number first.'});
+    if(app.application_status!=='pending')return res.status(409).json({success:false,error:'This application has already been reviewed.'});
+    if(!/^[A-Za-z0-9._-]{2,40}$/.test(String(app.application_no||'')))return res.status(400).json({success:false,error:'The application number cannot be used as a Student ID. Please correct the application number first.'});
     const [classes,years,rollDup,idDup]=await Promise.all([
       rest('classes?id=eq.'+encodeURIComponent(classId)+'&status=eq.true&select=id'),
       rest('academic_years?id=eq.'+encodeURIComponent(yearId)+'&select=id,is_active'),
@@ -44,7 +45,8 @@ module.exports = async (req,res) => {
     return res.status(201).json({success:true,student:{id:studentUuid,student_id:app.application_no,name:app.student_name,roll}});
   }catch(e){
     console.error('Admission approval failed:',e);
-    if(applicationMarked&&applicationIdForRollback)await rest('admission_applications?id=eq.'+encodeURIComponent(applicationIdForRollback)+'&application_status=eq.approved',{method:'PATCH',body:JSON.stringify({application_status:'pending',reviewed_at:null,reviewed_by:null})}).catch(()=>{});\n    if(studentUuid){await rest('student_enrollments?student_id=eq.'+encodeURIComponent(studentUuid),{method:'DELETE'}).catch(()=>{});if(profileMade)await rest('user_profiles?id=eq.'+encodeURIComponent(authId),{method:'DELETE'}).catch(()=>{});if(authId)await fetch(base+'/auth/v1/admin/users/'+encodeURIComponent(authId),{method:'DELETE',headers}).catch(()=>{});await rest('students?id=eq.'+encodeURIComponent(studentUuid),{method:'DELETE'}).catch(()=>{});}
+    if(applicationMarked&&applicationIdForRollback)await rest('admission_applications?id=eq.'+encodeURIComponent(applicationIdForRollback)+'&application_status=eq.approved',{method:'PATCH',body:JSON.stringify({application_status:'pending',reviewed_at:null,reviewed_by:null})}).catch(()=>{});
+    if(studentUuid){await rest('student_enrollments?student_id=eq.'+encodeURIComponent(studentUuid),{method:'DELETE'}).catch(()=>{});if(profileMade)await rest('user_profiles?id=eq.'+encodeURIComponent(authId),{method:'DELETE'}).catch(()=>{});if(authId)await fetch(base+'/auth/v1/admin/users/'+encodeURIComponent(authId),{method:'DELETE',headers}).catch(()=>{});await rest('students?id=eq.'+encodeURIComponent(studentUuid),{method:'DELETE'}).catch(()=>{});}
     return res.status(400).json({success:false,error:e.message||'Could not approve admission.'});
   }
 };
