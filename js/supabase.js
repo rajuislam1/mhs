@@ -32,9 +32,30 @@
     }
 
     if (!window.mhsSupabase) {
+      // Keep Admin, Teacher and Student Auth sessions separate.
+      // All three portals share the same origin, so Supabase's default
+      // storage key would otherwise let one portal overwrite another portal's
+      // signed-in user when used in parallel tabs.
+      const path = String(window.location.pathname || '').toLowerCase();
+      const storageKey = path.includes('/admin/')
+        ? 'mhs-admin-auth'
+        : path.includes('/teacher/')
+          ? 'mhs-teacher-auth'
+          : path.includes('/student/')
+            ? 'mhs-student-auth'
+            : 'mhs-public-auth';
+
       window.mhsSupabase = window.supabase.createClient(
         SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY
+        SUPABASE_PUBLISHABLE_KEY,
+        {
+          auth: {
+            storageKey,
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+          }
+        }
       );
     }
 
