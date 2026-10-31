@@ -3,12 +3,12 @@
  'use strict';
  const button=document.getElementById('backupData');if(!button)return;
  const tables=[
-  ['school_settings','*'],['academic_years','*'],['classes','*'],['subjects','*'],['class_subjects','*'],
+  ['school_settings','*'],['academic_years','*'],['classes','*'],['subjects','*'],['class_subjects','*'],['hero_images','*'],
   ['students','*'],['student_enrollments','*'],['student_promotions','*'],['student_subjects','*'],
   ['teachers','id,teacher_id,name,designation,mobile,email,username,status,created_at,updated_at,subject,qualification,photo'],
-  ['teacher_assignments','*'],['results','*'],['result_edit_requests','*'],['class_routines','*'],
+  ['teacher_assignments','*'],['user_profiles','*'],['teacher_public_profiles','*'],['results','*'],['result_edit_requests','*'],['teacher_notifications','*'],['class_routines','*'],
   ['student_fees','*'],['student_attendance','*'],['student_documents','*'],['notices','*'],
-  ['notice_tickers','*'],['gallery','*'],['achievements','*'],['admission_applications','*']
+  ['notice_tickers','*'],['gallery','*'],['achievements','*'],['school_events','*'],['admission_applications','*']
  ];
  button.addEventListener('click',async function(){
   const original=button.textContent;button.disabled=true;button.textContent='Preparing database backup…';
