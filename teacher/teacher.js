@@ -24,7 +24,8 @@ document.querySelectorAll('nav button').forEach(b=>{
     };
 });
 
-document.getElementById('logout').onclick=()=>{
+document.getElementById('logout').onclick=async()=>{
+    try{const sb=await window.mhsSupabaseReady;await sb.auth.signOut();}catch(e){console.error('Teacher sign out failed:',e)}
     sessionStorage.removeItem('mhs_teacher');
     location.href='login.html';
 };
