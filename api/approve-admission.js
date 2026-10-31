@@ -3,11 +3,11 @@ module.exports = async (req,res) => {
   if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({success:false,error:'Method not allowed.'});}
   const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!url||!key)return res.status(500).json({success:false,error:'Supabase server configuration is missing.'});
-  const base=url.replace(/\\/$/,'');const headers={apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'};
+  const base=url.endsWith('/')?url.slice(0,-1):url;const headers={apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'};
   async function rest(path,options={}){const r=await fetch(base+'/rest/v1/'+path,{...options,headers:{...headers,...options.headers}});const t=await r.text();let d;try{d=t?JSON.parse(t):null}catch{d=t}if(!r.ok)throw new Error(d?.message||d?.details||'Database request failed.');return d;}
   let authId=null,studentUuid=null,profileMade=false,enrollmentMade=false;
   try{
-    const token=(req.headers.authorization||'').replace(/^Bearer\\s+/i,'');if(!token)return res.status(401).json({success:false,error:'Admin login required.'});
+    const token=(req.headers.authorization||'').replace('Bearer ','');if(!token)return res.status(401).json({success:false,error:'Admin login required.'});
     const ar=await fetch(base+'/auth/v1/user',{headers:{apikey:key,Authorization:'Bearer '+token}});if(!ar.ok)return res.status(401).json({success:false,error:'Admin session expired.'});const admin=await ar.json();
     const profiles=await rest('user_profiles?id=eq.'+encodeURIComponent(admin.id)+'&select=role,is_active');
     if(!profiles[0]||profiles[0].role!=='super_admin'||profiles[0].is_active!==true)return res.status(403).json({success:false,error:'Active Super Admin permission required.'});
