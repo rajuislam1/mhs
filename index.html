@@ -232,19 +232,6 @@
   <script src="js/supabase.js"></script>
   <script src="js/site.js"></script>
 
-  <!-- HOME GALLERY -->
-  <script>
-    const hg = document.getElementById('homeGallery');
-    const gg = JSON.parse(localStorage.getItem('mhs_gallery') || '[]');
-
-    hg.innerHTML = gg.slice(0, 6).map(x => `
-      <div>
-        <img src="${x.url}" alt="">
-        <small>${mhsEsc(x.caption)}</small>
-      </div>
-    `).join('') || '<p class="hint">Gallery photos will be published by the administration.</p>';
-  </script>
-
   <script src="js/core.js"></script>
   <script src="js/footer.js"></script>
 
