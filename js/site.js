@@ -14,7 +14,8 @@
       sb.from('school_settings').select('school_name,school_name_en,established_year,slogan,logo_url,phone,email,address,about_text,mission_text,vision_text,history_text,student_count,teacher_count,service_years,ssc_pass_rate').limit(1).maybeSingle(),
       sb.from('notices').select('id,title,content,attachment_url,published_at,created_at').eq('is_published',true).order('published_at',{ascending:false}).limit(3),
       sb.from('notice_tickers').select('message,link_url').eq('is_active',true).order('display_order').limit(1).maybeSingle(),
-      sb.from('gallery').select('title,description,image_url,category').eq('is_published',true).order('display_order').limit(6),\n      sb.from('hero_images').select('image_url,title,alt_text,display_order').eq('is_active',true).order('display_order'),
+      sb.from('gallery').select('title,description,image_url,category').eq('is_published',true).order('display_order').limit(6),
+      sb.from('hero_images').select('image_url,title,alt_text,display_order').eq('is_active',true).order('display_order'),
       sb.from('achievements').select('id',{count:'exact',head:true}).eq('is_published',true),
       sb.from('teacher_public_profiles').select('id',{count:'exact',head:true}).eq('is_published',true)
     ]);
