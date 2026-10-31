@@ -22,7 +22,8 @@
     if(settingsQ.error) throw settingsQ.error;
     if(noticesQ.error) throw noticesQ.error;
     if(tickerQ.error) throw tickerQ.error;
-    if(galleryQ.error) throw galleryQ.error;\n    if(heroQ.error) throw heroQ.error;
+    if(galleryQ.error) throw galleryQ.error;
+    if(heroQ.error) throw heroQ.error;
     if(achievementsQ.error) throw achievementsQ.error;
     if(teachersQ.error) throw teachersQ.error;
     const s=settingsQ.data||{};
