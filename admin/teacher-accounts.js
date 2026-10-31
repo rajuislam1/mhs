@@ -814,31 +814,13 @@
           throw new Error('Select teacher, academic year, class and subject.');
         }
 
-        // Ensure the teacher account is linked to an active teacher profile.
+        // teacher_assignments.teacher_id references teachers.id (UUID).
+        // user_profiles is intentionally private to each user under RLS, so an
+        // admin-side direct lookup of another teacher's profile is not allowed.
         const teacher = options.teachers.find(t => t.id === teacherId);
-
-        if (!teacher) {
-          throw new Error('Selected teacher was not found in Supabase.');
-        }
-
-        const linkedTeacherId = teacher.id; // UUID FK; teacher.teacher_id is only the display/login code.
-
-        const { data: profile, error: profileError } = await client
-          .from('user_profiles')
-          .select('id,role,is_active,teacher_id')
-          .eq('teacher_id', linkedTeacherId)
-          .eq('role', 'teacher')
-          .eq('is_active', true)
-          .maybeSingle();
-
-        if (profileError) throw profileError;
-
-        if (!profile) {
-          throw new Error(
-            'This teacher has no active linked login profile. ' +
-            'Check the teachers.teacher_id and user_profiles.teacher_id values.'
-          );
-        }
+        if (!teacher) throw new Error('Selected teacher was not found in Supabase.');
+        if (teacher.status !== true) throw new Error('This teacher account is deactivated.');
+        const linkedTeacherId = teacher.id;
 
         // Check duplicate in Supabase.
         const { data: duplicates, error: duplicateError } = await client
