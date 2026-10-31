@@ -73,46 +73,12 @@
     </div>
 
     <!-- Core Scripts -->
-    <script src="../js/core.js"></script>
-    <script src="../js/result-utils.js"></script>
-
     <!-- Teacher Portal -->
     <script src="../js/supabase.js"></script>
     <script src="teacher.js"></script>
 
 
-    <!-- Initialize Dashboard -->
-    <script>
-        (function () {
-            async function initializeTeacherDashboard() {
-                const cached = JSON.parse(sessionStorage.getItem("mhs_teacher") || "null");
-                if (!cached) { location.href = "login.html"; return; }
-                try {
-                    const sb = await window.mhsSupabaseReady;
-                    const { data: auth, error: authError } = await sb.auth.getUser();
-                    if (authError || !auth.user || auth.user.id !== cached.id) throw new Error("Session expired");
-                    const { data: profile, error: profileError } = await sb
-                        .from("user_profiles").select("role,is_active,display_name")
-                        .eq("id", auth.user.id).maybeSingle();
-                    if (profileError || !profile || profile.role !== "teacher" || profile.is_active !== true) throw new Error("Teacher account is inactive");
-                    cached.name = profile.display_name || cached.name;
-                    sessionStorage.setItem("mhs_teacher", JSON.stringify(cached));
-                    const dashboardButton = document.querySelector('nav button[data-tab="dash"]');
-                    if (dashboardButton) dashboardButton.classList.add("active");
-                    if (typeof window.render === "function") window.render();
-                    else throw new Error("Teacher Portal could not initialize.");
-                } catch (error) {
-                    console.error("Teacher session validation failed:", error);
-                    try { const sb = await window.mhsSupabaseReady; await sb.auth.signOut(); } catch (_) {}
-                    sessionStorage.removeItem("mhs_teacher");
-                    location.href = "login.html";
-                }
-            }
-            if (document.readyState === "loading") {
-                document.addEventListener("DOMContentLoaded", initializeTeacherDashboard, { once: true });
-            } else { initializeTeacherDashboard(); }
-        })();
-    </script>
+
 <!-- Teacher Portal Result Edit Requests deployment update -->
 
 </body>
