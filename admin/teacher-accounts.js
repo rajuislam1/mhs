@@ -775,19 +775,42 @@
       target.innerHTML = `
         <div class="table-wrap">
           <table class="table">
-            <tr><th>Academic Year</th><th>Class</th><th>Subject</th><th>Status</th></tr>
-            ${list.map(row => `
-              <tr>
-                <td>${escTeacher(row.year)}</td>
-                <td>${escTeacher(row.class)}</td>
-                <td>${escTeacher(row.subject)}</td>
-                <td>${row.status === true ? 'Active' : 'Inactive'}</td>
-              </tr>
-            `).join('') ||
-              '<tr><td colspan="4">No assignments yet.</td></tr>'}
+            <tr><th>Academic Year</th><th>Class</th><th>Subject</th><th>Status</th><th>Action</th></tr>
+            ${assignmentRows.filter(row => row.teacher_id === username).map(row => {
+              const label = assignmentLabel(row, options);
+              return `
+                <tr>
+                  <td>${escTeacher(label.year)}</td>
+                  <td>${escTeacher(label.class)}</td>
+                  <td>${escTeacher(label.subject)}</td>
+                  <td>${label.status === true ? 'Active' : 'Inactive'}</td>
+                  <td><button type="button" class="btn-small danger" data-remove-assignment="${escTeacher(row.id)}">Remove</button></td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="5">No assignments yet.</td></tr>'}
           </table>
         </div>
       `;
+      target.querySelectorAll('[data-remove-assignment]').forEach(button => {
+        button.onclick = async () => {
+          if (!confirm('Remove this teacher class and subject assignment?')) return;
+          button.disabled = true;
+          try {
+            const client = await getSupabase();
+            await getActiveAdmin(client);
+            const { error } = await client.from('teacher_assignments')
+              .delete().eq('id', button.dataset.removeAssignment);
+            if (error) throw error;
+            assignmentRows = assignmentRows.filter(row => row.id !== button.dataset.removeAssignment);
+            await refreshAssignmentCache(client, options);
+            renderAssignmentList();
+            assignMessage.textContent = 'Teaching assignment removed successfully.';
+          } catch (error) {
+            console.error('Remove teaching assignment failed:', error);
+            assignMessage.textContent = error.message || 'Could not remove assignment.';
+            button.disabled = false;
+          }
+        };
+      });
     };
 
     // SAVE ASSIGNMENT TO SUPABASE.
