@@ -3,16 +3,9 @@
 (function () {
   'use strict';
 
-  const read = (key, fallback = []) => {
-    try {
-      return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback;
-    } catch {
-      return fallback;
-    }
-  };
-
-  const write = (key, value) =>
-    localStorage.setItem(key, JSON.stringify(value));
+  // Legacy browser cache intentionally disabled. Supabase is the only source of truth.
+  const read = (_key, fallback = []) => fallback;
+  const write = (_key, _value) => {};
 
   const escTeacher = value =>
     String(value ?? '').replace(/[&<>"']/g, ch => ({
