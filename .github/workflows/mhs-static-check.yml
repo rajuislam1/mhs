@@ -1,0 +1,52 @@
+name: MHS Static Syntax Checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "fix/supabase-full-migration-*"]
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check JavaScript files
+        run: |
+          for file in admin/admin.js admin/backup.js admin/content.js admin/extra.js admin/enhancements.js admin/teacher-accounts.js js/site.js teacher/teacher.js api/create-student.js api/manage-student.js api/student-login.js api/public-result.js api/create-teacher.js api/manage-teacher.js api/manage-public-teacher.js; do
+            if [ -f "$file" ]; then
+              echo "Checking $file"
+              node --check "$file"
+            fi
+          done
+      - name: Check inline JavaScript in changed pages
+        run: |
+          python3 - <<'PY'
+          import re, pathlib, subprocess, sys
+          pages = ["admin/index.html", "admin/login.html", "teacher/index.html", "student/login.html", "student/index.html", "results.html", "student.html", "about.html", "gallery.html", "admission-apply.html"]
+          failed = False
+          for page in pages:
+              path = pathlib.Path(page)
+              if not path.exists():
+                  continue
+              text = path.read_text(encoding="utf-8")
+              blocks = re.findall(r"<script(?![^>]*\bsrc\s*=)[^>]*>(.*?)</script>", text, flags=re.I|re.S)
+              for i, code in enumerate(blocks, 1):
+                  if not code.strip():
+                      continue
+                  tmp = pathlib.Path("/tmp/mhs-inline-check.js")
+                  tmp.write_text(code, encoding="utf-8")
+                  result = subprocess.run(["node", "--check", str(tmp)], capture_output=True, text=True)
+                  if result.returncode:
+                      failed = True
+                      print(f"Syntax error in {page} inline script #{i}:")
+                      print(result.stderr)
+          if failed:
+              sys.exit(1)
+          print("Inline JavaScript syntax checks passed.")
+          PY
