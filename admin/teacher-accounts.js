@@ -1,4 +1,3 @@
-```javascript
 /* MHS V17 — Supabase Teacher Accounts, Public Profiles & Assignments */
 (function () {
   'use strict';
@@ -918,4 +917,3 @@
     }
   };
 })();
-```
