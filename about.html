@@ -1,3 +1,66 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>About | Mokhleshpur High School</title><link rel="icon" href="assets/images/logo.svg"><link rel="stylesheet" href="css/style.css"></head><body><script src="js/header.js"></script><main class="page"><div class="page-hero"><span data-i18n="ABOUT OUR SCHOOL">ABOUT OUR SCHOOL</span><h1>মোখলেশপুর উচ্চ বিদ্যালয়</h1><p>Established in 1962 · EIIN 120140</p></div><section class="section prose"><h2 data-i18n="About School">About School</h2><p id="about"></p><h2 data-i18n="History">History</h2><p id="history"></p><div class="mission-grid"><div><h3 data-i18n="Mission">Mission</h3><p id="mission"></p></div><div><h3 data-i18n="Vision">Vision</h3><p id="vision"></p></div></div></section></main><script src="js/data.js"></script><script src="js/supabase.js"></script><script>
-(async()=>{const fallback=typeof SITE!=='undefined'?SITE:{};const put=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value||''};try{const sb=await window.mhsSupabaseReady;const {data,error}=await sb.from('school_settings').select('about_text,history_text,mission_text,vision_text').limit(1).maybeSingle();if(error)throw error;const s=data||{};put('about',s.about_text||fallback.about);put('history',s.history_text||fallback.history);put('mission',s.mission_text||fallback.mission);put('vision',s.vision_text||fallback.vision)}catch(e){console.error('School profile load failed:',e);put('about',fallback.about);put('history',fallback.history);put('mission',fallback.mission);put('vision',fallback.vision)}})();
-</script><script src="js/footer.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>About Our School | Mokhleshpur High School</title>
+  <meta name="description" content="Learn about the history, mission and vision of Mokhleshpur High School, established in 1962.">
+  <link rel="icon" href="assets/images/logo.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <script src="js/header.js"></script>
+  <main class="page">
+    <div class="page-hero">
+      <span data-i18n="ABOUT OUR SCHOOL">ABOUT OUR SCHOOL</span>
+      <h1>মোখলেশপুর উচ্চ বিদ্যালয়</h1>
+      <p>Established in 1962 · EIIN 120140</p>
+    </div>
+    <section class="section prose">
+      <h2 data-i18n="About School">About School</h2>
+      <p id="about"></p>
+      <h2 data-i18n="History">History</h2>
+      <p id="history"></p>
+      <div class="mission-grid">
+        <div><h3 data-i18n="Mission">Mission</h3><p id="mission"></p></div>
+        <div><h3 data-i18n="Vision">Vision</h3><p id="vision"></p></div>
+      </div>
+    </section>
+  </main>
+  <script src="js/data.js"></script>
+  <script src="js/supabase.js"></script>
+  <script>
+    (function () {
+      const fallback = typeof SITE !== 'undefined' ? SITE : {};
+      const put = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value || '';
+      };
+      // Populate all four sections immediately, even if the network or database is unavailable.
+      put('about', fallback.about);
+      put('history', fallback.history);
+      put('mission', fallback.mission);
+      put('vision', fallback.vision);
+
+      const timeout = promise => Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out')), 9000))
+      ]);
+      timeout(window.mhsSupabaseReady)
+        .then(sb => timeout(sb.from('school_settings')
+          .select('about_text,history_text,mission_text,vision_text')
+          .limit(1).maybeSingle()))
+        .then(({data, error}) => {
+          if (error) throw error;
+          const s = data || {};
+          put('about', s.about_text || fallback.about);
+          put('history', s.history_text || fallback.history);
+          put('mission', s.mission_text || fallback.mission);
+          put('vision', s.vision_text || fallback.vision);
+        })
+        .catch(error => console.warn('School profile fallback active:', error?.message || error));
+    })();
+  </script>
+  <script src="js/footer.js"></script>
+</body>
+</html>
