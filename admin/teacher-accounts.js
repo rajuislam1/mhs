@@ -358,10 +358,7 @@
   // --------------------------------------------------
   window.teachers = async function () {
     let accounts = read('mhs_teacher_accounts');
-    let profiles = read(
-      'mhs_teachers',
-      typeof TEACHERS !== 'undefined' ? TEACHERS : []
-    );
+    let profiles = [];
 
     let accountLoadError = '';
     let publicProfileLoadError = '';
@@ -414,10 +411,7 @@
     } catch (error) {
       console.error('Public teacher profile load error:', error);
       publicProfileLoadError = error.message || 'Could not load public profiles.';
-      profiles = read(
-        'mhs_teachers',
-        typeof TEACHERS !== 'undefined' ? TEACHERS : []
-      );
+      profiles = [];
       window.mhsPublicTeachers = [];
     }
 
@@ -434,7 +428,7 @@
       assignmentLoadError = error.message || 'Could not load assignments.';
     }
 
-    const legacyAssignments = read('mhs_teacher_classes');
+    const legacyAssignments = [];
 
     const publicProfileRows = profiles.map(x => {
       const isDatabaseProfile = Boolean(
