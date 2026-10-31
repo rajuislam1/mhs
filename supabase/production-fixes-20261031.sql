@@ -114,11 +114,11 @@ $$;
 revoke all on function private.refresh_school_public_statistics() from public, anon, authenticated;
 drop trigger if exists refresh_school_statistics_from_students on public.students;
 create trigger refresh_school_statistics_from_students
-after insert or update of status or delete on public.students
+after insert or update or delete on public.students
 for each statement execute function private.refresh_school_public_statistics();
 drop trigger if exists refresh_school_statistics_from_teachers on public.teachers;
 create trigger refresh_school_statistics_from_teachers
-after insert or update of status or delete on public.teachers
+after insert or update or delete on public.teachers
 for each statement execute function private.refresh_school_public_statistics();
 insert into public.school_public_statistics(id,active_students,active_teachers,updated_at)
 values (
