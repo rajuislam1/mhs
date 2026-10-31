@@ -147,6 +147,14 @@
   // --------------------------------------------------
   // Deactivate teacher account
   // --------------------------------------------------
+  window.activateSupabaseTeacher = async function (id) {
+    const teacher = findAccount(id);
+    if (!teacher) return alert('Teacher record not found. Reload and try again.');
+    if (!confirm('Reactivate ' + teacher.name + ' account?')) return;
+    try { await teacherApi('PATCH', { id, status: true }); alert('Teacher account reactivated.'); await window.teachers(); }
+    catch (error) { showError('Could not reactivate teacher.', error); }
+  };
+
   window.deactivateSupabaseTeacher = async function (id) {
     const teacher = findAccount(id);
 
@@ -570,7 +578,10 @@
                         ${isActive ? `
                           <button type="button" class="btn-small danger"
                             onclick="deactivateSupabaseTeacher('${escTeacher(x.id)}')">Deactivate</button>
-                        ` : ''}
+                        ` : `
+                          <button type="button" class="btn-small"
+                            onclick="activateSupabaseTeacher('${escTeacher(x.id)}')">Reactivate</button>
+                        `}
                       ` : '<span class="hint">Legacy account</span>'}
                       <button type="button" class="btn-small"
                         onclick="manageTeacherAssignments(${i})">Manage Classes & Subjects</button>
