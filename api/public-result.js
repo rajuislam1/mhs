@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
       get('/academic_years?select=id&year=eq.' + encodeURIComponent(year) + '&limit=1')
     ]);
     if (!classes?.length || !years?.length) return res.status(404).json({ error: 'No published result found for the supplied details.' });
-    const students = await get('/students?select=id,name,roll,class_id,academic_year_id,section&roll=eq.' + encodeURIComponent(roll) + '&class_id=eq.' + encodeURIComponent(classes[0].id) + '&academic_year_id=eq.' + encodeURIComponent(years[0].id) + '&limit=1');
+    const students = await get('/students?select=id,name,roll,class_id,academic_year_id,section&roll=eq.' + encodeURIComponent(roll) + '&class_id=eq.' + encodeURIComponent(classes[0].id) + '&academic_year_id=eq.' + encodeURIComponent(years[0].id) + '&status=eq.true&limit=1');
     if (!students?.length) return res.status(404).json({ error: 'No published result found for the supplied details.' });
     const student = students[0];
     const rows = await get('/results?select=marks,grade,grade_point,exam_name,status,class_subjects(subject_id,subjects(name))&student_id=eq.' + encodeURIComponent(student.id) + '&academic_year_id=eq.' + encodeURIComponent(years[0].id) + '&status=eq.published&exam_name=eq.' + encodeURIComponent(exam));
@@ -42,7 +42,7 @@ module.exports = async (req, res) => {
     }));
     const total = subjects.reduce((sum, row) => sum + row.marks, 0);
     const average = total / subjects.length;
-    const gpa = subjects.reduce((sum, row) => sum + row.point, 0) / subjects.length;
+    const gpa = subjects.some(row => row.point === 0) ? 0 : Math.min(5, subjects.reduce((sum, row) => sum + row.point, 0) / subjects.length);
     return res.status(200).json({
       result: {
         name: student.name, class: cls, roll, year, exam, subjects, total,
