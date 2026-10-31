@@ -130,9 +130,47 @@
 
   window.MHS_EXTRA.admissions = async function () {
     app.innerHTML='<div class="panel"><div class="box">Loading admission applications…</div></div>';
-    try { const sb=await client();const {data:rows,error}=await sb.from('admission_applications').select('id,application_no,student_name,father_name,mobile,guardian_mobile,applying_class_id,application_status,submitted_at,previous_school').order('submitted_at',{ascending:false});if(error)throw error;
-      app.innerHTML='<div class="panel"><div class="box"><h2>Admission Applications ('+rows.length+')</h2><div class="table-wrap"><table class="table"><tr><th>Application</th><th>Student</th><th>Guardian / Phone</th><th>Class ID</th><th>Submitted</th><th>Status</th><th>Update</th></tr>'+rows.map(x=>'<tr><td>'+esc(x.application_no)+'</td><td>'+esc(x.student_name)+'<small style="display:block">'+esc(x.previous_school||'')+'</small></td><td>'+esc(x.father_name||'—')+'<br>'+esc(x.guardian_mobile||x.mobile||'—')+'</td><td>'+esc(x.applying_class_id||'—')+'</td><td>'+esc(new Date(x.submitted_at).toLocaleDateString())+'</td><td>'+esc(x.application_status)+'</td><td><select data-adm-status="'+x.id+'"><option '+(x.application_status==='pending'?'selected':'')+'>pending</option><option '+(x.application_status==='reviewing'?'selected':'')+'>reviewing</option><option '+(x.application_status==='approved'?'selected':'')+'>approved</option><option '+(x.application_status==='rejected'?'selected':'')+'>rejected</option></select><button class="btn-small" data-adm-save="'+x.id+'">Save</button></td></tr>').join('')+'</table></div></div></div>';
-      app.querySelectorAll('[data-adm-save]').forEach(b=>b.onclick=async()=>{try{const status=app.querySelector('[data-adm-status="'+b.dataset.admSave+'"]').value;const {error}=await sb.from('admission_applications').update({application_status:status,reviewed_at:stamp()}).eq('id',b.dataset.admSave);if(error)throw error;msg('Application status saved.');await window.MHS_EXTRA.admissions();}catch(x){msg(x.message,true);}});
+    try {
+      const sb=await client();
+      const [{data:rows,error},{data:classes,error:ce},{data:years,error:ye}]=await Promise.all([
+        sb.from('admission_applications').select('id,application_no,student_name,father_name,mother_name,date_of_birth,gender,mobile,guardian_mobile,address,applying_class_id,application_status,submitted_at,previous_school').order('submitted_at',{ascending:false}),
+        sb.from('classes').select('id,name,class_number').eq('status',true).order('class_number'),
+        sb.from('academic_years').select('id,year,is_active').order('year',{ascending:false})
+      ]);
+      if(error)throw error;if(ce)throw ce;if(ye)throw ye;
+      const activeYear=years.find(y=>y.is_active);
+      const classLabel=id=>{const c=classes.find(x=>x.id===id);return c?'Class '+c.class_number+' — '+c.name:'Not selected';};
+      app.innerHTML='<div class="panel"><div class="box"><h2>Online Admission Applications ('+rows.length+')</h2><p class="hint">Approve applications by assigning class, roll and a Student Portal password. Approved students are automatically added to the Student Database.</p><div class="table-wrap"><table class="table"><thead><tr><th>Application</th><th>Student Details</th><th>Guardian / Phone</th><th>Applied Class</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.application_no)+'</td><td>'+esc(x.student_name)+'<small style="display:block">DOB: '+esc(x.date_of_birth||'—')+' · '+esc(x.gender||'—')+'</small><small>'+esc(x.previous_school||'')+'</small></td><td>'+esc(x.father_name||'—')+'<br>'+esc(x.guardian_mobile||x.mobile||'—')+'<small style="display:block">'+esc(x.address||'')+'</small></td><td>'+esc(classLabel(x.applying_class_id))+'</td><td>'+esc(new Date(x.submitted_at).toLocaleDateString())+'</td><td>'+esc(x.application_status)+'</td><td>'+(x.application_status==='pending'?'<button class="btn-small" data-adm-approve="'+x.id+'">Approve</button> <button class="btn-small danger" data-adm-reject="'+x.id+'">Reject</button>':(x.application_status==='approved'?'Student Created':'—'))+'</td></tr>').join('')+'</tbody></table></div></div></div>';
+      app.querySelectorAll('[data-adm-approve]').forEach(b=>b.onclick=()=>{
+        const x=rows.find(y=>y.id===b.dataset.admApprove);if(!x)return;
+        const modal=document.createElement('div');modal.id='mhsAdmissionApproveModal';
+        modal.style.cssText='position:fixed;inset:0;background:#0009;z-index:10000;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto;';
+        modal.innerHTML='<div class="box" style="background:#fff;width:min(560px,100%);max-height:92vh;overflow:auto;padding:22px;border-radius:12px"><div class="toolbar"><h2>Approve Admission</h2><button type="button" id="mhsAdmClose">Close</button></div><p><b>'+esc(x.student_name)+'</b><br>Application: '+esc(x.application_no)+'</p><form id="mhsAdmApproveForm" class="form"><label class="full">Class<select id="mhsAdmClass" required>'+classes.map(c=>'<option value="'+c.id+'" '+(c.id===x.applying_class_id?'selected':'')+'>Class '+esc(c.class_number)+' — '+esc(c.name)+'</option>').join('')+'</select></label><label class="full">Academic Year<select id="mhsAdmYear" required>'+years.map(y=>'<option value="'+y.id+'" '+(y.is_active?'selected':'')+'>'+esc(y.year)+(y.is_active?' (Active)':'')+'</option>').join('')+'</select></label><label class="full">Roll Number<input id="mhsAdmRoll" type="number" min="1" step="1" required placeholder="Enter assigned roll"></label><label class="full">Student Portal Password<input id="mhsAdmPassword" type="password" minlength="8" autocomplete="new-password" required placeholder="Minimum 8 characters"></label><p class="hint full">Student ID will be generated from the application number: '+esc(x.application_no)+'.</p><div class="full" id="mhsAdmApproveMessage" role="status"></div><button id="mhsAdmApproveSubmit" class="full">Approve &amp; Create Student</button></form></div>';
+        document.body.appendChild(modal);
+        document.getElementById('mhsAdmClose').onclick=()=>modal.remove();
+        document.getElementById('mhsAdmApproveForm').onsubmit=async e=>{
+          e.preventDefault();const submit=document.getElementById('mhsAdmApproveSubmit'),message=document.getElementById('mhsAdmApproveMessage');
+          const payload={applicationId:x.id,classId:document.getElementById('mhsAdmClass').value,academicYearId:document.getElementById('mhsAdmYear').value,roll:Number(document.getElementById('mhsAdmRoll').value),password:document.getElementById('mhsAdmPassword').value};
+          if(!Number.isInteger(payload.roll)||payload.roll<1){message.textContent='Enter a valid roll number.';return;}
+          if(payload.password.length<8){message.textContent='Password must contain at least 8 characters.';return;}
+          submit.disabled=true;message.textContent='Creating student and login account…';
+          try{
+            const {data:{session},error:sessionError}=await sb.auth.getSession();if(sessionError)throw sessionError;if(!session?.access_token)throw new Error('Admin session expired. Please sign in again.');
+            const response=await fetch('/api/approve-admission',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify(payload)});
+            const result=await response.json().catch(()=>null);if(!response.ok||!result?.success)throw new Error(result?.error||'Admission approval failed.');
+            modal.remove();msg('Admission approved. Student ID: '+result.student.student_id+' — student and portal account created.');await window.MHS_EXTRA.admissions();
+          }catch(err){message.textContent=err.message||'Could not approve admission.';submit.disabled=false;}
+        };
+      });
+      app.querySelectorAll('[data-adm-reject]').forEach(b=>b.onclick=async()=>{
+        const x=rows.find(y=>y.id===b.dataset.admReject);if(!x||!confirm('Reject admission application '+x.application_no+'?'))return;
+        b.disabled=true;
+        try{const {data:{session},error:se}=await sb.auth.getSession();if(se)throw se;if(!session?.access_token)throw new Error('Admin session expired. Please sign in again.');
+          const response=await fetch('/api/reject-admission',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({applicationId:x.id})});
+          const result=await response.json().catch(()=>null);if(!response.ok||!result?.success)throw new Error(result?.error||'Could not reject application.');
+          msg('Application rejected.');await window.MHS_EXTRA.admissions();
+        }catch(err){msg(err.message,true);b.disabled=false;}
+      });
     } catch(e){app.innerHTML='<div class="box"><h2>Admission applications unavailable</h2><p>'+esc(e.message)+'</p></div>';}
   };
   window.MHS_EXTRA.fees = async function () {
