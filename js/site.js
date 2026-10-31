@@ -18,7 +18,7 @@
       sb.from('hero_images').select('image_url,title,alt_text,display_order').eq('is_active',true).order('display_order'),
       sb.from('achievements').select('id',{count:'exact',head:true}).eq('is_published',true),
       sb.from('teacher_public_profiles').select('id',{count:'exact',head:true}).eq('is_published',true),
-      sb.from('public_school_statistics').select('active_students,active_teachers').single()
+      sb.from('school_public_statistics').select('active_students,active_teachers').eq('id',1).single()
     ]);
     if(settingsQ.error) throw settingsQ.error;
     if(noticesQ.error) throw noticesQ.error;
