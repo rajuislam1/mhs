@@ -185,4 +185,7 @@
     app.querySelectorAll('[data-review]').forEach(b=>b.onclick=async()=>{try{const note=prompt('Optional review note:')||null;const {data:u}=await sb.auth.getUser();const {error}=await sb.from('result_edit_requests').update({status:b.dataset.status,responded_at:stamp(),response_note:note,reviewed_by:u.user.id}).eq('id',b.dataset.review);if(error)throw error;await window.MHS_EXTRA.editrequests();msg('Request '+b.dataset.status+'.');}catch(e){msg(e.message,true);}});
     }catch(e){app.innerHTML='<div class="panel"><div class="box"><h2>Requests unavailable</h2><p>'+esc(e.message)+'</p></div></div>';}
   };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => window.render?.(), { once: true });
+  else window.render?.();
 })();
