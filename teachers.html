@@ -94,17 +94,6 @@
       grid.innerHTML = '<p class="hint">Loading teacher profiles…</p>';
 
       try {
-          return JSON.parse(
-            localStorage.getItem('mhs_teachers') || 'null'
-          ) || (typeof TEACHERS !== 'undefined' ? TEACHERS : []);
-        } catch {
-          return typeof TEACHERS !== 'undefined' ? TEACHERS : [];
-        }
-      })();
-
-      renderTeachers(localTeachers);
-
-      try {
         if (!window.mhsSupabaseReady) {
           throw new Error('Supabase connection is not available.');
         }
