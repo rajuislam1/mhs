@@ -1,40 +1,47 @@
-const SITE_ACTIVE=JSON.parse(localStorage.getItem('mhs_site_settings')||'null')||SITE;
-const noticeData=JSON.parse(localStorage.getItem('mhs_notices')||'null')||NOTICES; const tickerCfg=JSON.parse(localStorage.getItem('mhs_ticker_notice')||'null')||{text:noticeData[0]?.title||'School notice'};
-const escSite=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-const ti=document.getElementById('tickerItems'); if(ti)ti.innerHTML=`<span>${escSite(tickerCfg.text||'School notice')}</span>`;
-const ab=document.getElementById('aboutText');if(ab)ab.textContent=SITE_ACTIVE.about;
-const nc=document.getElementById('noticeCards');if(nc)nc.innerHTML=noticeData.slice(0,3).map(n=>`<article class="notice-card"><small>${new Date(n.date).toLocaleDateString('en-GB')}</small><h3>${escSite(n.title)}</h3><p>${escSite(n.description)}</p><a href="notices.html">Read notice →</a></article>`).join('');
-const statVals=document.querySelectorAll('.stats strong');if(statVals.length>=4){let _s=[],_t=null;try{_s=JSON.parse(localStorage.getItem('mhs_students')||'[]')}catch{}try{_t=JSON.parse(localStorage.getItem('mhs_teachers')||'null')}catch{}statVals[0].textContent=_s.length;statVals[1].textContent=String((_t||TEACHERS).length).padStart(2,'0');statVals[2].textContent=SITE_ACTIVE.serviceYears;statVals[3].textContent=SITE_ACTIVE.passRate}
-document.getElementById('menu')?.addEventListener('click',()=>document.getElementById('nav')?.classList.toggle('open'));
+/* MHS public website — Supabase-backed dynamic content */
+(function () {
+  'use strict';
+  const E = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  })[ch]);
+  const setText = (id, value) => { const el=document.getElementById(id); if(el && value!=null) el.textContent=value; };
+  const fallback = typeof SITE !== 'undefined' ? SITE : {};
+  document.getElementById('menu')?.addEventListener('click', () => document.getElementById('nav')?.classList.toggle('open'));
 
-(function(){const bg=document.querySelector('.hero-bg');if(!bg)return;let h=null;try{h=JSON.parse(localStorage.getItem('mhs_hero')||'null')}catch{}const L=(h===null?['assets/images/hero/1.jpg','assets/images/hero/2.jpg']:h.map(x=>x.url)).filter(Boolean);if(!L.length)return;const imgs=L.map((u,i)=>{const m=document.createElement('img');m.src=u;m.alt='';m.className='hero-slide'+(i?'':' on');bg.before(m);return m});bg.remove();if(imgs.length>1){let i=0;setInterval(()=>{imgs[i].classList.remove('on');i=(i+1)%imgs.length;imgs[i].classList.add('on')},5000)}})();
-
-
-/* Supabase public notices: home page notice cards */
-(async function loadMhsPublicNoticeCards() {
-  const container = document.getElementById('noticeCards');
-  if (!container) return;
-  try {
-    if (!window.mhsSupabaseReady) {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'js/supabase.js';
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('Could not load js/supabase.js'));
-        document.head.appendChild(script);
-      });
-    }
+  async function loadPublicSite() {
     const sb = await window.mhsSupabaseReady;
-    const { data, error } = await sb
-      .from('notices')
-      .select('id,title,content,attachment_url,published_at,created_at')
-      .eq('is_published', true)
-      .order('published_at', { ascending: false })
-      .limit(3);
-    if (error) throw error;
-    const rows = data || [];
-    container.innerHTML = rows.map(n => `<article class="notice-card"><small>${new Date(n.published_at || n.created_at).toLocaleDateString('en-GB')}</small><h3>${escSite(n.title)}</h3><p>${escSite(n.content || '')}</p><a href="notices.html">Read notice →</a></article>`).join('') || '<p class="hint">No notices published.</p>';
-  } catch (error) {
-    console.error('Public Supabase notices could not be loaded; keeping local fallback.', error);
+    const [settingsQ, noticesQ, tickerQ, galleryQ, achievementsQ, teachersQ] = await Promise.all([
+      sb.from('school_settings').select('school_name,school_name_en,established_year,slogan,logo_url,phone,email,address,about_text,mission_text,vision_text,history_text,student_count,teacher_count,service_years,ssc_pass_rate').limit(1).maybeSingle(),
+      sb.from('notices').select('id,title,content,attachment_url,published_at,created_at').eq('is_published',true).order('published_at',{ascending:false}).limit(3),
+      sb.from('notice_tickers').select('message,link_url').eq('is_active',true).order('display_order').limit(1).maybeSingle(),
+      sb.from('gallery').select('title,description,image_url,category').eq('is_published',true).order('display_order').limit(6),
+      sb.from('achievements').select('id',{count:'exact',head:true}).eq('is_published',true),
+      sb.from('teacher_public_profiles').select('id',{count:'exact',head:true}).eq('is_published',true)
+    ]);
+    if(settingsQ.error) throw settingsQ.error;
+    if(noticesQ.error) throw noticesQ.error;
+    if(tickerQ.error) throw tickerQ.error;
+    if(galleryQ.error) throw galleryQ.error;
+    if(achievementsQ.error) throw achievementsQ.error;
+    if(teachersQ.error) throw teachersQ.error;
+    const s=settingsQ.data||{};
+    const about=document.getElementById('aboutText'); if(about) about.textContent=s.about_text||fallback.about||'';
+    const ticker=document.getElementById('tickerItems');
+    if(ticker) ticker.innerHTML=(tickerQ.data?.message||noticesQ.data?.[0]?.title||'School notice') ? '<span>'+E(tickerQ.data?.message||noticesQ.data?.[0]?.title||'School notice')+'</span>' : '';
+    const noticeCards=document.getElementById('noticeCards');
+    if(noticeCards) noticeCards.innerHTML=(noticesQ.data||[]).map(n=>'<article class="notice-card"><small>'+E(new Date(n.published_at||n.created_at).toLocaleDateString('en-GB'))+'</small><h3>'+E(n.title)+'</h3><p>'+E(n.content||'')+'</p><a href="notices.html">Read notice →</a></article>').join('')||'<p class="hint">No notices published.</p>';
+    const homeGallery=document.getElementById('homeGallery');
+    if(homeGallery) homeGallery.innerHTML=(galleryQ.data||[]).map(x=>'<div><img loading="lazy" src="'+E(x.image_url)+'" alt="'+E(x.title||'School gallery')+'"><small>'+E(x.title||x.description||'')+'</small></div>').join('')||'<p class="hint">Gallery photos will be published by the administration.</p>';
+    const statEls=document.querySelectorAll('.stats strong');
+    if(statEls.length>=4){statEls[0].textContent=String(s.student_count??fallback.students??'—');statEls[1].textContent=String(s.teacher_count??teachersQ.count??'—').padStart(2,'0');statEls[2].textContent=String(s.service_years??fallback.serviceYears??'—');statEls[3].textContent=String(s.ssc_pass_rate??fallback.passRate??'—');}
+    const hero=document.querySelector('.hero');
+    if(hero){
+      const slides=(galleryQ.data||[]).filter(x=>String(x.category||'').toLowerCase()==='hero'&&x.image_url).map(x=>x.image_url);
+      const urls=slides.length?slides:['assets/images/hero/1.jpg','assets/images/hero/2.jpg'];
+      const bg=hero.querySelector('.hero-bg');
+      if(bg) bg.src=urls[0];
+      if(urls.length>1){let i=0;setInterval(()=>{i=(i+1)%urls.length;const current=hero.querySelector('.hero-bg');if(current)current.src=urls[i]},5000);}
+    }
   }
+  loadPublicSite().catch(error=>console.error('MHS public Supabase content could not be loaded:',error));
 })();
