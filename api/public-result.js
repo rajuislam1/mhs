@@ -21,11 +21,14 @@ module.exports = async (req, res) => {
     ]);
     const selectedIds=new Set((selected||[]).map(x=>x.class_subject_id));
     const requiredIds=(required||[]).filter(x=>x.is_compulsory||selectedIds.has(x.id)).map(x=>x.id);
-    const subjects=(rows||[]).map(r=>({subject:r.class_subjects?.subjects?.name||'Subject',marks:Number(r.marks||0),grade:r.grade||'',point:Number(r.grade_point||0),class_subject_id:r.class_subject_id}));
-    const publishedIds=new Set((rows||[]).map(r=>r.class_subject_id));
+    const eligibleRows=(rows||[]).filter(r=>requiredIds.includes(r.class_subject_id));
+    const subjects=eligibleRows.map(r=>({subject:r.class_subjects?.subjects?.name||'Subject',marks:Number(r.marks||0),grade:r.grade||'',point:Number(r.grade_point||0),class_subject_id:r.class_subject_id}));
+    const publishedIds=new Set(eligibleRows.map(r=>r.class_subject_id));
     const complete=requiredIds.length>0&&requiredIds.every(id=>publishedIds.has(id));
     const total=subjects.reduce((sum,row)=>sum+row.marks,0),average=subjects.length?total/subjects.length:0;
     const gpa=complete?(requiredIds.some(id=>{const row=subjects.find(x=>x.class_subject_id===id);return !row||row.point===0;})?0:Math.min(5,requiredIds.reduce((sum,id)=>sum+subjects.find(x=>x.class_subject_id===id).point,0)/requiredIds.length)):null;
-    return res.status(200).json({result:{name:student.name,class:cls,roll,year,exam,subjects,total,average,gpa:gpa===null?null:Number(gpa.toFixed(2)),gpa_pending:!complete,published_subject_count:subjects.length,required_subject_count:requiredIds.length}});
+    const roundedGpa=gpa===null?null:Number(gpa.toFixed(2));
+    const overallGrade=gpa===null?null:gpa>=5?'A+':gpa>=4?'A':gpa>=3.5?'A-':gpa>=3?'B':gpa>=2?'C':gpa>=1?'D':'F';
+    return res.status(200).json({result:{name:student.name,class:cls,roll,year,exam,subjects,total,average,gpa:roundedGpa,overall_grade:overallGrade,gpa_pending:!complete,published_subject_count:subjects.length,required_subject_count:requiredIds.length}});
   }catch(error){console.error('Public result lookup failed:',error);return res.status(500).json({error:'Unable to retrieve the published result right now.'});}
 };
