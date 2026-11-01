@@ -1,0 +1,30 @@
+/* Shared MHS portal refresh */
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
+:root{--mhs-green:#075b43;--mhs-deep:#063d30;--mhs-red:#c91d2b;--mhs-blue:#174b9b;--mhs-gold:#e7b638;--mhs-bg:#f2f7f4;--mhs-line:#dce8e1;--mhs-shadow:0 18px 48px rgba(5,58,41,.11)}
+*{box-sizing:border-box}body{font-family:'Hind Siliguri','Noto Sans Bengali',Arial,sans-serif;background:radial-gradient(ellipse at top left,#e4f2e9 0,transparent 42%),var(--mhs-bg);color:#18352a}
+.login-page{min-height:100vh;padding:28px 16px;display:grid;place-items:center;background:linear-gradient(135deg,#043b2d 0%,#087454 58%,#e9f3ed 58%,#f5f8f6 100%);position:relative;overflow:hidden}
+.login-page:before,.login-page:after{content:"";position:fixed;border:1px solid #ffffff28;border-radius:50%;width:460px;height:460px;right:-170px;top:-170px;pointer-events:none}.login-page:after{width:620px;height:620px;right:-250px;top:-250px}
+.login-card{position:relative;z-index:1;width:min(460px,94vw);padding:34px 38px 30px;border:1px solid #ffffffa8;border-radius:24px;background:rgba(255,255,255,.97);box-shadow:0 26px 80px #002d1d45;text-align:center}
+.login-card img{width:112px;height:126px;object-fit:contain;filter:drop-shadow(0 5px 8px #003d2d18)}
+.login-card h1{font-size:clamp(23px,4vw,30px);line-height:1.25;color:var(--mhs-deep);margin:12px 0 4px;font-weight:700}.login-card p{margin:0;color:#66786e}
+.login-card form{margin-top:25px;text-align:left}.login-card label{display:block;margin:15px 0;color:#29483b;font-size:14px;font-weight:600}
+.login-card input{display:block;width:100%;margin-top:7px;padding:13px 14px;border:1px solid #cddbd3;border-radius:11px;background:#f9fcfa;font:inherit;transition:.2s}
+.login-card input:focus{outline:0;border-color:#0b7957;box-shadow:0 0 0 4px #0b79571b;background:#fff}
+.login-card button{width:100%;padding:13px 16px;margin-top:8px;border:0;border-radius:11px;background:linear-gradient(100deg,#07583f,#0a805b);color:#fff;font:700 16px inherit;cursor:pointer;box-shadow:0 8px 18px #07583f2b}
+.login-card button:disabled{opacity:.65;cursor:wait}.login-card a{color:#075b43;text-decoration:none;font-weight:600}.login-card>a{display:inline-block;margin:18px 5px 0}.login-card hr{border:0;border-top:1px solid #e4ece7;margin:19px 0 8px}.login-card small{display:block;min-height:20px;color:#b42332;margin-top:10px}
+.login-card .teacher-link{display:block;margin:8px auto 0}.login-card:after{content:'ESTD. 1962  •  EIIN 120140';display:block;margin-top:24px;color:#819187;font-size:10px;letter-spacing:1.7px}
+.portal-page{min-height:100vh;padding:24px 16px 40px;background:linear-gradient(180deg,#e7f2eb 0,#f5f8f6 300px)}
+.portal-wrap{max-width:1120px;margin:auto}.portal-top{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:17px 22px;border-radius:18px;background:linear-gradient(110deg,#063d2e,#087553);color:#fff;box-shadow:var(--mhs-shadow);border-bottom:4px solid var(--mhs-gold)}
+.portal-brand{display:flex;align-items:center;gap:14px}.portal-brand img{width:66px;height:74px;object-fit:contain;background:#fff;border-radius:12px;padding:3px}.portal-brand h1{font-size:clamp(18px,3vw,25px);margin:0;line-height:1.35}.portal-brand p{margin:2px 0 0;color:#d6eadf;font-size:13px}
+.portal-actions{display:flex;gap:9px;flex-wrap:wrap}.portal-actions button,.portal-actions a{border:1px solid #ffffff66;background:#ffffff14;color:#fff;padding:9px 14px;border-radius:9px;text-decoration:none;font:600 14px inherit;cursor:pointer}
+.portal-welcome{margin:22px 0;padding:clamp(20px,4vw,34px);border:1px solid var(--mhs-line);border-radius:18px;background:linear-gradient(120deg,#fff,#f0f7f2);box-shadow:var(--mhs-shadow)}
+.portal-welcome h2{margin:0 0 6px;color:var(--mhs-deep);font-size:clamp(23px,4vw,34px)}.portal-welcome p{margin:0;color:#64776c}
+.portal-page .c{border:1px solid var(--mhs-line);border-radius:16px;padding:clamp(16px,3vw,24px);margin-bottom:17px;background:#fff;box-shadow:0 8px 26px #123d2610}
+.portal-page .c h3{margin:0 0 13px;color:var(--mhs-deep);font-size:20px}
+.portal-page button{background:linear-gradient(100deg,#075b43,#0b805b);border-radius:9px;padding:10px 16px;font-weight:600}
+.portal-page input,.portal-page select{border:1px solid #cbdad2;border-radius:9px;padding:11px 12px;background:#fbfdfb}
+.portal-page input:focus,.portal-page select:focus{outline:0;border-color:#0b7957;box-shadow:0 0 0 3px #0b79571a}
+.portal-page table{border-collapse:collapse;overflow:auto;border-radius:9px}.portal-page th{background:#eaf4ee;color:#174b38}.portal-page th,.portal-page td{padding:10px;border:1px solid #e1eae5}
+.portal-page .hint{color:#728078}.portal-page .empty{background:#f5f9f6;border:1px dashed #cbdcd1;border-radius:10px;padding:18px}
+.portal-page .error{border-color:#f1c8cc;background:#fff6f6;color:#a12626}
+@media(max-width:620px){.login-card{padding:27px 22px}.portal-page{padding:12px 10px 25px}.portal-top{padding:14px}.portal-brand img{width:54px;height:62px}.portal-actions{width:100%}.portal-actions button,.portal-actions a{flex:1;text-align:center}}
