@@ -39,3 +39,6 @@ tbody tr:nth-child(even){background:#f8fbf9}
 .mhs-teacher-edit-cancel{background:#edf2ef;color:#29483b}.mhs-teacher-edit-save{background:#006a4e;color:#fff;font-weight:700}
 @media(max-width:900px){.admin-shell{grid-template-columns:210px 1fr}}
 @media(max-width:650px){.admin-shell{grid-template-columns:1fr}.admin-shell aside{position:relative;padding:12px}.admin-shell nav{display:flex;gap:6px;overflow-x:auto;margin-top:10px}.admin-shell nav button{white-space:nowrap;width:auto;flex:0 0 auto}.logout{margin-top:10px}.admin-head{padding:16px;gap:12px;flex-wrap:wrap}.mhs-teacher-edit-form{grid-template-columns:1fr;padding:18px}.mhs-teacher-edit-actions{grid-column:1}.panel{overflow-x:auto}}
+
+/* School crest uses a portrait aspect ratio; do not squash it in portal sidebars. */
+.side-brand img{width:52px!important;height:58px!important;max-width:52px;object-fit:contain!important;flex:0 0 auto}
