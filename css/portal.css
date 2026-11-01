@@ -28,3 +28,6 @@
 .portal-page .hint{color:#728078}.portal-page .empty{background:#f5f9f6;border:1px dashed #cbdcd1;border-radius:10px;padding:18px}
 .portal-page .error{border-color:#f1c8cc;background:#fff6f6;color:#a12626}
 @media(max-width:620px){.login-card{padding:27px 22px}.portal-page{padding:12px 10px 25px}.portal-top{padding:14px}.portal-brand img{width:54px;height:62px}.portal-actions{width:100%}.portal-actions button,.portal-actions a{flex:1;text-align:center}}
+
+/* Keep the portrait school emblem proportional in all login and student portal headers. */
+.login-card>img{width:112px!important;height:126px!important;object-fit:contain!important}.portal-brand img{width:66px!important;height:76px!important;object-fit:contain!important}.side-brand img{width:52px!important;height:58px!important;object-fit:contain!important}
