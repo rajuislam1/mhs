@@ -51,9 +51,6 @@
                 </button>
             </nav>
 
-            <button type="button" id="logout" class="logout">
-                Logout
-            </button>
         </aside>
 
         <!-- Main Content -->
@@ -64,7 +61,7 @@
                     <h1 id="title">Dashboard</h1>
                 </div>
 
-                <a href="../index.html">View Website ↗</a>
+                <div class="head-actions"><a href="../index.html">View Website ↗</a><button type="button" id="logout" class="logout">Logout</button></div>
             </header>
 
             <section id="app"></section>
@@ -74,6 +71,7 @@
 
     <!-- Core Scripts -->
     <!-- Teacher Portal -->
+    <script src="../js/date-time-ui.js"></script>
     <script src="../js/supabase.js"></script>
     <script src="teacher.js"></script>
 

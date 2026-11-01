@@ -10,6 +10,17 @@ module.exports = async (req,res)=>{
   const p=await rest('user_profiles?id=eq.'+encodeURIComponent(admin.id)+'&select=role,is_active');if(!p[0]||p[0].role!=='super_admin'||p[0].is_active!==true)return res.status(403).json({success:false,error:'Active Super Admin permission required.'});
   const id=String(req.body?.id||'');if(!/^[0-9a-f-]{36}$/i.test(id))return res.status(400).json({success:false,error:'Valid student ID is required.'});
   const now=new Date().toISOString();
+  if(Object.prototype.hasOwnProperty.call(req.body||{},'password')){
+   const password=typeof req.body.password==='string'?req.body.password:'';
+   if(password.length<8)return res.status(400).json({success:false,error:'Password must contain at least 8 characters.'});
+   const links=await rest('user_profiles?student_id=eq.'+encodeURIComponent(id)+'&role=eq.student&select=id');
+   if(!links.length)return res.status(404).json({success:false,error:'Linked student login account was not found.'});
+   for(const link of links){
+    const response=await fetch(base+'/auth/v1/admin/users/'+encodeURIComponent(link.id),{method:'PUT',headers,body:JSON.stringify({password})});
+    if(!response.ok){const detail=await response.text();console.error('Student password reset failed:',detail);return res.status(400).json({success:false,error:'Could not reset student password. Please try again.'});}
+   }
+   return res.status(200).json({success:true,message:'Student password reset successfully.'});
+  }
   if(req.body?.profile&&typeof req.body.profile==='object'){
    const allowed=['student_id','name','father_name','mother_name','class_id','academic_year_id','roll','mobile','section','guardian','admission_number','date_of_birth','gender','admission_date','address','photo'];
    const patch={};for(const field of allowed)if(Object.prototype.hasOwnProperty.call(req.body.profile,field))patch[field]=req.body.profile[field];

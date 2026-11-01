@@ -145,6 +145,17 @@
     });
   };
 
+  window.resetSupabaseTeacherPassword = async function (id) {
+    const teacher=findAccount(id);if(!teacher)return alert('Teacher record not found. Reload and try again.');
+    const password=prompt('Enter a new password for '+teacher.name+' (minimum 8 characters):');if(password===null)return;
+    if(password.length<8)return alert('Password must contain at least 8 characters.');
+    const confirmPassword=prompt('Confirm the new password:');if(confirmPassword===null)return;
+    if(password!==confirmPassword)return alert('Passwords do not match.');
+    if(!confirm('Reset portal password for '+teacher.name+'?'))return;
+    try{await teacherApi('PATCH',{id,password});alert('Teacher portal password reset successfully.');}
+    catch(error){showError('Could not reset teacher password.',error);}
+  };
+
   // --------------------------------------------------
   // Deactivate teacher account
   // --------------------------------------------------
@@ -568,6 +579,7 @@
                       ${isDatabaseAccount ? `
                         <button type="button" class="btn-small"
                           onclick="editSupabaseTeacher('${escTeacher(x.id)}')">Edit</button>
+                        <button type="button" class="btn-small" onclick="resetSupabaseTeacherPassword('${escTeacher(x.id)}')">Reset Password</button>
                         ${isActive ? `
                           <button type="button" class="btn-small danger"
                             onclick="deactivateSupabaseTeacher('${escTeacher(x.id)}')">Deactivate</button>
