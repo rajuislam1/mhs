@@ -6,7 +6,7 @@
 <div class="c np"><h3>My Subjects</h3><div id="subjects">Loading…</div></div>
 <div class="c np"><h3>Published Results</h3><p class="hint">Choose class and exam, search your published marksheet, then print.</p><div class="form"><label>Class<select id="msClass"></select></label><label>Exam<select id="msExam"><option value="">Select Exam</option><option>Test</option><option>Lab Test</option><option>Half Yearly</option><option>Final</option></select></label><label>Search<input id="msSearch" placeholder="Search exam or subject"></label></div><div class="actions" style="margin-top:14px"><button id="msFind">Search Marksheet</button><button id="msPrint" disabled>Print Marksheet</button></div><div id="msResults" class="empty" style="margin-top:14px">Select an exam and search.</div></div>
 <div class="c np"><h3>Fee Payments</h3><div id="fees">Loading…</div></div><div id="error" class="c error np" hidden></div><div id="marksheetPrintArea"></div>
-</div><script src="../js/supabase.js"></script><script>
+</div></div><script src="../js/supabase.js"></script><script>
 const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 let sb,studentRecord,publishedRows=[],selectedMarksheet=null,requiredSubjectIds=[];
 const fail=e=>{console.error(e);const box=document.getElementById('error');box.hidden=false;box.textContent=e.message||'Unable to load student data.';};
