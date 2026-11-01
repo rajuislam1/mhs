@@ -81,7 +81,7 @@
 
   function showError(message, error) {
     console.error(message, error);
-    alert(error?.message || message);
+    if(window.mhsNotify)window.mhsNotify(error?.message || message,true);else alert(error?.message || message);
   }
 
   function findAccount(id) {
@@ -135,7 +135,7 @@
       try {
         await teacherApi('PATCH', { id, ...Object.fromEntries(Object.entries(values).map(([key,value]) => [key, value.trim()])) });
         close();
-        alert('Teacher details updated successfully.');
+        window.mhsNotify ? window.mhsNotify('Teacher details updated successfully.') : alert('Teacher details updated successfully.');
         await window.teachers();
       } catch (error) {
         showError('Could not update teacher.', error);
@@ -152,7 +152,7 @@
     const confirmPassword=prompt('Confirm the new password:');if(confirmPassword===null)return;
     if(password!==confirmPassword)return alert('Passwords do not match.');
     if(!confirm('Reset portal password for '+teacher.name+'?'))return;
-    try{await teacherApi('PATCH',{id,password});alert('Teacher portal password reset successfully.');}
+    try{await teacherApi('PATCH',{id,password});window.mhsNotify ? window.mhsNotify('Teacher portal password reset successfully.') : alert('Teacher portal password reset successfully.');}
     catch(error){showError('Could not reset teacher password.',error);}
   };
 
@@ -163,7 +163,7 @@
     const teacher = findAccount(id);
     if (!teacher) return alert('Teacher record not found. Reload and try again.');
     if (!confirm('Reactivate ' + teacher.name + ' account?')) return;
-    try { await teacherApi('PATCH', { id, status: true }); alert('Teacher account reactivated.'); await window.teachers(); }
+    try { await teacherApi('PATCH', { id, status: true }); window.mhsNotify ? window.mhsNotify('Teacher account reactivated.') : alert('Teacher account reactivated.'); await window.teachers(); }
     catch (error) { showError('Could not reactivate teacher.', error); }
   };
 
@@ -182,7 +182,7 @@
 
     try {
       await teacherApi('DELETE', { id });
-      alert('Teacher account deactivated successfully.');
+      window.mhsNotify ? window.mhsNotify('Teacher account deactivated successfully.') : alert('Teacher account deactivated successfully.');
       await window.teachers();
     } catch (error) {
       showError('Could not deactivate teacher.', error);
@@ -226,7 +226,7 @@
         photo: photo.trim()
       });
 
-      alert('Public teacher profile updated successfully.');
+      window.mhsNotify ? window.mhsNotify('Public teacher profile updated successfully.') : alert('Public teacher profile updated successfully.');
       await window.teachers();
     } catch (error) {
       showError('Could not update public teacher profile.', error);
@@ -737,7 +737,7 @@
         }
 
         document.getElementById('tp').value = '';
-        alert('Teacher account created successfully.');
+        window.mhsNotify ? window.mhsNotify('Teacher account created successfully.') : alert('Teacher account created successfully.');
         await window.teachers();
       } catch (error) {
         console.error('Teacher account creation error:', error);
@@ -769,7 +769,7 @@
 
       try {
         await publicTeacherApi('POST', payload);
-        alert('Teacher profile saved to Supabase successfully.');
+        window.mhsNotify ? window.mhsNotify('Teacher profile saved to Supabase successfully.') : alert('Teacher profile saved to Supabase successfully.');
         await window.teachers();
       } catch (error) {
         showError('Could not save public teacher profile.', error);
@@ -906,7 +906,7 @@
         assignMessage.textContent =
           'Assignment saved successfully to Supabase.';
 
-        alert('Teaching assignment saved successfully to Supabase.');
+        window.mhsNotify ? window.mhsNotify('Teaching assignment saved successfully to Supabase.') : alert('Teaching assignment saved successfully to Supabase.');
         renderAssignmentList();
 
         // Refresh summary and list without losing the selected form values.
