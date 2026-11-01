@@ -42,3 +42,6 @@ tbody tr:nth-child(even){background:#f8fbf9}
 
 /* School crest uses a portrait aspect ratio; do not squash it in portal sidebars. */
 .side-brand img{width:52px!important;height:58px!important;max-width:52px;object-fit:contain!important;flex:0 0 auto}
+
+/* Header-level logout action for Admin and Teacher portals. */
+.head-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.head-actions .logout{display:inline-block;width:auto;margin:0;background:#fff1f0;border:1px solid #f0c9c6;color:#a12626;padding:8px 14px;text-align:center;white-space:nowrap}.head-actions .logout:hover{background:#fde7e5}.admin-head .head-actions .logout{color:#a12626}@media(max-width:700px){.head-actions{gap:7px}.head-actions .logout{padding:7px 10px}}
