@@ -150,6 +150,21 @@ module.exports = async (req, res) => {
     );
 
     if (req.method === 'PATCH') {
+      if (Object.prototype.hasOwnProperty.call(body, 'password')) {
+        const password = typeof body.password === 'string' ? body.password : '';
+        if (password.length < 8) return res.status(400).json({ error: 'Password must contain at least 8 characters.' });
+        if (!linkedProfile?.id) return res.status(404).json({ error: 'Linked teacher login account was not found.' });
+        const passwordResponse = await fetch(
+          `${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(linkedProfile.id)}`,
+          { method: 'PUT', headers: adminHeaders, body: JSON.stringify({ password }) }
+        );
+        if (!passwordResponse.ok) {
+          const detail = await passwordResponse.text();
+          console.error('Teacher password reset failed:', detail);
+          return res.status(400).json({ error: 'Could not reset teacher password. Check the password and try again.' });
+        }
+        return res.status(200).json({ success: true, message: 'Teacher password reset successfully.' });
+      }
       const allowedFields = [
         'name',
         'designation',
