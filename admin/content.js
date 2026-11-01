@@ -184,7 +184,7 @@
       const sb=await client();
       const [fr,sr,yr,cr,tr,pr]=await Promise.all([
         sb.from('fee_templates').select('id,class_id,academic_year_id,fee_name,description,amount,due_date,is_active,classes(class_number),academic_years(year)').order('created_at',{ascending:false}),
-        sb.from('students').select('id,student_id,name,roll,class_id,academic_year_id,mobile,father_name,classes(class_number)').order('name'),
+        sb.from('students').select('id,student_id,name,roll,class_id,academic_year_id,mobile,father_name,status,classes(class_number)').order('name'),
         sb.from('academic_years').select('id,year,is_active').order('year',{ascending:false}),
         sb.from('classes').select('id,class_number,name').eq('status',true).order('class_number'),
         sb.from('student_fees').select('id,student_id,academic_year_id,fee_type,amount,paid_amount,payment_status,due_date,created_at,students(name,student_id,roll,classes(class_number))').order('created_at',{ascending:false}).limit(2000),
@@ -211,7 +211,7 @@
           const entries=[...feeRows.querySelectorAll('.mhs-fee-config-row')].map(r=>({fee_name:r.querySelector('[data-fee-name]').value.trim(),amount:Number(r.querySelector('[data-fee-amount]').value),due_date:r.querySelector('[data-fee-due]').value||null}));
           if(!entries.length||entries.some(x=>!x.fee_name||!(x.amount>0)))throw new Error('Enter a fee name and a valid positive amount for every row.');
           if(new Set(entries.map(x=>x.fee_name.toLowerCase())).size!==entries.length)throw new Error('Fee names must be unique within this submission.');
-          const target=students.filter(s=>s.class_id===classId&&s.academic_year_id===yearId&&s.status!==false);
+          const target=students.filter(s=>s.class_id===classId&&s.academic_year_id===yearId&&s.status===true);
           if(!target.length)throw new Error('No students found in the selected class and academic year.');
           const existingTemplates=templates.slice();let posted=0,templateCount=0;
           for(const item of entries){
@@ -219,9 +219,14 @@
             if(t){const {error}=await sb.from('fee_templates').update({fee_name:item.fee_name,amount:item.amount,due_date:item.due_date,is_active:true,updated_at:stamp()}).eq('id',t.id);if(error)throw error;}
             else {const {data,error}=await sb.from('fee_templates').insert({class_id:classId,academic_year_id:yearId,fee_name:item.fee_name,amount:item.amount,due_date:item.due_date,is_active:true}).select('id,class_id,academic_year_id,fee_name,amount,due_date').single();if(error)throw error;t=data;existingTemplates.push(t);}
             templateCount++;
-            const existingFeeKeys=new Set(fees.filter(f=>f.academic_year_id===yearId&&f.fee_type.toLowerCase()===item.fee_name.toLowerCase()).map(f=>f.student_id));
+            const matchingFees=fees.filter(f=>f.academic_year_id===yearId&&f.fee_type.toLowerCase()===item.fee_name.toLowerCase()&&target.some(s=>s.id===f.student_id));
+            const existingFeeKeys=new Set(matchingFees.map(f=>f.student_id));
             const payload=target.filter(s=>!existingFeeKeys.has(s.id)).map(s=>({student_id:s.id,academic_year_id:yearId,fee_template_id:t.id,fee_type:item.fee_name,description:null,amount:item.amount,paid_amount:0,payment_status:'unpaid',due_date:item.due_date}));
             if(payload.length){const {error}=await sb.from('student_fees').insert(payload);if(error)throw error;posted+=payload.length;}
+            for(const oldFee of matchingFees.filter(f=>Number(f.paid_amount||0)===0)){
+              const {error}=await sb.from('student_fees').update({amount:item.amount,due_date:item.due_date,fee_template_id:t.id,updated_at:stamp()}).eq('id',oldFee.id).eq('paid_amount',0);
+              if(error)throw error;
+            }
           }
           msg('Saved '+templateCount+' fee head(s) and posted '+posted+' new student fee record(s). Existing records were preserved and not duplicated.');
           await window.MHS_EXTRA.fees();
