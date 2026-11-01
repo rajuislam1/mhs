@@ -1,3 +1,5 @@
+const { randomBytes } = require('crypto');
+
 module.exports = async (req, res) => {
   res.setHeader('Content-Type','application/json; charset=utf-8');
   if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({success:false,error:'Method not allowed.'});}
@@ -11,18 +13,36 @@ module.exports = async (req, res) => {
     const ar=await fetch(base+'/auth/v1/user',{headers:{apikey:key,Authorization:'Bearer '+token}});if(!ar.ok)return res.status(401).json({success:false,error:'Admin session expired.'});const admin=await ar.json();
     const profiles=await rest('user_profiles?id=eq.'+encodeURIComponent(admin.id)+'&select=role,is_active');
     if(!profiles[0]||profiles[0].role!=='super_admin'||profiles[0].is_active!==true)return res.status(403).json({success:false,error:'Active Super Admin permission required.'});
-    const b=req.body||{};const name=String(b.name||'').trim(),login=String(b.studentId||'').trim(),password=String(b.password||'');
-    if(!name||!login||!/^[A-Za-z0-9._-]{2,40}$/.test(login))return res.status(400).json({success:false,error:'Student name and a valid Student ID are required.'});
+    const b=req.body||{};const name=String(b.name||'').trim(),password=String(b.password||'');
+    if(!name)return res.status(400).json({success:false,error:'Student name is required.'});
     if(password.length<8)return res.status(400).json({success:false,error:'Password must be at least 8 characters.'});
     if(!b.classId||!b.academicYearId||!Number.isInteger(Number(b.roll))||Number(b.roll)<1)return res.status(400).json({success:false,error:'Class, academic year and valid roll are required.'});
-    const existing=await rest('students?student_id=eq.'+encodeURIComponent(login)+'&select=id');
-    if(existing.length)return res.status(409).json({success:false,error:'This Student ID is already in use.'});
-    const inserted=await rest('students',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({student_id:login,admission_number:login,name,father_name:String(b.fatherName||'').trim()||null,mother_name:String(b.motherName||'').trim()||null,class_id:b.classId,academic_year_id:b.academicYearId,roll:Number(b.roll),mobile:String(b.mobile||'').trim()||null,status:true})});
-    studentId=inserted?.[0]?.id;if(!studentId)throw new Error('Student record was not created.');
+    const classRows=await rest('classes?id=eq.'+encodeURIComponent(b.classId)+'&select=class_number');
+    const yearRows=await rest('academic_years?id=eq.'+encodeURIComponent(b.academicYearId)+'&select=year');
+    if(!classRows.length||!yearRows.length)throw new Error('Selected class or academic year was not found.');
+    const classCode=String(classRows[0].class_number||'X').replace(/[^A-Za-z0-9]/g,'');
+    const academicYear=String(yearRows[0].year||new Date().getFullYear());
+    let login=null,inserted=null,lastInsertError=null;
+    for(let attempt=0;attempt<8;attempt++){
+      login='MHS-'+academicYear+'-'+classCode+'-'+String(Number(b.roll)).padStart(2,'0')+'-'+randomBytes(4).toString('hex').toUpperCase();
+      const existing=await rest('students?student_id=eq.'+encodeURIComponent(login)+'&select=id');
+      if(existing.length)continue;
+      try{
+        inserted=await rest('students',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({student_id:login,admission_number:login,name,father_name:String(b.fatherName||'').trim()||null,mother_name:String(b.motherName||'').trim()||null,class_id:b.classId,academic_year_id:b.academicYearId,roll:Number(b.roll),mobile:String(b.mobile||'').trim()||null,status:true})});
+        break;
+      }catch(error){lastInsertError=error;if(!/duplicate|unique/i.test(error.message))throw error;}
+    }
+    if(!inserted?.length)throw lastInsertError||new Error('Could not generate a unique Student ID. Please retry.');
+    studentId=inserted[0].id;if(!studentId)throw new Error('Student record was not created.');
+    const feeTemplates=await rest('fee_templates?class_id=eq.'+encodeURIComponent(b.classId)+'&academic_year_id=eq.'+encodeURIComponent(b.academicYearId)+'&is_active=eq.true&select=id,fee_name,description,amount,due_date');
+    if(feeTemplates.length){
+      const feeRows=feeTemplates.map(f=>({student_id:studentId,academic_year_id:b.academicYearId,fee_template_id:f.id,fee_type:f.fee_name,description:f.description||null,amount:Number(f.amount),paid_amount:0,payment_status:'unpaid',due_date:f.due_date||null}));
+      await rest('student_fees',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(feeRows)});
+    }
     const email='student-'+studentId+'@mhs-login.invalid';
     const cr=await fetch(base+'/auth/v1/admin/users',{method:'POST',headers,body:JSON.stringify({email,password,email_confirm:true,user_metadata:{role:'student',student_id:studentId,display_name:name}})});
     const cu=await cr.json();if(!cr.ok)throw new Error(cu.message||cu.msg||'Could not create the student authentication account.');userId=cu.id;
     await rest('user_profiles',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({id:userId,role:'student',student_id:studentId,display_name:name,is_active:true})});
-    return res.status(201).json({success:true,student:{id:studentId,student_id:login,name}});
-  }catch(e){console.error('Student creation failed:',e);if(userId){await fetch(base+'/auth/v1/admin/users/'+userId,{method:'DELETE',headers}).catch(()=>{});}if(studentId){try{await rest('students?id=eq.'+encodeURIComponent(studentId),{method:'DELETE'});}catch{}}return res.status(400).json({success:false,error:e.message||'Could not create student.'});}
+    return res.status(201).json({success:true,student:{id:studentId,student_id:login,login_id:login,name,fee_templates_attached:true}});
+  }catch(e){console.error('Student creation failed:',e);if(userId){await fetch(base+'/auth/v1/admin/users/'+userId,{method:'DELETE',headers}).catch(()=>{});}if(studentId){try{await rest('student_fees?student_id=eq.'+encodeURIComponent(studentId),{method:'DELETE'});}catch{}try{await rest('students?id=eq.'+encodeURIComponent(studentId),{method:'DELETE'});}catch{}}return res.status(400).json({success:false,error:e.message||'Could not create student.'});}
 };
