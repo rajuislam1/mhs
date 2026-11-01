@@ -1,16 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 360" role="img" aria-labelledby="title desc">
-<title id="title">মোখলেশপুর উচ্চ বিদ্যালয়</title><desc id="desc">Mokhleshpur High School crest, established 1962</desc>
-<defs><path id="topArc" d="M 42 157 A 118 118 0 0 1 278 157"/><path id="bottomArc" d="M 48 205 A 112 112 0 0 0 272 205"/><linearGradient id="sun" x2="0" y2="1"><stop stop-color="#ffd35a"/><stop offset="1" stop-color="#f28c18"/></linearGradient></defs>
-<path d="M160 8C90 8 25 65 25 153v48c0 27 15 42 34 55l101 94 101-94c19-13 34-28 34-55v-48C295 65 230 8 160 8Z" fill="#fff" stroke="#c91d2b" stroke-width="7"/>
-<circle cx="160" cy="153" r="125" fill="#fff" stroke="#174b9b" stroke-width="5"/><circle cx="160" cy="153" r="112" fill="none" stroke="#c91d2b" stroke-width="5"/>
-<text fill="#174b9b" font-family="Noto Sans Bengali, sans-serif" font-size="19" font-weight="700" letter-spacing=".3"><textPath href="#topArc" startOffset="50%" text-anchor="middle">মোখলেশপুর উচ্চ বিদ্যালয়</textPath></text>
-<text fill="#174b9b" font-family="Noto Sans Bengali, sans-serif" font-size="18" font-weight="700"><textPath href="#bottomArc" startOffset="50%" text-anchor="middle">বিরল, দিনাজপুর</textPath></text>
-<g fill="#174b9b"><path d="m42 168 5 10 11 1-8 7 2 11-10-5-10 5 2-11-8-7 11-1z"/><path d="m278 168 5 10 11 1-8 7 2 11-10-5-10 5 2-11-8-7 11-1z"/></g>
-<g fill="none" stroke="#16723e" stroke-width="5" stroke-linecap="round"><path d="M91 230C54 186 66 119 110 92"/><path d="M229 230c37-44 25-111-19-138"/></g>
-<g fill="#188044"><ellipse cx="81" cy="199" rx="7" ry="15" transform="rotate(-40 81 199)"/><ellipse cx="76" cy="176" rx="7" ry="15" transform="rotate(-55 76 176)"/><ellipse cx="79" cy="151" rx="7" ry="15" transform="rotate(-65 79 151)"/><ellipse cx="91" cy="128" rx="7" ry="15" transform="rotate(-40 91 128)"/><ellipse cx="105" cy="110" rx="7" ry="15" transform="rotate(-30 105 110)"/><ellipse cx="239" cy="199" rx="7" ry="15" transform="rotate(40 239 199)"/><ellipse cx="244" cy="176" rx="7" ry="15" transform="rotate(55 244 176)"/><ellipse cx="241" cy="151" rx="7" ry="15" transform="rotate(65 241 151)"/><ellipse cx="229" cy="128" rx="7" ry="15" transform="rotate(40 229 128)"/><ellipse cx="215" cy="110" rx="7" ry="15" transform="rotate(30 215 110)"/></g>
-<text x="160" y="91" text-anchor="middle" font-family="Noto Sans Bengali,sans-serif" font-size="14" fill="#202020" font-weight="700">সবার জন্য শিক্ষা</text>
-<circle cx="160" cy="141" r="29" fill="url(#sun)"/><g stroke="#ef941a" stroke-width="3"><path d="M160 99v-12M133 111l-9-9M187 111l9-9M123 140h-13M197 140h13M139 103l-5-11M181 103l5-11"/></g>
-<path d="M119 137q20-8 41 4 21-12 41-4v42q-20-7-41 5-21-12-41-5z" fill="#fff" stroke="#202020" stroke-width="3"/><path d="M160 141v43" stroke="#202020" stroke-width="2"/><g fill="#222" font-family="Noto Sans Bengali,sans-serif" font-size="16" font-weight="700"><text x="139" y="160">অ</text><text x="170" y="160">আ</text><text x="139" y="176">ক</text><text x="170" y="176">খ</text></g>
-<path d="m160 192 7 14 16 2-12 11 3 16-14-8-14 8 3-16-12-11 16-2z" fill="#c91d2b"/>
-<path d="M51 276q109 53 218 0l-12 37q-97 43-194 0z" fill="#fff" stroke="#c91d2b" stroke-width="4"/><text x="160" y="307" text-anchor="middle" fill="#174b9b" font-family="Noto Sans Bengali,sans-serif" font-size="19" font-weight="700">স্থাপিতঃ ১৯৬২ ইং</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-labelledby="title desc">
+<title id="title">মোখলেশপুর উচ্চ বিদ্যালয়</title><desc id="desc">মোখলেশপুর উচ্চ বিদ্যালয়ের লাল, নীল ও সবুজ বৃত্তাকার প্রতীক, বই, সূর্য ও লরেল পাতা; স্থাপিত ১৯৬২</desc>
+<defs>
+ <path id="schoolTop" d="M145 430 A355 355 0 0 1 855 430"/>
+ <path id="schoolBottom" d="M190 610 A310 310 0 0 0 810 610"/>
+ <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffb31a"/><stop offset="1" stop-color="#f58200"/></linearGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="1.2"/></filter>
+</defs>
+<circle cx="500" cy="455" r="405" fill="#fff" stroke="#e01820" stroke-width="24"/>
+<circle cx="500" cy="455" r="365" fill="none" stroke="#e01820" stroke-width="10"/>
+<circle cx="500" cy="455" r="310" fill="#fff" stroke="#e01820" stroke-width="12"/>
+<text fill="#164aa0" font-family="Noto Sans Bengali,Hind Siliguri,sans-serif" font-size="76" font-weight="800" letter-spacing="1"><textPath href="#schoolTop" startOffset="50%" text-anchor="middle">মোখলেশপুর উচ্চ বিদ্যালয়</textPath></text>
+<text fill="#164aa0" font-family="Noto Sans Bengali,Hind Siliguri,sans-serif" font-size="63" font-weight="800"><textPath href="#schoolBottom" startOffset="50%" text-anchor="middle">বিরল, দিনাজপুর</textPath></text>
+<g fill="#164aa0"><path d="M116 478l22 43 48 7-35 33 8 47-43-23-43 23 8-47-35-33 48-7z"/><path d="M884 478l22 43 48 7-35 33 8 47-43-23-43 23 8-47-35-33 48-7z"/></g>
+<g fill="none" stroke="#078143" stroke-width="13" stroke-linecap="round"><path d="M295 690C190 590 208 390 337 270"/><path d="M705 690C810 590 792 390 663 270"/></g>
+<g fill="#078143">
+<path d="M285 663q-55-7-65-57 54 4 65 57M255 603q-57-5-67-57 54 4 67 57M238 535q-55-18-52-69 52 14 52 69M241 465q-48-30-31-77 45 27 31 77M265 398q-38-41-9-83 35 38 9 83M300 341q-24-48 14-80 22 47-14 80M715 663q55-7 65-57-54 4-65 57M745 603q57-5 67-57-54 4-67 57M762 535q55-18 52-69-52 14-52 69M759 465q48-30 31-77-45 27-31 77M735 398q38-41 9-83-35 38-9 83M700 341q24-48-14-80-22 47 14 80"/>
+</g>
+<text x="500" y="300" text-anchor="middle" fill="#111" font-family="Noto Sans Bengali,Hind Siliguri,sans-serif" font-size="52" font-weight="700">সবার জন্য শিক্ষা</text>
+<g stroke="#f59a18" stroke-width="9" stroke-linecap="round"><path d="M500 348V275M455 355l-24-68M545 355l24-68M420 379l-48-52M580 379l48-52M390 420l-64-29M610 420l64-29M370 465h-67M630 465h67"/></g>
+<circle cx="500" cy="440" r="105" fill="url(#sun)"/>
+<path d="M365 447q68-25 135 13 67-38 135-13v155q-68-25-135 14-67-39-135-14z" fill="#fff" stroke="#111" stroke-width="13" stroke-linejoin="round"/>
+<path d="M500 460v155" stroke="#111" stroke-width="9"/>
+<g fill="#111" font-family="Noto Sans Bengali,Hind Siliguri,sans-serif" font-size="58" font-weight="800"><text x="415" y="510">অ</text><text x="535" y="510">আ</text><text x="415" y="570">ক</text><text x="535" y="570">খ</text></g>
+<path d="M500 635l23 48 53 8-38 37 9 53-47-25-47 25 9-53-38-37 53-8z" fill="#df1720"/>
+<path d="M185 785Q500 945 815 785L780 900Q500 1020 220 900Z" fill="#fff" stroke="#e01820" stroke-width="12"/>
+<path d="M215 808Q500 950 785 808" fill="none" stroke="#e01820" stroke-width="8"/>
+<text x="500" y="900" text-anchor="middle" fill="#164aa0" font-family="Noto Sans Bengali,Hind Siliguri,sans-serif" font-size="67" font-weight="800">স্থাপিতঃ ১৯৬২ ইং</text>
 </svg>
