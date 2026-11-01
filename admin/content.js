@@ -15,11 +15,12 @@
       throw new Error('Active Super Admin permission required.');
     return sb;
   }
-  function msg(text, bad=false) {
+  window.mhsNotify = function(text, bad=false) {
     let el=document.getElementById('mhsDbMessage');
     if(!el){el=document.createElement('div');el.id='mhsDbMessage';el.setAttribute('role','status');el.setAttribute('aria-live','polite');el.style.cssText='position:fixed;right:22px;top:88px;z-index:10000;max-width:min(440px,calc(100vw - 32px));padding:12px 18px;border-radius:9px;background:#fff;box-shadow:0 8px 28px #10251b26;border-left:4px solid #16804a;font-weight:600;';document.body.appendChild(el);}
     el.textContent=text;el.style.borderLeftColor=bad?'#b42318':'#16804a';el.style.color=bad?'#b42318':'#176b42';el.hidden=false;clearTimeout(el._hideTimer);el._hideTimer=setTimeout(()=>{el.hidden=true;},5000);
-  }
+  };
+  const msg = window.mhsNotify;
   const stamp = () => new Date().toISOString();
   const dateInput = value => { try { return new Date(value || Date.now()).toISOString().slice(0,16); } catch { return new Date().toISOString().slice(0,16); } };
 
