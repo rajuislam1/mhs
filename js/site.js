@@ -42,12 +42,22 @@
     }
   };
 
+
+  function renderSchoolStatistics(data) {
+    if (!data || !data.is_published) return;
+    const infra=document.getElementById('school-infrastructure'), people=document.getElementById('school-history-stats');
+    if(infra){infra.hidden=false;const cards=[['Total Land',data.land_decimals==null?'—':data.land_decimals+' decimal'],['Playground',data.playground_decimals==null?'—':data.playground_decimals+' decimal'],['Building Space',data.floor_space_sqft==null?'—':Number(data.floor_space_sqft).toLocaleString()+' sq. ft.'],['Classrooms',data.room_count==null?'—':String(data.room_count)]];document.getElementById('mhsInfrastructureCards').innerHTML=cards.map(([l,v])=>'<article class="mhs-infra-card"><strong>'+E(v)+'</strong><span>'+E(l)+'</span></article>').join('');}
+    if(people){people.hidden=false;const years=Array.isArray(data.annual_people)?data.annual_people:[];document.getElementById('mhsPeopleStats').innerHTML='<div class="table-wrap"><table class="mhs-data-table"><thead><tr><th>Year</th><th>Students</th><th>Teachers</th><th>Employees</th><th>Student-Teacher Ratio</th></tr></thead><tbody>'+years.slice().sort((a,b)=>Number(b.year)-Number(a.year)).map(x=>'<tr><td>'+E(x.year)+'</td><td>'+E(x.students??'—')+'</td><td>'+E(x.teachers??'—')+'</td><td>'+E(x.employees??'—')+'</td><td>'+E(x.ratio??'—')+'</td></tr>').join('')+'</tbody></table></div>';
+      const table=list=>'<div class="table-wrap"><table class="mhs-data-table"><thead><tr><th>Year</th><th>Appeared</th><th>Passed</th><th>Failed</th><th>GPA-5</th><th>Pass Rate</th></tr></thead><tbody>'+((Array.isArray(list)?list:[]).slice().sort((a,b)=>Number(b.year)-Number(a.year)).map(x=>'<tr><td>'+E(x.year)+'</td><td>'+E(x.appeared??'—')+'</td><td>'+E(x.passed??'—')+'</td><td>'+E(x.failed??'—')+'</td><td>'+E(x.gpa5??'—')+'</td><td><b>'+E(x.pass_rate??'—')+'</b></td></tr>').join(''))+'</tbody></table></div>';
+      document.getElementById('mhsSscResults').innerHTML=table(data.ssc_results);document.getElementById('mhsJscResults').innerHTML=table(data.jsc_results);document.getElementById('mhsStatsSource').textContent=data.source_note||'Historical data; contact the school to verify.';}
+  }
+
   async function loadPublicSite() {
     let sb;
     try { sb = await withTimeout(window.mhsSupabaseReady, 9000); }
     catch (error) { console.warn('MHS database unavailable; showing saved school content.', error?.message || error); return; }
 
-    const [settingsQ, noticesQ, tickerQ, galleryQ, heroQ, achievementsQ, teachersQ, statsQ] = await Promise.all([
+    const [settingsQ, noticesQ, tickerQ, galleryQ, heroQ, achievementsQ, teachersQ, statsQ, schoolStatsQ] = await Promise.all([
       query(sb.from('school_settings').select('school_name,school_name_en,established_year,slogan,logo_url,phone,email,address,about_text,mission_text,vision_text,history_text,student_count,teacher_count,service_years,ssc_pass_rate').limit(1).maybeSingle(), 'school settings'),
       query(sb.from('notices').select('id,title,content,attachment_url,published_at,created_at').eq('is_published',true).order('published_at',{ascending:false}).limit(3), 'notices'),
       query(sb.from('notice_tickers').select('message,link_url').eq('is_active',true).order('display_order').limit(1).maybeSingle(), 'notice ticker'),
@@ -55,7 +65,7 @@
       query(sb.from('hero_images').select('image_url,title,alt_text,display_order').eq('is_active',true).order('display_order'), 'hero images'),
       query(sb.from('achievements').select('id',{count:'exact',head:true}).eq('is_published',true), 'achievements'),
       query(sb.from('teacher_public_profiles').select('id',{count:'exact',head:true}).eq('is_published',true), 'teacher profiles'),
-      query(sb.from('school_public_statistics').select('active_students,active_teachers').eq('id',1).maybeSingle(), 'public statistics')
+      query(sb.from('school_public_statistics').select('*').eq('id',1).maybeSingle(), 'public statistics')
     ]);
 
     const s = settingsQ.data || {};
@@ -79,6 +89,7 @@
     ).join('') || '<p class="hint">Gallery photos will be published by the administration.</p>';
 
     const stats = statsQ.data;
+    renderSchoolStatistics(schoolStatsQ.data);
     const statEls = document.querySelectorAll('.stats strong');
     if (statEls.length >= 4) {
       if (stats?.active_students != null) statEls[0].textContent = String(stats.active_students);
