@@ -98,18 +98,10 @@
     if (homeGallery) { const localImages=['Entertainment.jpeg','Nobin boron.jpeg','Nobinboron.jpeg','head teacher.jpeg','kabadi.jpeg','hero/1.jpg','hero/2.jpg'].map((f,i)=>({title:['Entertainment','Nobin Boron','Nobin Boron','Head Teacher','Kabaddi','School Event','School Event'][i],image_url:'assets/images/'+f})); const remote=galleryQ.data||[]; const all=[...localImages,...remote].slice(0,16); homeGallery.innerHTML = all.map(x =>
       '<div><img loading="lazy" src="' + E(x.image_url) + '" alt="' + E(x.title || 'School gallery') +
       '"><small>' + E(x.title || x.description || '') + '</small></div>'
-    ).join('') || '<p class="hint">Gallery photos will be published by the administration.</p>';
+    ).join('') || '<p class="hint">Gallery photos will be published by the administration.</p>'; }
 
-    const stats = statsQ.data;
     renderSchoolStatistics(schoolStatsQ.data);
     renderSchoolContent(schoolContentQ.data||[]);
-    const statEls = document.querySelectorAll('.stats strong');
-    if (statEls.length >= 4) {
-      if (stats?.active_students != null) statEls[0].textContent = String(stats.active_students);
-      if (stats?.active_teachers != null) statEls[1].textContent = String(stats.active_teachers).padStart(2,'0');
-      statEls[2].textContent = String(s.service_years ?? fallback.serviceYears ?? '—');
-      statEls[3].textContent = String(s.ssc_pass_rate ?? fallback.passRate ?? '—');
-    }
 
     const slides = (heroQ.data || []).map(x => x.image_url).filter(Boolean);
     if (heroBg && slides.length) {
