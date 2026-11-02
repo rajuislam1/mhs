@@ -20,17 +20,21 @@ module.exports = async (req, res) => {
     const classRows=await rest('classes?id=eq.'+encodeURIComponent(b.classId)+'&select=class_number');
     const yearRows=await rest('academic_years?id=eq.'+encodeURIComponent(b.academicYearId)+'&select=year');
     if(!classRows.length||!yearRows.length)throw new Error('Selected class or academic year was not found.');
-    const classCode=String(classRows[0].class_number||'X').replace(/[^A-Za-z0-9]/g,'');
-    const academicYear=String(yearRows[0].year||new Date().getFullYear());
+    // New student IDs use a numeric sequence starting at 10001; legacy IDs stay unchanged.
+    const existingIds=await rest('students?select=student_id&limit=10000');
+    let nextNumericId=Math.max(10000,...(existingIds||[]).map(x=>/^\d+$/.test(String(x.student_id||''))?Number(x.student_id):10000))+1;
     let login=null,inserted=null,lastInsertError=null;
     for(let attempt=0;attempt<8;attempt++){
-      login='MHS-'+academicYear+'-'+classCode+'-'+String(Number(b.roll)).padStart(2,'0')+'-'+randomBytes(4).toString('hex').toUpperCase();
-      const existing=await rest('students?student_id=eq.'+encodeURIComponent(login)+'&select=id');
-      if(existing.length)continue;
+      login=String(nextNumericId++);
       try{
         inserted=await rest('students',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({student_id:login,admission_number:login,name,father_name:String(b.fatherName||'').trim()||null,mother_name:String(b.motherName||'').trim()||null,class_id:b.classId,academic_year_id:b.academicYearId,roll:Number(b.roll),mobile:String(b.mobile||'').trim()||null,status:true})});
         break;
-      }catch(error){lastInsertError=error;if(!/duplicate|unique/i.test(error.message))throw error;}
+      }catch(error){
+        lastInsertError=error;
+        if(!/duplicate|unique/i.test(error.message))throw error;
+        const latest=await rest('students?select=student_id&limit=10000');
+        nextNumericId=Math.max(nextNumericId,...(latest||[]).map(x=>/^\d+$/.test(String(x.student_id||''))?Number(x.student_id)+1:10001));
+      }
     }
     if(!inserted?.length)throw lastInsertError||new Error('Could not generate a unique Student ID. Please retry.');
     studentId=inserted[0].id;if(!studentId)throw new Error('Student record was not created.');
