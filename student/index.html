@@ -68,7 +68,13 @@ document.getElementById('admitPrint').onclick=async()=>{
    const schedule=examSchedules||[];
    if(!schedule.length)throw new Error('No subject date/time schedule has been entered for this examination yet.');
    if(!window.html2pdf){
-    await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';script.onload=resolve;script.onerror=()=>reject(new Error('PDF library could not load. Check your internet connection and retry.'));document.head.appendChild(script);});
+    await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';script.onload=()=>window.html2pdf?resolve():reject(new Error('PDF rendering library loaded but is unavailable.'));script.onerror=()=>reject(new Error('PDF rendering library could not load. Check your internet connection and retry.'));document.head.appendChild(script);});
+   }
+   if(!(window.jspdf?.jsPDF||window.jsPDF)){
+    const urls=['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'];
+    let loaded=false;
+    for(const src of urls){try{await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error('Unable to load PDF document engine'));document.head.appendChild(script);});if(window.jspdf?.jsPDF||window.jsPDF){loaded=true;break;}}catch(err){console.warn('PDF engine CDN failed:',src,err);}}
+    if(!loaded)throw new Error('PDF document engine could not load from either source. Check your internet connection, disable script blockers, and retry.');
    }
    const schoolInfo=school||{},logo=new URL('../assets/images/logo.svg',location.href).href;
    const rows=schedule.map(x=>'<tr><td>'+E(x.subjects?.code||'—')+'</td><td>'+E(x.subjects?.name||'Subject')+'</td><td>'+E(x.exam_date||'—')+'</td><td>'+E(x.start_time?String(x.start_time).slice(0,5):'—')+(x.end_time?' – '+E(String(x.end_time).slice(0,5)):'')+'</td></tr>').join('');
