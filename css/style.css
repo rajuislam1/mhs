@@ -124,3 +124,19 @@ body.lang-en{font-family:var(--font-en)!important}body.lang-en h1,body.lang-en h
 body.lang-bn{font-family:var(--font-bn)!important}body.lang-bn h1,body.lang-bn h2,body.lang-bn h3,body.lang-bn h4,body.lang-bn h5,body.lang-bn h6{font-family:var(--font-bn)!important}
 @media(max-width:850px){.header{padding:8px 16px!important;min-height:64px!important;gap:4px}.header .brand{min-width:0;flex:1}.header-motto{padding:5px 8px;gap:7px}.header-motto small{display:none}.header-motto strong{font-size:10px;padding-left:8px}.header nav{margin-top:7px;top:100%;gap:2px}}
 @media(max-width:560px){.header{min-height:62px!important;padding:7px 12px!important}.header .brand img{width:42px!important;height:46px!important;max-width:42px!important;max-height:46px!important}.header .brand b{font-size:14px}.header .brand span{font-size:10px}.header-motto{display:none}.header nav{top:100%}}
+
+
+/* Headteacher's message: portrait keeps its natural proportions on every screen */
+.headteacher-message{background:linear-gradient(135deg,#f7fbf8 0%,#fff 55%,#f4f8f5 100%);border-radius:22px}
+.headteacher-message-card{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:clamp(24px,4vw,48px);align-items:start;padding:clamp(18px,3vw,34px);background:#fff;border:1px solid #e5eee8;border-radius:20px;box-shadow:0 12px 34px rgba(0,61,45,.08)}
+.headteacher-portrait{margin:0;text-align:center;max-width:300px;width:100%;justify-self:center}
+.headteacher-portrait img{display:block;width:100%;height:auto;aspect-ratio:auto;object-fit:contain;border-radius:14px;border:5px solid #fff;box-shadow:0 5px 22px rgba(0,0,0,.14)}
+.headteacher-portrait figcaption{display:grid;gap:3px;margin-top:13px;padding:12px 10px;border-radius:12px;background:linear-gradient(135deg,#006a4e,#004432);color:#fff}
+.headteacher-portrait figcaption strong{font-size:19px}.headteacher-portrait figcaption span{font-weight:600}.headteacher-portrait figcaption small{color:#e5f4ec}
+.headteacher-message-copy{color:#263b32;font-size:16px;line-height:1.9}
+.headteacher-message-copy p{margin:0 0 15px;line-height:1.9}
+.headteacher-message-copy .headteacher-blessing{margin-top:20px;color:#006a4e;font-weight:700;font-size:18px}
+.headteacher-signoff{display:grid;justify-items:end;gap:2px;margin-top:22px;padding-top:13px;border-top:1px solid #e6eee8;color:#174d3b}
+.headteacher-signoff strong{font-family:var(--font-en)!important;font-size:19px;font-weight:800;letter-spacing:.01em}
+.headteacher-signoff span{font-weight:700}.headteacher-signoff small{color:#66746f}
+@media(max-width:700px){.headteacher-message-card{grid-template-columns:1fr}.headteacher-portrait{max-width:min(100%,280px)}.headteacher-message-copy{font-size:15px}.headteacher-signoff{justify-items:center;text-align:center}}
