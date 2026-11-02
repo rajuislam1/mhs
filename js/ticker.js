@@ -1,7 +1,7 @@
 /* Load the active Supabase notice ticker on every public page. */
 (function(){
  'use strict';
- document.addEventListener('DOMContentLoaded',async()=>{
+ const loadTicker=async()=>{
   const target=document.getElementById('tickerItems');if(!target)return;
   try{
    if(!window.mhsSupabaseReady){
@@ -12,5 +12,7 @@
    if(error)throw error;
    if(data?.message){target.replaceChildren();const span=document.createElement('span');span.textContent=data.message;target.appendChild(span);}
   }catch(error){console.warn('MHS ticker refresh unavailable:',error?.message||error);}
- });
+ };
+ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadTicker,{once:true});
+ else loadTicker();
 })();
