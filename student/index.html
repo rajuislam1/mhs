@@ -83,7 +83,7 @@ document.getElementById('admitPrint').onclick=async()=>{
    const canvas=await pdfWorker.get('canvas'); 
    if(!canvas||canvas.width<100||canvas.height<100)throw new Error('Admit card could not be rendered. Please retry.'); 
    const ctx=canvas.getContext('2d');const sample=ctx.getImageData(Math.floor(canvas.width/2),Math.floor(canvas.height/2),1,1).data;if(sample[3]===0)throw new Error('Admit card render is transparent. Please retry.'); 
-   const pdfawait pdfWorker.toPdf().get('pdf');pdf.save(filename);
+   const pdf=await pdfWorker.toPdf().get('pdf');pdf.save(filename);
   }catch(err){console.error(err);alert(err.message||'Admit card PDF could not be generated.');}
   finally{host?.remove();btn.disabled=!(admitEligible&&admitRoutinePublished);btn.textContent=oldText;}
  }
