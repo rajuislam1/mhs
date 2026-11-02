@@ -62,3 +62,49 @@ tbody tr:nth-child(even){background:#f8fbf9}
 .admin-shell nav button[data-tab="feePayments"]:before{content:"৳"}
 .admin-shell nav button[data-tab="classes"]:before{content:"▣"}
 .admin-shell nav button[data-tab="attendance"]:before{content:"✓"}
+
+/* MHS portal accessibility: make every actionable control show a hand cursor. */
+button:not(:disabled),input[type="submit"]:not(:disabled),input[type="button"]:not(:disabled),a,.btn-small,[role="button"],summary{cursor:pointer!important}
+button:disabled,input:disabled{cursor:not-allowed!important}
+/* Admin and Teacher portal responsive navigation and content. */
+@media(max-width:900px){
+ .admin-shell{display:flex;flex-direction:column;min-height:100vh}
+ .admin-shell aside{position:sticky;top:0;z-index:100;padding:10px 12px;max-height:none;box-shadow:0 4px 18px #002c1c20}
+ .admin-shell .side-brand{padding:3px 6px;gap:8px}
+ .admin-shell .side-brand img{width:34px;height:34px}
+ .admin-shell .side-caption{display:none}
+ .admin-shell nav{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;overflow-y:hidden;gap:6px;margin:8px 0 0;padding:0 0 5px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+ .admin-shell nav button{flex:0 0 auto!important;width:auto!important;white-space:nowrap;padding:9px 12px;margin:0;font-size:12px}
+ .admin-shell main{width:100%;min-width:0}
+ .admin-head{position:sticky;top:94px;z-index:50;padding:14px 18px;gap:12px;flex-wrap:wrap}
+ .admin-head h1{font-size:21px}
+ .panel{padding:18px}
+ .cards4{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .form{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+@media(max-width:600px){
+ .admin-shell aside{padding:8px 9px}
+ .admin-shell .side-brand span{font-size:14px}
+ .admin-shell nav button{font-size:11px;padding:8px 10px}
+ .admin-head{top:86px;padding:12px;align-items:flex-start}
+ .admin-head h1{font-size:18px}
+ .head-actions{width:100%;display:flex;flex-wrap:wrap;gap:7px}
+ .head-actions button,.head-actions a{font-size:12px;padding:8px 10px}
+ .panel{padding:10px}
+ .box{padding:14px;margin-top:12px;border-radius:10px}
+ .box h2{font-size:17px}
+ .cards4{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .stat{padding:13px}.stat b{font-size:22px}
+ .form{grid-template-columns:1fr;gap:10px}
+ .form .full{grid-column:auto}
+ .toolbar{align-items:flex-start;flex-wrap:wrap}
+ .attendance-hero{align-items:flex-start}
+ .attendance-icon{width:42px;height:42px;border-radius:12px;font-size:21px;flex:0 0 auto}
+ .attendance-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .attendance-actions button,.attendance-submit button{width:100%;min-width:0}
+ .attendance-submit{align-items:stretch;flex-direction:column}
+ .table th,.table td{white-space:nowrap;padding:8px;font-size:12px}
+ .login-card{max-width:100%}
+}
+@media(max-width:380px){.cards4{grid-template-columns:1fr}.admin-head{top:82px}}
