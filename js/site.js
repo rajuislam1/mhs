@@ -52,12 +52,20 @@
       document.getElementById('mhsSscResults').innerHTML=table(data.ssc_results);document.getElementById('mhsJscResults').innerHTML=table(data.jsc_results);document.getElementById('mhsStatsSource').textContent=data.source_note||'Historical data; contact the school to verify.';}
   }
 
+
+  function renderSchoolContent(rows) {
+    const g={facility:[],event:[],achievement:[],calendar:[],library:[]};(rows||[]).forEach(x=>{if(g[x.content_type])g[x.content_type].push(x);});
+    const card=x=>'<article class="mhs-content-card">'+(x.image_url?'<img loading="lazy" src="'+E(x.image_url)+'" alt="'+E(x.title)+'">':'')+'<div><h3>'+E(x.title)+'</h3>'+(x.title_bn?'<h4>'+E(x.title_bn)+'</h4>':'')+'<p>'+E(x.description||'')+'</p>'+(x.event_date?'<small>'+E(new Date(x.event_date+'T00:00:00').toLocaleDateString())+'</small>':'')+(x.location?'<small> · '+E(x.location)+'</small>':'')+'</div></article>';
+    const fill=(sid,cid,list,n)=>{const s=document.getElementById(sid),el=document.getElementById(cid);if(!s||!el)return;const featured=list.filter(x=>x.is_featured),data=(featured.length?featured:list).slice(0,n);if(data.length){s.hidden=false;el.innerHTML=data.map(card).join('');}};
+    fill('mhs-home-facilities','mhsHomeFacilities',g.facility,4);fill('mhs-home-events','mhsHomeEvents',g.event,3);fill('mhs-home-achievements','mhsHomeAchievements',g.achievement,3);fill('mhs-home-library','mhsHomeLibrary',g.library,3);
+    const c=g.calendar.filter(x=>x.event_date).sort((a,b)=>a.event_date.localeCompare(b.event_date)),s=document.getElementById('mhs-home-calendar'),el=document.getElementById('mhsHomeCalendar');if(s&&el&&c.length){s.hidden=false;el.innerHTML=c.slice(0,5).map(x=>'<article class="mhs-calendar-item"><time>'+E(new Date(x.event_date+'T00:00:00').toLocaleDateString())+'</time><div><b>'+E(x.title)+'</b><p>'+E(x.description||'')+'</p></div></article>').join('');}
+  }
   async function loadPublicSite() {
     let sb;
     try { sb = await withTimeout(window.mhsSupabaseReady, 9000); }
     catch (error) { console.warn('MHS database unavailable; showing saved school content.', error?.message || error); return; }
 
-    const [settingsQ, noticesQ, tickerQ, galleryQ, heroQ, achievementsQ, teachersQ, statsQ, schoolStatsQ] = await Promise.all([
+    const [settingsQ, noticesQ, tickerQ, galleryQ, heroQ, achievementsQ, teachersQ, statsQ, schoolStatsQ, schoolContentQ] = await Promise.all([
       query(sb.from('school_settings').select('school_name,school_name_en,established_year,slogan,logo_url,phone,email,address,about_text,mission_text,vision_text,history_text,student_count,teacher_count,service_years,ssc_pass_rate').limit(1).maybeSingle(), 'school settings'),
       query(sb.from('notices').select('id,title,content,attachment_url,published_at,created_at').eq('is_published',true).order('published_at',{ascending:false}).limit(3), 'notices'),
       query(sb.from('notice_tickers').select('message,link_url').eq('is_active',true).order('display_order').limit(1).maybeSingle(), 'notice ticker'),
@@ -65,7 +73,8 @@
       query(sb.from('hero_images').select('image_url,title,alt_text,display_order').eq('is_active',true).order('display_order'), 'hero images'),
       query(sb.from('achievements').select('id',{count:'exact',head:true}).eq('is_published',true), 'achievements'),
       query(sb.from('teacher_public_profiles').select('id',{count:'exact',head:true}).eq('is_published',true), 'teacher profiles'),
-      query(sb.from('school_public_statistics').select('*').eq('id',1).maybeSingle(), 'public statistics')
+      query(sb.from('school_public_statistics').select('*').eq('id',1).maybeSingle(), 'public statistics'),
+      query(sb.from('school_public_content').select('*').eq('is_published',true).order('display_order').order('event_date'), 'school content sections')
     ]);
 
     const s = settingsQ.data || {};
@@ -90,6 +99,7 @@
 
     const stats = statsQ.data;
     renderSchoolStatistics(schoolStatsQ.data);
+    renderSchoolContent(schoolContentQ.data||[]);
     const statEls = document.querySelectorAll('.stats strong');
     if (statEls.length >= 4) {
       if (stats?.active_students != null) statEls[0].textContent = String(stats.active_students);
