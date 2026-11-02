@@ -1,7 +1,7 @@
 document.write(`
 <div class="topbar"><div data-en="EIIN: 120140 · Estd. 1962 · Dinajpur Education Board" data-bn="EIIN: ১২০১৪০ · স্থাপিত: ১৯৬২ · দিনাজপুর শিক্ষা বোর্ড">EIIN: 120140 · Estd. 1962 · Dinajpur Education Board</div><div><span>☎ 01752209431</span><span>✉ mokhleshpurhighschool@gmail.com</span></div></div>
 <header class="header"><a class="brand" href="index.html"><img src="assets/images/logo.svg" alt="MHS"><div><b data-en="Mokhleshpur High School" data-bn="মোখলেশপুর উচ্চ বিদ্যালয়">Mokhleshpur High School</b><span data-en="Established 1962" data-bn="স্থাপিত ১৯৬২">Established 1962</span></div></a>
-<button class="menu" id="menu" aria-label="Open menu">☰</button>
+<button class="menu" id="menu" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
 <nav id="nav">
 <a href="index.html" data-en="Home" data-bn="হোম">Home</a>
 <a href="notices.html" data-en="Notices" data-bn="নোটিশ">Notices</a>
@@ -26,5 +26,12 @@ document.write(`
 <a href="student.html" data-en="Student Portal" data-bn="শিক্ষার্থী পোর্টাল">Student Portal</a><a href="admission.html" data-en="Admission" data-bn="ভর্তি">Admission</a>
 <button class="lang-btn" id="langToggle" type="button">বাংলা</button><a class="admin-btn" href="admin/login.html" data-en="▣ Admin" data-bn="▣ অ্যাডমিন">▣ Admin</a>
 </nav></header><div class="ticker"><strong data-en="NOTICE" data-bn="নোটিশ">NOTICE</strong><div id="tickerItems"></div></div>`);
-(function(){const menu=document.getElementById('menu'),nav=document.getElementById('nav');menu?.addEventListener('click',()=>nav?.classList.toggle('open'));document.querySelectorAll('.nav-drop-trigger').forEach(btn=>btn.addEventListener('click',()=>btn.parentElement.classList.toggle('expanded')));document.getElementById('langToggle')?.addEventListener('click',()=>window.MHS_I18N?.toggle());})();
-document.write('<script src="js/i18n.js"><\\/script><script src="js/ticker.js"><\\/script>');
+(function(){
+ const menu=document.getElementById('menu'),nav=document.getElementById('nav');
+ menu?.addEventListener('click',()=>{const open=nav?.classList.toggle('open');menu.setAttribute('aria-expanded',String(!!open));});
+ document.querySelectorAll('.nav-drop-trigger').forEach(btn=>btn.addEventListener('click',()=>btn.parentElement.classList.toggle('expanded')));
+ document.getElementById('langToggle')?.addEventListener('click',()=>window.MHS_I18N?.toggle());
+ // Load scripts through DOM APIs. Avoid malformed document.write closing-script tags,
+ // which can make the browser consume the rest of the page as script text.
+ ['js/i18n.js','js/ticker.js'].forEach(src=>{const script=document.createElement('script');script.src=src;script.async=false;document.head.appendChild(script);});
+})();
