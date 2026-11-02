@@ -103,3 +103,24 @@ button,input,select,textarea{font-size:var(--text-sm)}
 .brand b{font-family:var(--font-bn)!important}
 .stats strong,.feature-grid h3,.section-head h2,.prose h2,.page-hero h1,.hero h1{font-family:var(--font-bn)!important}
 @media(max-width:600px){body{font-size:15px}.hero h1{font-size:clamp(28px,8vw,36px)}.page-hero h1{font-size:clamp(27px,7vw,34px)}.section-head h2{font-size:25px}.prose h2,.resource-card h2{font-size:21px}}
+
+
+/* Compact shared header and stable language typography */
+.header{height:auto!important;min-height:0!important;display:flex;flex-wrap:wrap;align-items:center;gap:0 18px;padding:7px clamp(16px,4vw,64px)!important}
+.header .brand{flex:1 1 auto;min-width:260px;gap:11px}
+.header .brand img{width:50px!important;height:54px!important;max-width:50px!important;max-height:54px!important}
+.header .brand b{font-size:18px;line-height:1.2}
+.header .brand span{font-size:12px;line-height:1.25;margin-top:2px}
+.header-motto{display:flex;align-items:center;gap:10px;margin-left:auto;padding:7px 13px;border:1px solid #e2eee7;border-radius:12px;background:linear-gradient(110deg,#f7fbf8,#fff);color:#245d48}
+.header-motto>div{display:grid;line-height:1.25}.header-motto b{font-size:13px;font-weight:700}.header-motto small{font-size:10px;color:#718279}
+.header-motto strong{border-left:1px solid #d7e6dd;padding-left:12px;font-size:11px;letter-spacing:.04em;color:#a47d12}
+.motto-dot{width:9px;height:9px;border-radius:50%;background:#1c9a69;box-shadow:0 0 0 0 rgba(28,154,105,.35);animation:mhsPulse 2s infinite;flex:none}
+@keyframes mhsPulse{0%{box-shadow:0 0 0 0 rgba(28,154,105,.35)}70%{box-shadow:0 0 0 8px rgba(28,154,105,0)}100%{box-shadow:0 0 0 0 rgba(28,154,105,0)}}
+.header nav{flex:1 1 100%;width:100%;justify-content:center;flex-wrap:wrap;gap:2px;margin-top:5px}
+.header nav>a,.header nav>.nav-dropdown>.nav-drop-trigger{font-size:12px!important;padding:6px 9px!important;white-space:nowrap}
+.header nav .lang-btn{font-size:12px;padding:6px 10px}.header nav .admin-btn{padding:6px 11px!important}
+.ticker{height:36px}.ticker strong{padding:6px 15px;font-size:12px}.ticker>div{padding:5px 0}.ticker span{font-size:12px}
+body.lang-en{font-family:var(--font-en)!important}body.lang-en h1,body.lang-en h2,body.lang-en h3,body.lang-en h4,body.lang-en h5,body.lang-en h6{font-family:var(--font-en)!important}
+body.lang-bn{font-family:var(--font-bn)!important}body.lang-bn h1,body.lang-bn h2,body.lang-bn h3,body.lang-bn h4,body.lang-bn h5,body.lang-bn h6{font-family:var(--font-bn)!important}
+@media(max-width:850px){.header{padding:8px 16px!important;min-height:64px!important;gap:4px}.header .brand{min-width:0;flex:1}.header-motto{padding:5px 8px;gap:7px}.header-motto small{display:none}.header-motto strong{font-size:10px;padding-left:8px}.header nav{margin-top:7px;top:100%;gap:2px}}
+@media(max-width:560px){.header{min-height:62px!important;padding:7px 12px!important}.header .brand img{width:42px!important;height:46px!important;max-width:42px!important;max-height:46px!important}.header .brand b{font-size:14px}.header .brand span{font-size:10px}.header-motto{display:none}.header nav{top:100%}}
