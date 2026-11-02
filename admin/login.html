@@ -1,1 +1,30 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Login | MHS</title><link rel="icon" href="../assets/images/logo.svg"><link rel="stylesheet" href="../css/admin.css"><link rel="stylesheet" href="../css/portal.css"></head><body class="login-page"><a class="teacher-shortcut" href="../teacher/login.html">Teacher Portal <span>→</span></a><div class="login-card"><img src="../assets/images/logo.svg" alt="Mokhleshpur High School crest"><h1>Administration Portal</h1><p>মোখলেশপুর উচ্চ বিদ্যালয়</p><form id="login"><label>Administrator Email<input id="u" type="email" required autocomplete="username" placeholder="Enter admin email"></label><label>Password<input id="p" type="password" required autocomplete="current-password" placeholder="Enter password"></label><button>Sign In to Dashboard</button><small id="msg" role="status" aria-live="polite"></small></form><a href="../index.html">← Back to website</a></div><script src="../js/core.js"></script><script src="../js/supabase.js"></script><script src="login.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Login | MHS</title>
+  <link rel="icon" href="../assets/images/logo.svg">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/portal.css">
+</head>
+<body class="login-page">
+  <a class="teacher-shortcut" href="../teacher/login.html">Teacher Portal <span>→</span></a>
+  <div class="login-card">
+    <img src="../assets/images/logo.svg" alt="Mokhleshpur High School crest">
+    <h1>Administration Portal</h1>
+    <p>মোখলেশপুর উচ্চ বিদ্যালয়</p>
+    <form id="login">
+      <label>Administrator Email<input id="u" type="email" required autocomplete="username" placeholder="Enter admin email"></label>
+      <label>Password<input id="p" type="password" required autocomplete="current-password" placeholder="Enter password"></label>
+      <button type="submit">Sign In to Dashboard</button>
+      <button type="button" id="forgot-password" class="secondary-button">Forgot Password?</button>
+      <small id="msg" role="status" aria-live="polite"></small>
+    </form>
+    <a href="../index.html">← Back to website</a>
+  </div>
+  <script src="../js/core.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>
