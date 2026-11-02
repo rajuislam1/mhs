@@ -375,6 +375,8 @@
   // --------------------------------------------------
   // Main Teacher Management screen
   // --------------------------------------------------
+  let sb = null;
+  // --------------------------------------------------
   window.teachers = async function () {
     let accounts = read('mhs_teacher_accounts');
     let profiles = [];
