@@ -16,5 +16,6 @@
   const button=document.getElementById('langToggle');if(button)button.textContent=bn()?'English':'বাংলা';
  }
  window.MHS_I18N={toggle(){localStorage.setItem(KEY,bn()?'en':'bn');apply();},translate:apply,getLanguage:()=>bn()?'bn':'en'};
- document.addEventListener('DOMContentLoaded',()=>{apply();const observer=new MutationObserver(records=>records.forEach(r=>r.addedNodes.forEach(n=>{if(n.nodeType===1)apply(n);else if(n.nodeType===3)translateText(n.parentElement||document.body);})));observer.observe(document.body,{childList:true,subtree:true});});
+ const init=()=>{apply();const observer=new MutationObserver(records=>records.forEach(r=>r.addedNodes.forEach(n=>{if(n.nodeType===1)apply(n);else if(n.nodeType===3)translateText(n.parentElement||document.body);})));observer.observe(document.body,{childList:true,subtree:true});};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
