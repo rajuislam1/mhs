@@ -87,26 +87,21 @@
     const noticeCards = document.getElementById('noticeCards');
     if (noticeCards) noticeCards.innerHTML = noticeList.map(n =>
       '<article class="notice-card"><small>' + E(n.published_at || n.created_at ? new Date(n.published_at || n.created_at).toLocaleDateString('en-GB') : '') +
-      '</small><h3>' + E(n.title) + '</h3><p>' + E(n.content || '') +
-      '</p><a href="notices.html">Read notice →</a></article>'
+      '</small><h3>' + E(n.title) + '</h3><p class="notice-preview">' + E(n.content || '') +
+      '</p><button type="button" class="notice-read-more" aria-expanded="false">Read more</button><a class="notice-full-link" href="notices.html">All notices →</a></article>'
     ).join('') || '<p class="hint">No notices published.</p>';
+    noticeCards?.querySelectorAll('.notice-read-more').forEach(btn=>btn.addEventListener('click',()=>{const card=btn.closest('.notice-card');const expanded=card.classList.toggle('expanded');btn.setAttribute('aria-expanded',String(expanded));btn.textContent=expanded?'Show less':'Read more';}));
+
+    const homeStats=document.getElementById('homeSchoolStats');if(homeStats&&settingsQ.data){const st=settingsQ.data;const vals=[[st.student_count??'—','Registered Students'],[st.teacher_count??'—','Teachers'],[st.service_years??'—','Years of Service'],[st.ssc_pass_rate==null?'—':String(st.ssc_pass_rate).includes('%')?st.ssc_pass_rate:st.ssc_pass_rate+'%','SSC Pass Rate']];homeStats.innerHTML=vals.map(([v,l])=>'<div><strong>'+E(v)+'</strong><span>'+E(l)+'</span></div>').join('');}
 
     const homeGallery = document.getElementById('homeGallery');
-    if (homeGallery && galleryQ.data) homeGallery.innerHTML = galleryQ.data.map(x =>
+    if (homeGallery) { const localImages=['Entertainment.jpeg','Nobin boron.jpeg','Nobinboron.jpeg','head teacher.jpeg','kabadi.jpeg','hero/1.jpg','hero/2.jpg'].map((f,i)=>({title:['Entertainment','Nobin Boron','Nobin Boron','Head Teacher','Kabaddi','School Event','School Event'][i],image_url:'assets/images/'+f})); const remote=galleryQ.data||[]; const all=[...localImages,...remote].slice(0,16); homeGallery.innerHTML = all.map(x =>
       '<div><img loading="lazy" src="' + E(x.image_url) + '" alt="' + E(x.title || 'School gallery') +
       '"><small>' + E(x.title || x.description || '') + '</small></div>'
-    ).join('') || '<p class="hint">Gallery photos will be published by the administration.</p>';
+    ).join('') || '<p class="hint">Gallery photos will be published by the administration.</p>'; }
 
-    const stats = statsQ.data;
     renderSchoolStatistics(schoolStatsQ.data);
     renderSchoolContent(schoolContentQ.data||[]);
-    const statEls = document.querySelectorAll('.stats strong');
-    if (statEls.length >= 4) {
-      if (stats?.active_students != null) statEls[0].textContent = String(stats.active_students);
-      if (stats?.active_teachers != null) statEls[1].textContent = String(stats.active_teachers).padStart(2,'0');
-      statEls[2].textContent = String(s.service_years ?? fallback.serviceYears ?? '—');
-      statEls[3].textContent = String(s.ssc_pass_rate ?? fallback.passRate ?? '—');
-    }
 
     const slides = (heroQ.data || []).map(x => x.image_url).filter(Boolean);
     if (heroBg && slides.length) {

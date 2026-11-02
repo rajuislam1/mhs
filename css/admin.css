@@ -137,3 +137,15 @@ body,.admin-shell,.admin-shell button,.admin-shell input,.admin-shell select,.ad
 html.bn-admin body,html.bn-admin body *{
   font-family:var(--mhs-admin-font-bn)!important;
 }
+
+/* Independent fixed-height Admin navigation and content scrolling */
+html,body{height:100%;min-height:100%;overflow:hidden}
+.admin-shell{height:100dvh;min-height:0;max-height:100dvh;overflow:hidden;grid-template-columns:250px minmax(0,1fr);align-items:stretch}
+.admin-shell>aside{position:relative;height:100dvh;min-height:0;max-height:100dvh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;align-self:stretch;scrollbar-width:thin;scrollbar-color:#4d8974 #063d30}
+.admin-shell>aside .side-brand{position:sticky;top:0;z-index:2;background:#063d30}
+.admin-shell>aside nav{min-height:0;flex:0 0 auto}
+.admin-shell>main{height:100dvh;min-height:0;max-height:100dvh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin}
+.admin-head{position:sticky;top:0;z-index:5}
+#app{min-height:0}
+@media(max-width:900px){.admin-shell{grid-template-columns:210px minmax(0,1fr)}}
+@media(max-width:700px){html,body{overflow:hidden}.admin-shell{grid-template-columns:1fr;grid-template-rows:minmax(160px,34dvh) minmax(0,1fr);height:100dvh}.admin-shell>aside{height:auto;max-height:34dvh;min-height:0}.admin-shell>aside .side-brand{position:sticky;top:0}.admin-shell>main{height:66dvh;max-height:66dvh}.admin-head{position:sticky;top:0}}
