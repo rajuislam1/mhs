@@ -397,55 +397,12 @@
       window.mhsEnsureAcademicStructure(year);
     }
 
-    // Load teacher login accounts.
-    try {
-      const result = await teacherApi('GET');
-
-      accounts = Array.isArray(result.teachers) ? result.teachers : [];
-      window.mhsSupabaseTeachers = accounts;
-
-      write('mhs_teacher_accounts', accounts.map(x => ({
-        id: x.id,
-        name: x.name,
-        designation: x.designation,
-        subject: x.subject,
-        qualification: x.qualification,
-        username: x.username,
-        email: x.email,
-        photo: x.photo,
-        status: x.status
-      })));
-    } catch (error) {
-      console.error('Teacher account load error:', error);
-      accountLoadError = error.message || 'Could not load teacher accounts.';
-      accounts = read('mhs_teacher_accounts');
-      window.mhsSupabaseTeachers = [];
-    }
-
-    // Load public profiles.
-    try {
-      const result = await publicTeacherApi('GET');
-      profiles = Array.isArray(result.teachers) ? result.teachers : [];
-      window.mhsPublicTeachers = profiles;
-    } catch (error) {
-      console.error('Public teacher profile load error:', error);
-      publicProfileLoadError = error.message || 'Could not load public profiles.';
-      profiles = [];
-      window.mhsPublicTeachers = [];
-    }
-
-    // Load assignment data from Supabase.
-    let sb = null;
-
-    try {
-      sb = await getSupabase();
-      await getActiveAdmin(sb);
-      options = await getAssignmentOptions(sb);
-      assignmentRows = await getAssignments(sb);
-    } catch (error) {
-      console.error('Assignment load error:', error);
-      assignmentLoadError = error.message || 'Could not load assignments.';
-    }
+    // Load account, public-profile and assignment data concurrently.
+    const assignmentTask=(async()=>{const client=await getSupabase();await getActiveAdmin(client);const [assignmentOptions,rows]=await Promise.all([getAssignmentOptions(client),getAssignments(client)]);return{client,assignmentOptions,rows};})();
+    const [accountResult,profileResult,assignmentResult]=await Promise.allSettled([teacherApi('GET'),publicTeacherApi('GET'),assignmentTask]);
+    if(accountResult.status==='fulfilled'){accounts=Array.isArray(accountResult.value.teachers)?accountResult.value.teachers:[];window.mhsSupabaseTeachers=accounts;write('mhs_teacher_accounts',accounts.map(x=>({id:x.id,name:x.name,designation:x.designation,subject:x.subject,qualification:x.qualification,username:x.username,email:x.email,photo:x.photo,status:x.status})));}else{const error=accountResult.reason;console.error('Teacher account load error:',error);accountLoadError=error?.message||'Could not load teacher accounts.';accounts=read('mhs_teacher_accounts');window.mhsSupabaseTeachers=[];}
+    if(profileResult.status==='fulfilled'){profiles=Array.isArray(profileResult.value.teachers)?profileResult.value.teachers:[];window.mhsPublicTeachers=profiles;}else{const error=profileResult.reason;console.error('Public teacher profile load error:',error);publicProfileLoadError=error?.message||'Could not load public profiles.';profiles=[];window.mhsPublicTeachers=[];}
+    if(assignmentResult.status==='fulfilled'){sb=assignmentResult.value.client;options=assignmentResult.value.assignmentOptions;assignmentRows=assignmentResult.value.rows;}else{const error=assignmentResult.reason;console.error('Assignment load error:',error);assignmentLoadError=error?.message||'Could not load assignments.';}
 
     const legacyAssignments = [];
 
