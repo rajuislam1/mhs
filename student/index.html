@@ -77,7 +77,7 @@ document.getElementById('admitPrint').onclick=async()=>{
    document.body.appendChild(host);const card=host.querySelector('.mhs-pdf');const pdfImages=Array.from(card.querySelectorAll('img'));await Promise.all(pdfImages.map(img=>img.decode?img.decode().catch(()=>{}):Promise.resolve()));
    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
    const rect=card.getBoundingClientRect();if(!card.textContent.trim()||rect.width<100||rect.height<100)throw new Error('Admit card content is not ready for PDF capture. Please refresh and try again.');
-   const filename='MHS-Admit-Card-'+String(s.student_id).replace(/[^A-Za-z0-9-]/g,'')+'-'+exam.replace(/\\s+/g,'-')+'.pdf'; 
+   const filename='MHS-Admit-Card-'+String(s.student_id).replace(/[^A-Za-z0-9-]/g,'')+'-'+exam.replace(/\s+/g,'-')+'.pdf'; 
    const pdfOptions={margin:0,image:{type:'jpeg',quality:.98},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false,allowTaint:false,scrollX:0,scrollY:0,windowWidth:Math.max(document.documentElement.clientWidth,Math.ceil(rect.width)),windowHeight:Math.max(document.documentElement.clientHeight,Math.ceil(rect.height))},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}}; 
    const pdfWorker=window.html2pdf().set(pdfOptions).from(card).toCanvas(); 
    const canvas=await pdfWorker.get('canvas'); 
