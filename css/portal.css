@@ -1,5 +1,5 @@
 /* Shared MHS portal refresh */
-@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
 :root{--mhs-green:#075b43;--mhs-deep:#063d30;--mhs-red:#c91d2b;--mhs-blue:#174b9b;--mhs-gold:#e7b638;--mhs-bg:#f2f7f4;--mhs-line:#dce8e1;--mhs-shadow:0 18px 48px rgba(5,58,41,.11)}
 *{box-sizing:border-box}body{font-family:'Hind Siliguri','Noto Sans Bengali',Arial,sans-serif;background:radial-gradient(ellipse at top left,#e4f2e9 0,transparent 42%),var(--mhs-bg);color:#18352a}
 .login-page{min-height:100vh;padding:28px 16px;display:grid;place-items:center;background:linear-gradient(135deg,#043b2d 0%,#087454 58%,#e9f3ed 58%,#f5f8f6 100%);position:relative;overflow:hidden}
@@ -77,3 +77,18 @@ button:disabled,input:disabled{cursor:not-allowed!important}
  .portal-page .actions button{width:100%}
  .portal-page input,.portal-page select{width:100%;max-width:100%}
 }
+
+
+/* Unified typography for Admin, Teacher and Student portals */
+:root{--mhs-font-bn:'Hind Siliguri','Noto Sans Bengali',Arial,sans-serif;--mhs-font-en:'Manrope','Hind Siliguri','Noto Sans Bengali',Arial,sans-serif}
+body,.portal-page,.login-page,.admin-shell,.admin-shell main,.admin-shell aside{font-family:var(--mhs-font-bn)!important;font-size:15px;line-height:1.6}
+h1,h2,h3,h4,h5,h6,button,input,select,textarea,label,table{font-family:var(--mhs-font-bn)!important}
+.admin-head h1{font-size:clamp(22px,2.4vw,29px)!important;line-height:1.3}
+.admin-shell nav button,.portal-actions button,.portal-actions a,.head-actions a{font-size:14px!important;line-height:1.4}
+.login-card h1{font-size:clamp(23px,4vw,29px)!important;line-height:1.3}
+.login-card p{font-size:15px;line-height:1.6}
+.login-card label,.form label,.login-card input{font-size:14px!important}
+.portal-welcome h2{font-size:clamp(23px,3vw,32px)!important;line-height:1.3}
+.portal-page .c h2,.portal-page .c h3{font-size:20px!important;line-height:1.35}
+.portal-page table th,.portal-page table td{font-size:14px;line-height:1.5}
+@media(max-width:620px){body,.portal-page,.login-page{font-size:14px}.portal-page .c h2,.portal-page .c h3{font-size:18px!important}.portal-page table th,.portal-page table td{font-size:13px;padding:8px}}
