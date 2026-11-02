@@ -145,3 +145,18 @@ body.lang-bn{font-family:var(--font-bn)!important}body.lang-bn h1,body.lang-bn h
 
 /* Admin-managed homepage sections */
 .mhs-content-section[hidden]{display:none!important}.mhs-content-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin:24px 0}.mhs-content-card{overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}.mhs-content-card img{display:block;width:100%;height:190px;object-fit:cover;background:#edf3ef}.mhs-content-card>div{padding:18px}.mhs-content-card h3{margin:0 0 7px;color:var(--green);font-size:18px}.mhs-content-card h4{margin:0 0 8px;font-size:15px;color:var(--muted)}.mhs-content-card p{margin:0 0 10px;line-height:1.7;white-space:pre-line}.mhs-content-card small{font-size:12px;color:var(--muted)}.mhs-calendar-list{display:grid;gap:12px;margin:22px 0}.mhs-calendar-item{display:flex;gap:18px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px}.mhs-calendar-item time{flex:0 0 110px;color:var(--green);font-weight:800}.mhs-calendar-item p{margin:4px 0 0}.mhs-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}.mhs-detail-card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}.mhs-detail-card img{width:100%;height:260px;object-fit:cover}.mhs-detail-card>div{padding:20px}.mhs-detail-card h2{margin:0 0 8px;color:var(--green)}.mhs-detail-card p{white-space:pre-line}@media(max-width:760px){.mhs-content-grid,.mhs-detail-grid{grid-template-columns:1fr}.mhs-content-card img{height:210px}.mhs-calendar-item{gap:10px;flex-direction:column}.mhs-calendar-item time{flex:auto}}
+
+/* Homepage notice cards: fixed preview height; expand only on demand */
+.notice-card{min-height:235px;display:flex;flex-direction:column;align-items:flex-start;padding:20px}
+.notice-card h3{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.7em}
+.notice-card .notice-preview{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-height:1.65;max-height:5.0em;margin:5px 0 10px}
+.notice-card.expanded .notice-preview{display:block;-webkit-line-clamp:unset;max-height:none;overflow:visible}
+.notice-read-more{border:0;background:transparent;color:var(--green);font:inherit;font-size:13px;font-weight:800;padding:4px 0;cursor:pointer}
+.notice-full-link{margin-top:auto;padding-top:5px}
+#home-school-statistics-gallery .stats{margin:0;max-width:none}
+#home-school-statistics-gallery .stats>div{min-width:0}
+#homeGallery.public-gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+#homeGallery.public-gallery>div{height:190px;min-height:190px;overflow:hidden;border-radius:12px;background:#e9efeb}
+#homeGallery.public-gallery img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s ease}
+#homeGallery.public-gallery>div:hover img{transform:scale(1.04)}
+@media(max-width:760px){#homeGallery.public-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}#homeGallery.public-gallery>div{height:155px;min-height:155px}}
