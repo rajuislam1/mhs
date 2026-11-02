@@ -80,11 +80,9 @@ document.getElementById('admitPrint').onclick=async()=>{
    const filename='MHS-Admit-Card-'+String(s.student_id).replace(/[^A-Za-z0-9-]/g,'')+'-'+exam.replace(/\s+/g,'-')+'.pdf'; 
    const pdfOptions={margin:0,filename,image:{type:'png',quality:1},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false,allowTaint:false,scrollX:0,scrollY:0,width:Math.ceil(rect.width),height:Math.ceil(rect.height),windowWidth:Math.max(1200,document.documentElement.clientWidth),windowHeight:Math.max(1600,document.documentElement.clientHeight)},jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},pagebreak:{mode:[]}}; 
    const pdfWorker=window.html2pdf().set(pdfOptions).from(card).toCanvas(); 
-   const canvas=await pdfWorker.get('canvas'); 
-   if(!canvas||canvas.width<100||canvas.height<100)throw new Error('Admit card could not be rendered. Please retry.'); 
-   const ctx=canvas.getContext('2d');const sample=ctx.getImageData(Math.floor(canvas.width/2),Math.floor(canvas.height/2),1,1).data;if(sample[3]===0)throw new Error('Admit card render is transparent. Please retry.'); 
    const canvas=await pdfWorker.get('canvas');
    if(!canvas||canvas.width<100||canvas.height<100)throw new Error('Admit card could not be rendered. Please retry.');
+   const ctx=canvas.getContext('2d');const sample=ctx.getImageData(Math.floor(canvas.width/2),Math.floor(canvas.height/2),1,1).data;if(sample[3]===0)throw new Error('Admit card render is transparent. Please retry.');
    const JsPDF=window.jspdf?.jsPDF||window.jsPDF;
    if(typeof JsPDF!=='function')throw new Error('PDF engine is unavailable. Please refresh and retry.');
    const pdf=new JsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
