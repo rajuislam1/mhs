@@ -1,51 +1,12 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Notices | Mokhleshpur High School</title>
-  <link rel="icon" href="assets/images/logo.svg">
-  <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-  <script src="js/header.js"></script>
-  <main class="page">
-    <div class="page-hero">
-      <span data-i18n="NOTICE BOARD">NOTICE BOARD</span>
-      <h1 data-i18n="Latest Notices">Latest Notices</h1>
-      <p data-i18n="School announcements and official information.">School announcements and official information.</p>
-    </div>
-    <section class="section"><div id="allNotices" class="notice-list"><div class="empty">Loading notices…</div></div></section>
-  </main>
-  <script src="js/data.js"></script>
-  <script src="js/supabase.js"></script>
-  <script>
-    (async function loadAllPublicNotices() {
-      const target = document.getElementById('allNotices');
-      const escNotice = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
-      const renderRows = rows => {
-        target.innerHTML = rows.map(x => {
-          const date = x.published_at || x.created_at || x.date || new Date().toISOString();
-          const title = x.title || '';
-          const content = x.content ?? x.description ?? '';
-          const file = x.attachment_url ?? x.file ?? '';
-          return `<article class="notice-row"><div class="date-box"><b>${new Date(date).toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}</b><small>${new Date(date).getFullYear()}</small></div><div><h3>${escNotice(title)}</h3><p>${escNotice(content)}</p><small>Posted: ${new Date(date).toLocaleString()}</small>${file ? `<p><a class="text-link" href="${escNotice(file)}" target="_blank" rel="noopener noreferrer">View attachment →</a></p>` : ''}</div></article>`;
-        }).join('') || '<div class="empty">No notices published.</div>';
-      };
-      try {
-        const sb = await window.mhsSupabaseReady;
-        const { data, error } = await sb.from('notices')
-          .select('id,title,content,attachment_url,is_published,published_at,created_at')
-          .eq('is_published', true)
-          .order('published_at', { ascending: false });
-        if (error) throw error;
-        renderRows(data || []);
-      } catch (error) {
-        console.error('Could not load public notices from Supabase:', error);
-        target.innerHTML = '<div class="empty">Notices are temporarily unavailable. Please try again later.</div>';
-      }
-    })();
-  </script>
-  <script src="js/footer.js"></script>
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Notices | Mokhleshpur High School</title><link rel="icon" href="assets/images/logo.svg"><link rel="stylesheet" href="css/style.css"></head>
+<body><script src="js/header.js"></script><main class="page"><div class="page-hero"><span data-en="NOTICE BOARD" data-bn="নোটিশ বোর্ড">NOTICE BOARD</span><h1 data-en="Latest Notices" data-bn="সর্বশেষ নোটিশ">Latest Notices</h1><p data-en="School announcements and official information." data-bn="বিদ্যালয়ের ঘোষণা ও অফিসিয়াল তথ্য।">School announcements and official information.</p></div>
+<section class="section"><div class="notice-filter"><label><span data-en="Notice Search" data-bn="নোটিশ খুঁজুন">Notice Search</span><input id="noticeSearch" type="search" placeholder="Search notices"></label><label><span data-en="From date" data-bn="শুরুর তারিখ">From date</span><input id="dateFrom" type="date"></label><label><span data-en="To date" data-bn="শেষ তারিখ">To date</span><input id="dateTo" type="date"></label><button id="clearNoticeFilters" class="btn green" type="button" data-en="Clear" data-bn="মুছুন">Clear</button></div><div id="allNotices" class="notice-list"><div class="empty">Loading notices…</div></div></section></main>
+<script src="js/data.js"></script><script src="js/supabase.js"></script><script>
+(async function(){const target=document.getElementById('allNotices'),search=document.getElementById('noticeSearch'),from=document.getElementById('dateFrom'),to=document.getElementById('dateTo');let rows=[];
+const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+function render(){const q=search.value.trim().toLocaleLowerCase(),a=from.value,b=to.value;const filtered=rows.filter(x=>{const d=(x.published_at||x.created_at||'').slice(0,10),text=[x.title,x.content,x.notice_type].join(' ').toLocaleLowerCase();return(!q||text.includes(q))&&(!a||d>=a)&&(!b||d<=b)});target.innerHTML=filtered.map(x=>{const date=x.published_at||x.created_at||new Date().toISOString(),file=x.attachment_url||'';return '<article class="notice-row"><div class="date-box"><b>'+new Date(date).toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+'</b><small>'+new Date(date).getFullYear()+'</small></div><div><h3>'+E(x.title)+'</h3><p>'+E(x.content||'')+'</p><small>Posted: '+new Date(date).toLocaleString()+'</small>'+(file?'<p><a class="text-link" href="'+E(file)+'" target="_blank" rel="noopener">View / Download attachment →</a></p>':'')+'</div></article>'}).join('')||'<div class="empty">No notices match your search.</div>';window.MHS_I18N?.translate(target);}
+[search,from,to].forEach(el=>el.addEventListener('input',render));document.getElementById('clearNoticeFilters').onclick=()=>{search.value=from.value=to.value='';render()};
+try{const sb=await window.mhsSupabaseReady;const {data,error}=await sb.from('notices').select('id,title,content,notice_type,attachment_url,published_at,created_at').eq('is_published',true).order('published_at',{ascending:false});if(error)throw error;rows=data||[];render()}catch(e){console.error(e);target.innerHTML='<div class="empty">Notices are temporarily unavailable.</div>';}
+})();
+</script><script src="js/footer.js"></script></body></html>
