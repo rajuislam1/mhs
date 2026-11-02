@@ -42,3 +42,31 @@ tbody tr:nth-child(even){background:#f8fbf9}
 
 /* Keep the portrait crest proportional in every shared header. */
 .brand img,.footer-brand img,.side-brand img,.portal-brand img,.login-card>img{object-fit:contain!important;flex-shrink:0;max-width:100%;height:auto!important;width:auto!important;max-height:76px!important}.brand img{max-width:62px;max-height:62px!important}.footer-brand img,.side-brand img{max-width:52px;max-height:58px!important}.portal-brand img{width:66px!important;height:76px!important}.login-card>img{width:112px!important;height:126px!important}
+
+
+/* Public pages: mobile layout refinements and consistent pointer feedback. */
+button,button[type=button],button[type=submit],input[type=button],input[type=submit],a.btn,.btn,[role=button],summary{cursor:pointer}
+@media(max-width:850px){
+ .section{padding:48px 18px}.band{padding-left:18px;padding-right:18px}
+ .header{position:relative;z-index:50}.header nav{max-height:calc(100vh - 90px);overflow-y:auto}
+ .hero{min-height:0}.hero-content{padding:42px 0}.hero-links{margin:8px 0 18px}
+ .map-section{gap:22px}.map{height:260px}.stats{margin:0 12px 20px}
+}
+@media(max-width:600px){
+ .topbar{display:none}.header{min-height:66px;height:auto;padding:8px 14px}
+ .brand{gap:8px;min-width:0}.brand img{max-width:44px;max-height:48px!important}.brand b{font-size:14px;line-height:1.2}.brand span{font-size:11px}
+ .header nav{top:64px;padding:12px}.header nav a{padding:11px 12px}
+ .ticker{height:auto;min-height:38px}.ticker strong{padding:8px 10px;font-size:12px}.ticker>div{min-width:0}.ticker span{font-size:12px}
+ .hero{padding:0 14px 18px}.hero-content{width:100%;padding:36px 0 22px}.hero h1{font-size:clamp(29px,8vw,38px);overflow-wrap:anywhere}.hero h2{font-size:19px}.hero p{font-size:14px}
+ .hero-actions{gap:9px}.hero-actions .btn{width:100%;text-align:center}.hero-links{width:100%;margin:0 0 8px}
+ .hero-links h3{font-size:16px}.hl-list{max-height:260px}
+ .stats{grid-template-columns:1fr 1fr;margin:0 10px 12px}.stats div{padding:14px 8px}.stats strong{font-size:23px}.stats span{font-size:11px}
+ .section{padding:38px 14px}.section-head h2{font-size:25px;line-height:1.25;margin-bottom:20px}
+ .cards,.feature-grid,.teacher-grid,.two-col,.map-section,.mission-grid{grid-template-columns:1fr;gap:14px}
+ .notice-card,.feature-grid article,.teacher-card,.result-box,.external-result{padding:17px}
+ .form-grid,.student-search{grid-template-columns:1fr}.notice-row{grid-template-columns:62px minmax(0,1fr);gap:10px;padding:12px}
+ .notice-row p{overflow-wrap:anywhere}.result-card,.student-result{overflow-x:auto}.result-card table,.student-result table{min-width:520px}
+ .public-gallery{grid-template-columns:1fr}.public-gallery img{height:190px}.map{height:220px}
+ .footer-main,.site-footer .footer-main{grid-template-columns:1fr;padding:34px 16px;gap:18px}
+ .site-footer .copyright{padding:16px;flex-direction:column;text-align:center}img,iframe{max-width:100%}
+}
