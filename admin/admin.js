@@ -1,5 +1,5 @@
 /* MHS Admin shell with role-based module visibility. Server and RLS enforce permissions too. */
-if(sessionStorage.getItem('mhs_admin')!=='1') location.href='login.html';
+if(sessionStorage.getItem('mhs_admin')!=='1') location.replace('/admin');
 const app=document.getElementById('app'),title=document.getElementById('title');
 let tab='overview';
 const role=sessionStorage.getItem('mhs_admin_role')||'super_admin';
@@ -33,7 +33,7 @@ function render(){
  Promise.resolve(fn()).catch(e=>{console.error(e);app.innerHTML='<div class="panel"><div class="box"><h2>Could not load data</h2><p>'+esc(e.message||'Supabase request failed.')+'</p></div></div>';});
 }
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{if(!canAccess(b.dataset.tab))return;tab=b.dataset.tab;render();}));
-document.getElementById('logout').addEventListener('click',async()=>{try{const sb=await window.mhsSupabaseReady;await sb.auth.signOut()}catch(e){console.error(e)}finally{['mhs_admin','mhs_admin_role','mhs_admin_permissions','mhs_admin_name'].forEach(k=>sessionStorage.removeItem(k));location.href='login.html'}});
+document.getElementById('logout').addEventListener('click',async()=>{try{const sb=await window.mhsSupabaseReady;await sb.auth.signOut()}catch(e){console.error(e)}finally{['mhs_admin','mhs_admin_role','mhs_admin_permissions','mhs_admin_name'].forEach(k=>sessionStorage.removeItem(k));location.href='/admin'}});
 document.getElementById('adminLang').addEventListener('click',()=>{document.documentElement.classList.toggle('bn-admin');document.getElementById('adminLang').textContent=document.documentElement.classList.contains('bn-admin')?'English':'বাংলা'});
 applyNavigationAccess();
 const backupButton=document.getElementById('backupData');if(backupButton&&role!=='super_admin')backupButton.hidden=true;
