@@ -17,7 +17,7 @@ document.getElementById('login').addEventListener('submit', async (e) => {
     if (!data.user) throw new Error('Login succeeded but no user was returned.');
 
     const { data: profile, error: profileError } = await supabase
-      .from('user_profiles').select('id, role, is_active').eq('id', data.user.id).maybeSingle();
+      .from('user_profiles').select('id, role, is_active, permissions, display_name').eq('id', data.user.id).maybeSingle();
 
     if (profileError) throw new Error('Profile query failed: ' + profileError.message);
     if (!profile) throw new Error('No user profile found for this login account.');
