@@ -271,7 +271,7 @@
 
     const { data: profile, error } = await sb
       .from('user_profiles')
-      .select('id,role,is_active')
+      .select('id,role,is_active,permissions')
       .eq('id', user.id)
       .maybeSingle();
 
