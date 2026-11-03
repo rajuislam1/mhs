@@ -18,17 +18,16 @@ module.exports = async (req,res) => {
     const apps=await rest('admission_applications?id=eq.'+encodeURIComponent(applicationId)+'&select=*');
     const app=apps[0];if(!app)return res.status(404).json({success:false,error:'Admission application not found.'});
     if(app.application_status!=='pending')return res.status(409).json({success:false,error:'This application has already been reviewed.'});
-    const [classes,years,rollDup,idDup]=await Promise.all([
+    const [classes,years,rollDup]=await Promise.all([
       rest('classes?id=eq.'+encodeURIComponent(classId)+'&status=eq.true&select=id'),
       rest('academic_years?id=eq.'+encodeURIComponent(yearId)+'&select=id,is_active'),
       rest('students?class_id=eq.'+encodeURIComponent(classId)+'&academic_year_id=eq.'+encodeURIComponent(yearId)+'&roll=eq.'+roll+'&status=eq.true&select=id'),
-      rest('students?select=id&limit=1')
     ]);
     if(!classes.length||!years.length)return res.status(400).json({success:false,error:'Selected class or academic year is invalid.'});
     if(rollDup.length)return res.status(409).json({success:false,error:'This roll number is already assigned in the selected class and year.'});
     // Generate a numeric Student ID using the same 10001+ sequence as manual student creation.
     const existingIds=await rest('students?select=student_id&limit=10000');
-    let nextNumericId=Math.max(10000,...(existingIds||[]).map(x=>/^\\d+$/.test(String(x.student_id||''))?Number(x.student_id):10000))+1;
+    let nextNumericId=Math.max(10000,...(existingIds||[]).map(x=>/^\d+$/.test(String(x.student_id||''))?Number(x.student_id):10000))+1;
     let inserted=null,lastInsertError=null;
     for(let attempt=0;attempt<8;attempt++){
       generatedStudentId=String(nextNumericId++);
@@ -44,7 +43,7 @@ module.exports = async (req,res) => {
         lastInsertError=error;
         if(!/duplicate|unique/i.test(error.message))throw error;
         const latest=await rest('students?select=student_id&limit=10000');
-        nextNumericId=Math.max(nextNumericId,...(latest||[]).map(x=>/^\\d+$/.test(String(x.student_id||''))?Number(x.student_id)+1:10001));
+        nextNumericId=Math.max(nextNumericId,...(latest||[]).map(x=>/^\d+$/.test(String(x.student_id||''))?Number(x.student_id)+1:10001));
       }
     }
     if(!inserted?.length)throw lastInsertError||new Error('Could not generate a unique numeric Student ID. Please retry.');
