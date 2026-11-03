@@ -192,3 +192,8 @@ body.lang-bn{font-family:var(--font-bn)!important}body.lang-bn h1,body.lang-bn h
 @media(max-width:850px){.mhs-animated-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mhs-home-achievements-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.mhs-animated-stats-grid{gap:10px}.mhs-animated-stat-card{min-height:145px;padding:19px 10px}.mhs-count-up{font-size:27px}.mhs-home-achievements-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.mhs-animated-stat-card{animation:none}.mhs-count-up{transition:none}}
+
+
+/* Discreet administrator access is available only at the bottom of the public-site footer. */
+.footer-admin-access{max-width:1180px;margin:0 auto;padding:0 20px 18px;text-align:right}.footer-admin-link{display:inline-block;color:#d9c16d!important;border:1px solid rgba(217,193,109,.45);border-radius:20px;padding:6px 13px;font-size:11px;text-decoration:none;opacity:.82}.footer-admin-link:hover{background:rgba(217,193,109,.1);opacity:1}
+@media(max-width:600px){.footer-admin-access{text-align:center;padding-bottom:16px}}
