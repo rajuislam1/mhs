@@ -60,6 +60,33 @@
     fill('mhs-home-facilities','mhsHomeFacilities',g.facility,4);fill('mhs-home-events','mhsHomeEvents',g.event,3);fill('mhs-home-achievements','mhsHomeAchievements',g.achievement,3);fill('mhs-home-library','mhsHomeLibrary',g.library,3);
     const c=g.calendar.filter(x=>x.event_date).sort((a,b)=>a.event_date.localeCompare(b.event_date)),s=document.getElementById('mhs-home-calendar'),el=document.getElementById('mhsHomeCalendar');if(s&&el&&c.length){s.hidden=false;el.innerHTML=c.slice(0,5).map(x=>'<article class="mhs-calendar-item"><time>'+E(new Date(x.event_date+'T00:00:00').toLocaleDateString())+'</time><div><b>'+E(x.title)+'</b><p>'+E(x.description||'')+'</p></div></article>').join('');}
   }
+  function renderAnimatedStats(data) {
+    const section=document.getElementById('mhs-animated-stats'),grid=document.getElementById('mhsAnimatedStats');
+    if(!section||!grid||!data||!data.is_published)return;
+    const rows=Array.isArray(data.animated_stats)?data.animated_stats.filter(x=>x&&x.is_active!==false&&String(x.label||'').trim()):[];
+    if(!rows.length)return;
+    section.hidden=false;
+    grid.innerHTML=rows.sort((a,b)=>(Number(a.display_order)||0)-(Number(b.display_order)||0)).map((x,i)=>{
+      const raw=String(x.value??'0'),numeric=Number(raw.replace(/,/g,'').replace(/[^0-9.-]/g,''));
+      const suffix=raw.match(/[^0-9,.-]+$/)?.[0]||'';
+      const prefix=raw.match(/^[^0-9,.-]+/)?.[0]||'';
+      const numericValue=Number.isFinite(numeric)?numeric:0;
+      return '<article class="mhs-animated-stat-card" style="--stat-delay:'+Math.min(i,8)*90+'ms"><span class="mhs-stat-icon" aria-hidden="true">'+E(x.icon||'✦')+'</span><strong class="mhs-count-up" data-target="'+numericValue+'" data-prefix="'+E(prefix)+'" data-suffix="'+E(suffix)+'">'+E(raw)+'</strong><span class="mhs-animated-stat-label">'+E(x.label)+'</span>'+(x.note?'<small>'+E(x.note)+'</small>':'')+'</article>';
+    }).join('');
+    const counters=grid.querySelectorAll('.mhs-count-up');
+    const animate=el=>{if(el.dataset.done)return;el.dataset.done='1';const target=Number(el.dataset.target)||0;if(!target){el.textContent=(el.dataset.prefix||'')+'0'+(el.dataset.suffix||'');return;}const duration=1400,start=performance.now(),prefix=el.dataset.prefix||'',suffix=el.dataset.suffix||'';const step=now=>{const progress=Math.min(1,(now-start)/duration),eased=1-Math.pow(1-progress,3);el.textContent=prefix+Math.round(target*eased).toLocaleString()+suffix;if(progress<1)requestAnimationFrame(step);};requestAnimationFrame(step);};
+    if('IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){animate(entry.target);observer.unobserve(entry.target);}}),{threshold:.25});counters.forEach(el=>observer.observe(el));}else counters.forEach(animate);
+  }
+
+  function renderHomepageAchievements(rows) {
+    const section=document.getElementById('home-achievements-wrap'),grid=document.getElementById('homeAchievements');
+    if(!section||!grid)return;
+    const items=(rows||[]).filter(x=>x.content_type==='achievement').sort((a,b)=>(Number(a.display_order)||0)-(Number(b.display_order)||0)).slice(0,6);
+    if(!items.length)return;
+    section.hidden=false;
+    grid.innerHTML=items.map(x=>'<article class="mhs-home-achievement-card"><span>★</span><div><h3>'+E(x.title)+'</h3>'+(x.title_bn?'<h4>'+E(x.title_bn)+'</h4>':'')+'<p>'+E(x.description||x.description_bn||'')+'</p>'+(x.event_date?'<small>'+E(new Date(x.event_date+'T00:00:00').toLocaleDateString())+'</small>':'')+'</div></article>').join('');
+  }
+
   async function loadPublicSite() {
     let sb;
     try { sb = await withTimeout(window.mhsSupabaseReady, 9000); }
