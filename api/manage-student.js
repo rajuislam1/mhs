@@ -5,9 +5,9 @@ module.exports = async (req,res)=>{
  const base=url.replace(/\/$/,'');const headers={apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'};
  async function rest(path,options={}){const r=await fetch(base+'/rest/v1/'+path,{...options,headers:{...headers,...options.headers}});const t=await r.text();let d;try{d=t?JSON.parse(t):null}catch{d=t}if(!r.ok)throw new Error(d?.message||'Database request failed.');return d;}
  try{
-  const token=(req.headers.authorization||'').replace(/^Bearer\s+/i,'');if(!token)return res.status(401).json({success:false,error:'Admin login required.'});
-  const ar=await fetch(base+'/auth/v1/user',{headers:{apikey:key,Authorization:'Bearer '+token}});if(!ar.ok)return res.status(401).json({success:false,error:'Admin session expired.'});const admin=await ar.json();
-  const p=await rest('user_profiles?id=eq.'+encodeURIComponent(admin.id)+'&select=role,is_active');if(!p[0]||p[0].role!=='super_admin'||p[0].is_active!==true)return res.status(403).json({success:false,error:'Active Super Admin permission required.'});
+  const { authorizeAdmin } = require('./_lib/admin-auth');
+  const authz = await authorizeAdmin(req, res, 'students');
+  if (!authz) return;
   const id=String(req.body?.id||'');if(!/^[0-9a-f-]{36}$/i.test(id))return res.status(400).json({success:false,error:'Valid student ID is required.'});
   const now=new Date().toISOString();
   if(Object.prototype.hasOwnProperty.call(req.body||{},'password')){
