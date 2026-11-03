@@ -7,7 +7,7 @@
     },
     {
       "source": "/admin/dashboard",
-      "destination": "/admin/index.html"
+      "destination": "/admin/dashboard.html"
     }
   ]
 }
