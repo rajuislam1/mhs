@@ -271,7 +271,7 @@
 
     const { data: profile, error } = await sb
       .from('user_profiles')
-      .select('id,role,is_active')
+      .select('id,role,is_active,permissions')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -279,8 +279,9 @@
 
     if (
       !profile ||
-      profile.role !== 'super_admin' ||
-      profile.is_active !== true
+      !['super_admin', 'admin', 'moderator'].includes(profile.role) ||
+      profile.is_active !== true ||
+      (profile.role !== 'super_admin' && profile.permissions?.teachers !== true)
     ) {
       throw new Error(
         'Active Super Admin permission required to manage assignments.'

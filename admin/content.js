@@ -9,10 +9,15 @@
     if (!sessionData?.session?.user) throw new Error('Admin session expired. Please sign in again.');
     const user = sessionData.session.user;
     const { data: profile, error: profileError } = await sb
-      .from('user_profiles').select('role,is_active').eq('id', user.id).maybeSingle();
+      .from('user_profiles').select('role,is_active,permissions').eq('id', user.id).maybeSingle();
     if (profileError) throw new Error('Could not verify Admin permission: ' + profileError.message);
-    if (!profile || profile.role !== 'super_admin' || profile.is_active !== true)
-      throw new Error('Active Super Admin permission required.');
+    const activeModule = window.mhsAdminActiveTab || 'overview';
+    if (!profile || profile.is_active !== true) throw new Error('Administrator account is inactive.');
+    if (profile.role !== 'super_admin' &&
+        !(profile.role === 'admin' || profile.role === 'moderator') ||
+        (profile.role !== 'super_admin' && activeModule !== 'overview' && profile.permissions?.[activeModule] !== true)) {
+      throw new Error('You do not have permission to access this module.');
+    }
     return sb;
   }
   window.mhsNotify = function(text, bad=false) {

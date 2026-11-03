@@ -1,3 +1,4 @@
+const { authorizeAdmin } = require('./_lib/admin-auth');
 
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -27,64 +28,8 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Verify the signed-in user.
-    const token = (req.headers.authorization || '')
-      .replace(/^Bearer\s+/i, '');
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        error: 'Admin login required.'
-      });
-    }
-
-    const authResponse = await fetch(
-      `${SUPABASE_URL}/auth/v1/user`,
-      {
-        headers: {
-          apikey: SERVICE_KEY,
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
-
-    if (!authResponse.ok) {
-      return res.status(401).json({
-        success: false,
-        error: 'Login session is invalid or expired.'
-      });
-    }
-
-    const authUser = await authResponse.json();
-
-    const profileResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/user_profiles` +
-      `?id=eq.${encodeURIComponent(authUser.id)}` +
-      '&select=id,role,is_active',
-      { headers }
-    );
-
-    if (!profileResponse.ok) {
-      return res.status(500).json({
-        success: false,
-        error: 'Could not verify admin permissions.'
-      });
-    }
-
-    const profiles = await profileResponse.json();
-    const profile = profiles[0];
-
-    if (
-      !profile ||
-      profile.role !== 'super_admin' ||
-      profile.is_active !== true
-    ) {
-      return res.status(403).json({
-        success: false,
-        error: 'Active Super Admin permission required.'
-      });
-    }
-
+    const authz = await authorizeAdmin(req, res, 'teachers');
+    if (!authz) return;
     const baseUrl =
       `${SUPABASE_URL}/rest/v1/teacher_public_profiles`;
 

@@ -9,10 +9,10 @@ module.exports = async (req, res) => {
   async function rest(path,options={}){const r=await fetch(base+'/rest/v1/'+path,{...options,headers:{...headers,...options.headers}});const t=await r.text();let d;try{d=t?JSON.parse(t):null}catch{d=t}if(!r.ok)throw new Error(typeof d==='string'?d:(d?.message||d?.details||'Database request failed.'));return d;}
   let studentId=null,userId=null;
   try{
-    const token=(req.headers.authorization||'').replace(/^Bearer\s+/i,'');if(!token)return res.status(401).json({success:false,error:'Admin login required.'});
-    const ar=await fetch(base+'/auth/v1/user',{headers:{apikey:key,Authorization:'Bearer '+token}});if(!ar.ok)return res.status(401).json({success:false,error:'Admin session expired.'});const admin=await ar.json();
-    const profiles=await rest('user_profiles?id=eq.'+encodeURIComponent(admin.id)+'&select=role,is_active');
-    if(!profiles[0]||profiles[0].role!=='super_admin'||profiles[0].is_active!==true)return res.status(403).json({success:false,error:'Active Super Admin permission required.'});
+    const { authorizeAdmin } = require('./_lib/admin-auth');
+    const authz = await authorizeAdmin(req, res, 'students');
+    if (!authz) return;
+    const admin = authz.user;
     const b=req.body||{};const name=String(b.name||'').trim(),password=String(b.password||'');
     if(!name)return res.status(400).json({success:false,error:'Student name is required.'});
     if(password.length<8)return res.status(400).json({success:false,error:'Password must be at least 8 characters.'});

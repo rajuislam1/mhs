@@ -1,3 +1,4 @@
+const { authorizeAdmin } = require('./_lib/admin-auth');
 
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -27,60 +28,8 @@ module.exports = async (req, res) => {
   let profileCreated = false;
 
   try {
-    const token = (req.headers.authorization || '')
-      .replace(/^Bearer\s+/i, '');
-
-    if (!token) {
-      return res.status(401).json({
-        error: 'Admin login required.'
-      });
-    }
-
-    // Verify the current Supabase Auth session.
-    const authCheck = await fetch(
-      `${SUPABASE_URL}/auth/v1/user`,
-      {
-        headers: {
-          apikey: SERVICE_KEY,
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
-
-    if (!authCheck.ok) {
-      return res.status(401).json({
-        error: 'Your login session is invalid or expired.'
-      });
-    }
-
-    const admin = await authCheck.json();
-
-    // Verify the administrator's role and active status.
-    const profileCheck = await fetch(
-      `${SUPABASE_URL}/rest/v1/user_profiles` +
-      `?id=eq.${encodeURIComponent(admin.id)}` +
-      '&select=id,role,is_active',
-      { headers }
-    );
-
-    if (!profileCheck.ok) {
-      return res.status(500).json({
-        error: 'Could not verify administrator permissions.'
-      });
-    }
-
-    const profiles = await profileCheck.json();
-    const adminProfile = profiles[0];
-
-    if (
-      !adminProfile ||
-      adminProfile.role !== 'super_admin' ||
-      adminProfile.is_active !== true
-    ) {
-      return res.status(403).json({
-        error: 'Active Super Admin permission required.'
-      });
-    }
+    const authz = await authorizeAdmin(req, res, 'teachers');
+    if (!authz) return;
 
     const body = req.body || {};
 
