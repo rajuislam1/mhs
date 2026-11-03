@@ -23,6 +23,7 @@ async function rest(base, headers, path, options = {}) {
 }
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  let pendingAuthId = null;
   try {
     const auth = await authorizeAdmin(req, res, null);
     if (!auth) return;
@@ -58,10 +59,12 @@ module.exports = async (req, res) => {
       });
       const created = await createResponse.json();
       if (!createResponse.ok) return res.status(400).json({ success: false, error: created.message || created.msg || 'Could not create account.' });
+      pendingAuthId = created.id;
       const saved = await rest(base, headers, 'user_profiles', {
         method: 'POST', headers: { Prefer: 'return=representation' },
         body: JSON.stringify({ id: created.id, role, display_name: name, email, is_active: true, permissions })
       });
+      pendingAuthId = null;
       return res.status(201).json({ success: true, account: saved?.[0] || { id: created.id, role, display_name: name, email, is_active: true, permissions } });
     }
     if (req.method === 'PATCH') {
@@ -96,6 +99,11 @@ module.exports = async (req, res) => {
     res.setHeader('Allow', 'GET, POST, PATCH');
     return res.status(405).json({ success: false, error: 'Method not allowed.' });
   } catch (error) {
+    if (pendingAuthId && URL && KEY) {
+      await fetch(URL.replace(/\\/$/, '') + '/auth/v1/admin/users/' + encodeURIComponent(pendingAuthId), {
+        method: 'DELETE', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY }
+      }).catch(() => {});
+    }
     console.error('Admin role management failed:', error);
     return res.status(500).json({ success: false, error: error.message || 'Unexpected server error.' });
   }
