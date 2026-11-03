@@ -22,7 +22,7 @@ document.getElementById('login').addEventListener('submit', async e => {
       refresh_token: payload.session.refresh_token
     });
     if (error) throw error;
-    window.location.replace('/student/index.html');
+    window.location.replace('/student/dashboard.html');
   } catch (error) {
     console.error('Student sign-in failed:', error);
     msg.textContent = error.message || 'Unable to sign in.';
