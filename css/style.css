@@ -170,3 +170,25 @@ body.lang-bn{font-family:var(--font-bn)!important}body.lang-bn h1,body.lang-bn h
 .gallery-page-grid figcaption{padding:10px 14px;font-weight:700;color:var(--green)}
 @media(max-width:760px){.gallery-page-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.gallery-page-grid img{height:160px}}
 @media(max-width:420px){.gallery-page-grid{grid-template-columns:1fr}.gallery-page-grid img{height:210px}}
+
+
+/* Animated highlights and achievements — no photos required */
+.mhs-animated-stats-section{padding-top:58px;padding-bottom:62px}
+.mhs-animated-stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.mhs-animated-stat-card{position:relative;overflow:hidden;min-height:170px;padding:25px 18px;text-align:center;border:1px solid #dfe9e3;border-radius:18px;background:linear-gradient(145deg,#fff,#f4faf6);box-shadow:0 10px 28px rgba(0,61,45,.07);animation:mhsStatRise .55s both;animation-delay:var(--stat-delay,0ms)}
+.mhs-animated-stat-card:after{content:"";position:absolute;width:120px;height:120px;border-radius:50%;right:-48px;top:-55px;background:rgba(0,106,78,.06)}
+.mhs-stat-icon{display:block;font-size:25px;color:#c39b27;margin-bottom:7px}
+.mhs-count-up{display:block;color:#006a4e;font-size:34px;font-weight:800;line-height:1.25;font-variant-numeric:tabular-nums}
+.mhs-animated-stat-label{display:block;margin-top:9px;font-weight:700;color:#1d3c30}
+.mhs-animated-stat-card small{display:block;color:#738179;margin-top:3px}
+.mhs-home-achievements-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-bottom:25px}
+.mhs-home-achievement-card{display:flex;gap:14px;padding:22px;border:1px solid #e0e9e4;border-radius:14px;background:#fff;box-shadow:0 8px 22px rgba(0,61,45,.05)}
+.mhs-home-achievement-card>span{flex:none;width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#fff6d9;color:#a98216;font-size:20px}
+.mhs-home-achievement-card h3{margin:0 0 4px;color:#164b38;font-size:18px}
+.mhs-home-achievement-card h4{margin:0 0 6px;color:#60756a;font-size:14px}
+.mhs-home-achievement-card p{margin:0;color:#66746f;font-size:14px}
+.mhs-home-achievement-card small{display:block;margin-top:8px;color:#a17b16}
+@keyframes mhsStatRise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:850px){.mhs-animated-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mhs-home-achievements-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.mhs-animated-stats-grid{gap:10px}.mhs-animated-stat-card{min-height:145px;padding:19px 10px}.mhs-count-up{font-size:27px}.mhs-home-achievements-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.mhs-animated-stat-card{animation:none}.mhs-count-up{transition:none}}

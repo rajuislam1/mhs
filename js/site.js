@@ -60,19 +60,49 @@
     fill('mhs-home-facilities','mhsHomeFacilities',g.facility,4);fill('mhs-home-events','mhsHomeEvents',g.event,3);fill('mhs-home-achievements','mhsHomeAchievements',g.achievement,3);fill('mhs-home-library','mhsHomeLibrary',g.library,3);
     const c=g.calendar.filter(x=>x.event_date).sort((a,b)=>a.event_date.localeCompare(b.event_date)),s=document.getElementById('mhs-home-calendar'),el=document.getElementById('mhsHomeCalendar');if(s&&el&&c.length){s.hidden=false;el.innerHTML=c.slice(0,5).map(x=>'<article class="mhs-calendar-item"><time>'+E(new Date(x.event_date+'T00:00:00').toLocaleDateString())+'</time><div><b>'+E(x.title)+'</b><p>'+E(x.description||'')+'</p></div></article>').join('');}
   }
+  function renderAnimatedStats(data) {
+    const section=document.getElementById('mhs-animated-stats'),grid=document.getElementById('mhsAnimatedStats');
+    if(!section||!grid||!data||!data.is_published)return;
+    const rows=Array.isArray(data.animated_stats)?data.animated_stats.filter(x=>x&&x.is_active!==false&&String(x.label||'').trim()):[];
+    if(!rows.length)return;
+    section.hidden=false;
+    grid.innerHTML=rows.sort((a,b)=>(Number(a.display_order)||0)-(Number(b.display_order)||0)).map((x,i)=>{
+      const raw=String(x.value??'0'),numeric=Number(raw.replace(/,/g,'').replace(/[^0-9.-]/g,''));
+      const suffix=raw.match(/[^0-9,.-]+$/)?.[0]||'';
+      const prefix=raw.match(/^[^0-9,.-]+/)?.[0]||'';
+      const numericValue=Number.isFinite(numeric)?numeric:0;
+      return '<article class="mhs-animated-stat-card" style="--stat-delay:'+Math.min(i,8)*90+'ms"><span class="mhs-stat-icon" aria-hidden="true">'+E(x.icon||'✦')+'</span><strong class="mhs-count-up" data-target="'+numericValue+'" data-prefix="'+E(prefix)+'" data-suffix="'+E(suffix)+'">'+E(raw)+'</strong><span class="mhs-animated-stat-label">'+E(x.label)+'</span>'+(x.note?'<small>'+E(x.note)+'</small>':'')+'</article>';
+    }).join('');
+    const counters=grid.querySelectorAll('.mhs-count-up');
+    const animate=el=>{if(el.dataset.done)return;el.dataset.done='1';const target=Number(el.dataset.target)||0;if(!target){el.textContent=(el.dataset.prefix||'')+'0'+(el.dataset.suffix||'');return;}const duration=1400,start=performance.now(),prefix=el.dataset.prefix||'',suffix=el.dataset.suffix||'';const step=now=>{const progress=Math.min(1,(now-start)/duration),eased=1-Math.pow(1-progress,3);el.textContent=prefix+Math.round(target*eased).toLocaleString()+suffix;if(progress<1)requestAnimationFrame(step);};requestAnimationFrame(step);};
+    if('IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){animate(entry.target);observer.unobserve(entry.target);}}),{threshold:.25});counters.forEach(el=>observer.observe(el));}else counters.forEach(animate);
+  }
+
+  function renderHomepageAchievements(rows, legacyRows) {
+    const section=document.getElementById('home-achievements-wrap'),grid=document.getElementById('homeAchievements');
+    if(!section||!grid)return;
+    const contentItems=(rows||[]).filter(x=>x.content_type==='achievement').map(x=>({title:x.title,title_bn:x.title_bn,description:x.description||x.description_bn,event_date:x.event_date,display_order:x.display_order}));
+    const legacyItems=(legacyRows||[]).map(x=>({title:x.title,description:x.description,event_date:x.achievement_date,display_order:x.display_order}));
+    const items=[...contentItems,...legacyItems].sort((a,b)=>(Number(a.display_order)||0)-(Number(b.display_order)||0)).slice(0,6);
+    if(!items.length)return;
+    section.hidden=false;
+    grid.innerHTML=items.map(x=>'<article class="mhs-home-achievement-card"><span>★</span><div><h3>'+E(x.title)+'</h3>'+(x.title_bn?'<h4>'+E(x.title_bn)+'</h4>':'')+'<p>'+E(x.description||x.description_bn||'')+'</p>'+(x.event_date?'<small>'+E(new Date(x.event_date+'T00:00:00').toLocaleDateString())+'</small>':'')+'</div></article>').join('');
+  }
+
   async function loadPublicSite() {
     let sb;
     try { sb = await withTimeout(window.mhsSupabaseReady, 9000); }
     catch (error) { console.warn('MHS database unavailable; showing saved school content.', error?.message || error); return; }
 
-    const [settingsQ, noticesQ, tickerQ, galleryQ, heroQ, schoolStatsQ, schoolContentQ] = await Promise.all([
+    const [settingsQ, noticesQ, tickerQ, galleryQ, heroQ, schoolStatsQ, schoolContentQ, achievementsQ] = await Promise.all([
       query(sb.from('school_settings').select('school_name,school_name_en,established_year,slogan,logo_url,phone,email,address,about_text,mission_text,vision_text,history_text,student_count,teacher_count,service_years,ssc_pass_rate').limit(1).maybeSingle(), 'school settings'),
       query(sb.from('notices').select('id,title,content,attachment_url,published_at,created_at').eq('is_published',true).order('published_at',{ascending:false}).limit(3), 'notices'),
       query(sb.from('notice_tickers').select('message,link_url').eq('is_active',true).order('display_order').limit(1).maybeSingle(), 'notice ticker'),
       query(sb.from('gallery').select('title,description,image_url,category').eq('is_published',true).order('display_order').limit(6), 'gallery'),
       query(sb.from('hero_images').select('image_url,title,alt_text,display_order').eq('is_active',true).order('display_order'), 'hero images'),
       query(sb.from('school_public_statistics').select('*').eq('id',1).maybeSingle(), 'public statistics'),
-      query(sb.from('school_public_content').select('*').eq('is_published',true).order('display_order').order('event_date'), 'school content sections')
+      query(sb.from('school_public_content').select('*').eq('is_published',true).order('display_order').order('event_date'), 'school content sections'),
+      query(sb.from('achievements').select('title,description,achievement_date,display_order').eq('is_published',true).order('display_order'), 'achievements')
     ]);
 
     const s = settingsQ.data || {};

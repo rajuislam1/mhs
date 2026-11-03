@@ -187,16 +187,24 @@
       </div>
     </section>
 
-    <!-- ACHIEVEMENTS & GALLERY -->
-    <section class="section">
-      <div class="section-head">
-        <span>ACHIEVEMENTS</span>
-        <h2>Achievements & Gallery</h2>
-      </div>
+    <!-- ANIMATED SCHOOL HIGHLIGHTS — managed from Admin > School Statistics -->
+    <section class="section mhs-animated-stats-section" id="mhs-animated-stats" hidden>
+      <div class="section-head"><span data-en="OUR JOURNEY IN NUMBERS" data-bn="সংখ্যায় আমাদের অগ্রযাত্রা">OUR JOURNEY IN NUMBERS</span><h2 data-en="School at a Glance" data-bn="এক নজরে বিদ্যালয়">School at a Glance</h2></div>
+      <div class="mhs-animated-stats-grid" id="mhsAnimatedStats"></div>
+    </section>
 
+    <!-- ACHIEVEMENTS -->
+    <section class="section mhs-home-achievements-wrap" id="home-achievements-wrap" hidden>
+      <div class="section-head"><span data-en="CELEBRATING SUCCESS" data-bn="সাফল্যের উদযাপন">CELEBRATING SUCCESS</span><h2 data-en="Our Achievements" data-bn="আমাদের অর্জনসমূহ">Our Achievements</h2></div>
+      <div class="mhs-home-achievements-grid" id="homeAchievements"></div>
+      <a class="btn green" href="achievements.html">View All Achievements</a>
+    </section>
+
+    <!-- SCHOOL GALLERY — uses existing school photographs; no new image upload required -->
+    <section class="section band" id="home-gallery-section">
+      <div class="section-head"><span data-en="MEMORIES & MOMENTS" data-bn="বিদ্যালয়ের স্মৃতি ও মুহূর্ত">MEMORIES & MOMENTS</span><h2 data-en="School Gallery" data-bn="বিদ্যালয়ের ফটো গ্যালারি">School Gallery</h2></div>
       <div id="homeGallery" class="preview public-gallery"></div>
-
-      <a class="btn green" href="gallery.html">View Gallery</a>
+      <a class="btn green" href="gallery.html">View Full Gallery</a>
     </section>
 
     <!-- SCHOOL STATISTICS AFTER ACHIEVEMENTS & GALLERY -->
