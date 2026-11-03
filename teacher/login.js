@@ -37,7 +37,7 @@ document.getElementById('login').addEventListener('submit', async (e) => {
     sessionStorage.setItem('mhs_teacher', JSON.stringify(teacherSession));
     // Use an absolute path: /teacher itself has no trailing slash, so
     // a relative index.html would otherwise resolve to the website root.
-    window.location.replace('/teacher/index.html');
+    window.location.replace('/teacher/dashboard.html');
   } catch (error) {
     console.error('Teacher login error:', error);
     msg.textContent = error.message || 'Login failed. Please try again.';
