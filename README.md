@@ -7,7 +7,7 @@ Vercel-ready static HTML/CSS/JS website for Mokhleshpur High School, Birol, Dina
 ## Teacher login
 1. Admin → Teachers & Accounts → Create Teacher Account.
 2. Open `teacher/login.html`.
-3. Login with the created username/password.
+3. Login with the created personal email address and password.
 
 ## Working admin modules
 - Dashboard
