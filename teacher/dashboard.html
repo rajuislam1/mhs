@@ -1,0 +1,86 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Teacher Portal | Mokhleshpur High School</title>
+
+    <link rel="icon" href="../assets/images/logo.svg">
+    <link rel="stylesheet" href="../css/admin.css"><link rel="stylesheet" href="../css/portal.css">
+</head>
+
+<body>
+    <div class="admin-shell">
+
+        <!-- Sidebar -->
+        <aside>
+            <a class="side-brand" href="../index.html">
+                <img src="../assets/images/logo.svg" alt="School Logo">
+                <span>Teacher Portal</span>
+            </a>
+
+            <nav>
+                <button type="button" data-tab="dash" class="active">
+                    Dashboard
+                </button>
+
+                <button type="button" data-tab="attendance">✓ &nbsp; Online Attendance</button>
+                <button type="button" data-tab="attreport">▥ &nbsp; Attendance Progress</button>
+
+                <button type="button" data-tab="routine">
+                    Class Routine
+                </button>
+
+                <button type="button" data-tab="classes">
+                    My Classes
+                </button>
+
+                <button type="button" data-tab="results">
+                    Publish Results
+                </button>
+                <button type="button" data-tab="notifications">
+                 Result Edit Requests
+                </button>
+
+
+                <button type="button" data-tab="students">
+                    Student Results
+                </button>
+
+                <button type="button" data-tab="classstudents">
+                    Class Students
+                </button>
+            </nav>
+
+        </aside>
+
+        <!-- Main Content -->
+        <main>
+            <header class="admin-head">
+                <div>
+                    <span id="teacherName">Teacher</span>
+                    <h1 id="title">Dashboard</h1>
+                </div>
+
+                <div class="head-actions"><a href="../index.html">View Website ↗</a><button type="button" id="logout" class="logout">Logout</button></div>
+            </header>
+
+            <section id="app"></section>
+        </main>
+
+    </div>
+
+    <!-- Core Scripts -->
+    <!-- Teacher Portal -->
+    <script src="../js/date-time-ui.js"></script>
+    <script src="../js/supabase.js"></script>
+    <script src="teacher.js"></script>
+
+
+
+<!-- Teacher Portal Result Edit Requests deployment update -->
+
+</body>
+</html>
