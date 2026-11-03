@@ -65,14 +65,12 @@
     try { sb = await withTimeout(window.mhsSupabaseReady, 9000); }
     catch (error) { console.warn('MHS database unavailable; showing saved school content.', error?.message || error); return; }
 
-    const [settingsQ, noticesQ, tickerQ, galleryQ, heroQ, achievementsQ, teachersQ, statsQ, schoolStatsQ, schoolContentQ] = await Promise.all([
+    const [settingsQ, noticesQ, tickerQ, galleryQ, heroQ, schoolStatsQ, schoolContentQ] = await Promise.all([
       query(sb.from('school_settings').select('school_name,school_name_en,established_year,slogan,logo_url,phone,email,address,about_text,mission_text,vision_text,history_text,student_count,teacher_count,service_years,ssc_pass_rate').limit(1).maybeSingle(), 'school settings'),
       query(sb.from('notices').select('id,title,content,attachment_url,published_at,created_at').eq('is_published',true).order('published_at',{ascending:false}).limit(3), 'notices'),
       query(sb.from('notice_tickers').select('message,link_url').eq('is_active',true).order('display_order').limit(1).maybeSingle(), 'notice ticker'),
       query(sb.from('gallery').select('title,description,image_url,category').eq('is_published',true).order('display_order').limit(6), 'gallery'),
       query(sb.from('hero_images').select('image_url,title,alt_text,display_order').eq('is_active',true).order('display_order'), 'hero images'),
-      query(sb.from('achievements').select('id',{count:'exact',head:true}).eq('is_published',true), 'achievements'),
-      query(sb.from('teacher_public_profiles').select('id',{count:'exact',head:true}).eq('is_published',true), 'teacher profiles'),
       query(sb.from('school_public_statistics').select('*').eq('id',1).maybeSingle(), 'public statistics'),
       query(sb.from('school_public_content').select('*').eq('is_published',true).order('display_order').order('event_date'), 'school content sections')
     ]);
@@ -95,7 +93,7 @@
     const homeStats=document.getElementById('homeSchoolStats');if(homeStats&&settingsQ.data){const st=settingsQ.data;const vals=[[st.student_count??'—','Registered Students'],[st.teacher_count??'—','Teachers'],[st.service_years??'—','Years of Service'],[st.ssc_pass_rate==null?'—':String(st.ssc_pass_rate).includes('%')?st.ssc_pass_rate:st.ssc_pass_rate+'%','SSC Pass Rate']];homeStats.innerHTML=vals.map(([v,l])=>'<div><strong>'+E(v)+'</strong><span>'+E(l)+'</span></div>').join('');}
 
     const homeGallery = document.getElementById('homeGallery');
-    if (homeGallery) { const localImages=['Entertainment.jpeg','Nobin boron.jpeg','Nobinboron.jpeg','head teacher.jpeg','kabadi.jpeg','hero/1.jpg','hero/2.jpg'].map((f,i)=>({title:['Entertainment','Nobin Boron','Nobin Boron','Head Teacher','Kabaddi','School Event','School Event'][i],image_url:'assets/images/'+f})); const remote=galleryQ.data||[]; const all=[...localImages,...remote].slice(0,16); homeGallery.innerHTML = all.map(x =>
+    if (homeGallery) { const localImages=['Entertainment.jpeg','Nobin boron.jpeg','Nobinboron.jpeg','kabadi.jpeg','hero/1.jpg','hero/2.jpg'].map((f,i)=>({title:['Entertainment','Nobin Boron','Nobin Boron','Kabaddi','School Event','School Event'][i],image_url:'assets/images/'+f})); const remote=(galleryQ.data||[]).filter(x=>!(/head[\s_-]*teacher|teacher.*(profile|portrait)|emran ali/i.test([x.title,x.image_url].join(' ')))); const all=[...localImages,...remote].slice(0,16); homeGallery.innerHTML = all.map(x =>
       '<div><img loading="lazy" src="' + E(x.image_url) + '" alt="' + E(x.title || 'School gallery') +
       '"><small>' + E(x.title || x.description || '') + '</small></div>'
     ).join('') || '<p class="hint">Gallery photos will be published by the administration.</p>'; }
