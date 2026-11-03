@@ -49,7 +49,7 @@ module.exports = async (req, res) => {
       const role = body.role === 'moderator' ? 'moderator' : 'admin';
       const permissions = cleanPermissions(body.permissions);
       if (!name || !email || !password) return res.status(400).json({ success: false, error: 'Name, email and password are required.' });
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return res.status(400).json({ success: false, error: 'Enter a valid email address.' });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ success: false, error: 'Enter a valid email address.' });
       if (password.length < 8) return res.status(400).json({ success: false, error: 'Password must contain at least 8 characters.' });
       if (!Object.values(permissions).some(Boolean)) return res.status(400).json({ success: false, error: 'Select at least one module permission.' });
       const createResponse = await fetch(base + '/auth/v1/admin/users', {
