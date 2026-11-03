@@ -1,1 +1,33 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Student Login | MHS</title><link rel="icon" href="../assets/images/logo.svg"><link rel="stylesheet" href="../css/portal.css"></head><body class="login-page"><div class="login-card"><img src="../assets/images/logo.svg" alt="School crest"><h1>Student Portal</h1><p>মোখলেশপুর উচ্চ বিদ্যালয়</p><form id="login"><label>Student ID / Admission No.<input id="u" required autocomplete="username" placeholder="Enter Student ID"></label><label>Password<input id="p" type="password" required autocomplete="current-password" placeholder="Enter password"></label><button id="submit" type="submit">Sign In to Student Portal</button><small id="msg" role="status" aria-live="polite"></small></form><a href="../student.html">← Student Services</a><hr><a href="../index.html">Back to school website</a></div><script src="../js/supabase.js"></script><script>document.getElementById('login').addEventListener('submit',async e=>{e.preventDefault();const button=document.getElementById('submit'),msg=document.getElementById('msg');button.disabled=true;msg.textContent='Signing in…';try{const response=await fetch('../api/student-login',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({login:document.getElementById('u').value.trim(),password:document.getElementById('p').value})});const payload=await response.json();if(!response.ok||!payload.success)throw new Error(payload.error||'Login failed.');const sb=await window.mhsSupabaseReady;const {error}=await sb.auth.setSession({access_token:payload.session.access_token,refresh_token:payload.session.refresh_token});if(error)throw error;location.href='index.html';}catch(error){console.error('Student sign-in failed:',error);msg.textContent=error.message||'Unable to sign in.';}finally{button.disabled=false;}});</script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Student Login | MHS</title><link rel="icon" href="../assets/images/logo.svg"><link rel="stylesheet" href="../css/portal.css"></head><body class="login-page"><div class="login-card"><img src="../assets/images/logo.svg" alt="School crest"><h1>Student Portal</h1><p>মোখলেশপুর উচ্চ বিদ্যালয়</p><form id="login"><label>Student ID / Admission No.<input id="u" required autocomplete="username" placeholder="Enter Student ID"></label><label>Password<input id="p" type="password" required autocomplete="current-password" placeholder="Enter password"></label><button id="submit" type="submit">Sign In to Student Portal</button><small id="msg" role="status" aria-live="polite"></small></form><a href="../student.html">← Student Services</a><hr><a href="../index.html">Back to school website</a></div><script src="../js/supabase.js"></script><script>
+document.getElementById('login').addEventListener('submit', async e => {
+  e.preventDefault();
+  const button = document.getElementById('submit');
+  const msg = document.getElementById('msg');
+  button.disabled = true;
+  msg.textContent = 'Signing in…';
+  try {
+    const response = await fetch('/api/student-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        login: document.getElementById('u').value.trim(),
+        password: document.getElementById('p').value
+      })
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.success) throw new Error(payload.error || 'Login failed.');
+    const sb = await window.mhsSupabaseReady;
+    const { error } = await sb.auth.setSession({
+      access_token: payload.session.access_token,
+      refresh_token: payload.session.refresh_token
+    });
+    if (error) throw error;
+    window.location.replace('/student/index.html');
+  } catch (error) {
+    console.error('Student sign-in failed:', error);
+    msg.textContent = error.message || 'Unable to sign in.';
+  } finally {
+    button.disabled = false;
+  }
+});
+</script></body></html>
