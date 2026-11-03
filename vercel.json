@@ -5,6 +5,14 @@
     {
       "source": "/admin",
       "destination": "/admin/login"
+    },
+    {
+      "source": "/teacher",
+      "destination": "/teacher/login"
+    },
+    {
+      "source": "/student",
+      "destination": "/student/login"
     }
   ]
 }
