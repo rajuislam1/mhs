@@ -36,4 +36,5 @@ document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()
 document.getElementById('logout').addEventListener('click',async()=>{try{const sb=await window.mhsSupabaseReady;await sb.auth.signOut()}catch(e){console.error(e)}finally{['mhs_admin','mhs_admin_role','mhs_admin_permissions','mhs_admin_name'].forEach(k=>sessionStorage.removeItem(k));location.href='login.html'}});
 document.getElementById('adminLang').addEventListener('click',()=>{document.documentElement.classList.toggle('bn-admin');document.getElementById('adminLang').textContent=document.documentElement.classList.contains('bn-admin')?'English':'বাংলা'});
 applyNavigationAccess();
+const backupButton=document.getElementById('backupData');if(backupButton&&role!=='super_admin')backupButton.hidden=true;
 window.render=render;window.mhsAdminRefresh=render;window.mhsAdminCanAccess=canAccess;window.mhsAdminRole=role;
