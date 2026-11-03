@@ -37,7 +37,7 @@
       // storage key would otherwise let one portal overwrite another portal's
       // signed-in user when used in parallel tabs.
       const path = String(window.location.pathname || '').toLowerCase();
-      const storageKey = path.includes('/admin/')
+      const storageKey = (path === '/admin' || path.startsWith('/admin/'))
         ? 'mhs-admin-auth'
         : path.includes('/teacher/')
           ? 'mhs-teacher-auth'
