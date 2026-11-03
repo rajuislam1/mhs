@@ -100,7 +100,7 @@ module.exports = async (req, res) => {
     return res.status(405).json({ success: false, error: 'Method not allowed.' });
   } catch (error) {
     if (pendingAuthId && URL && KEY) {
-      await fetch(URL.replace(/\\/$/, '') + '/auth/v1/admin/users/' + encodeURIComponent(pendingAuthId), {
+      await fetch(URL.replace(/\/$/, '') + '/auth/v1/admin/users/' + encodeURIComponent(pendingAuthId), {
         method: 'DELETE', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY }
       }).catch(() => {});
     }
