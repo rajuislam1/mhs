@@ -4,6 +4,10 @@
     {
       "source": "/admin",
       "destination": "/admin/login.html"
+    },
+    {
+      "source": "/admin/dashboard",
+      "destination": "/admin/index.html"
     }
   ]
 }
