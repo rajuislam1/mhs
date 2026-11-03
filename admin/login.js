@@ -28,7 +28,7 @@ document.getElementById('login').addEventListener('submit', async (e) => {
     sessionStorage.setItem('mhs_admin_role', profile.role);
     sessionStorage.setItem('mhs_admin_permissions', JSON.stringify(profile.permissions || {}));
     sessionStorage.setItem('mhs_admin_name', data.user.user_metadata?.display_name || data.user.email || 'Administrator');
-    window.location.href = 'index.html';
+    window.location.href = '/admin/dashboard';
   } catch (error) {
     console.error('Admin login error:', error);
     msg.textContent = error.message || 'Login failed. Please try again.';
