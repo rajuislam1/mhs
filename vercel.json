@@ -1,18 +1,21 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "rewrites": [
+  "redirects": [
     {
-      "source": "/admin",
-      "destination": "/admin/login"
+      "source": "/student",
+      "destination": "/student/login.html",
+      "permanent": false
     },
     {
       "source": "/teacher",
-      "destination": "/teacher/login"
+      "destination": "/teacher/login.html",
+      "permanent": false
     },
     {
-      "source": "/student",
-      "destination": "/student/login"
+      "source": "/admin",
+      "destination": "/admin/login.html",
+      "permanent": false
     }
   ]
 }
