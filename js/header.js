@@ -26,7 +26,7 @@ document.write(`
 <a href="gallery.html" data-en="Gallery" data-bn="গ্যালারি">Gallery</a><a href="results.html" data-en="Results" data-bn="ফলাফল">Results</a>
 <a href="student-corner.html" data-en="Student & Parent Corner" data-bn="শিক্ষার্থী ও অভিভাবক কর্নার">Student & Parent Corner</a>
 <a href="calendar.html" data-en="Academic Calendar" data-bn="শিক্ষাপঞ্জি">Academic Calendar</a>
-<a href="student.html" data-en="Student Portal" data-bn="শিক্ষার্থী পোর্টাল">Student Portal</a><a href="admission.html" data-en="Admission" data-bn="ভর্তি">Admission</a>
+<a href="student/login.html" data-en="Student Portal Login" data-bn="শিক্ষার্থী লগইন">Student Portal Login</a><a href="admission.html" data-en="Admission" data-bn="ভর্তি">Admission</a>
 <button class="lang-btn" id="langToggle" type="button">বাংলা</button>
 </nav></header><div class="ticker"><strong data-en="NOTICE" data-bn="নোটিশ">NOTICE</strong><div id="tickerItems"></div></div>`);
 (function(){
