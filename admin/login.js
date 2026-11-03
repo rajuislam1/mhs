@@ -21,10 +21,13 @@ document.getElementById('login').addEventListener('submit', async (e) => {
 
     if (profileError) throw new Error('Profile query failed: ' + profileError.message);
     if (!profile) throw new Error('No user profile found for this login account.');
-    if (profile.role !== 'super_admin') throw new Error('This account is not a super administrator.');
+    if (!['super_admin', 'admin', 'moderator'].includes(profile.role)) throw new Error('This account does not have Admin Portal access.');
     if (profile.is_active !== true) throw new Error('Administrator account is inactive.');
 
     sessionStorage.setItem('mhs_admin', '1');
+    sessionStorage.setItem('mhs_admin_role', profile.role);
+    sessionStorage.setItem('mhs_admin_permissions', JSON.stringify(profile.permissions || {}));
+    sessionStorage.setItem('mhs_admin_name', data.user.user_metadata?.display_name || data.user.email || 'Administrator');
     window.location.href = 'index.html';
   } catch (error) {
     console.error('Admin login error:', error);
