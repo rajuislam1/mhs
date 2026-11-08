@@ -237,3 +237,14 @@ body.lang-bn{font-family:var(--font-bn)!important}body.lang-bn h1,body.lang-bn h
  .header-clock .clock-date{font-size:12px}
  .header-clock .clock-time strong{font-size:15px}
 }
+
+
+/* Center the live clock in the flexible space between the school identity and motto. */
+@media(min-width:851px){
+ .header{justify-content:space-between;column-gap:18px}
+ .header>.brand{flex:0 0 auto}
+ .header>.header-clock{flex:1 1 0;min-width:0;justify-content:center;margin-inline:auto}
+ .header>.header-motto{flex:0 0 auto;margin-left:0}
+ .header>.menu{display:none}
+ .header>nav{flex:1 0 100%;width:100%;margin-top:0}
+}
