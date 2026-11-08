@@ -115,7 +115,7 @@
       const eligibleSources=()=>{const destination=destinationYear();return years.filter(y=>destination&&Number(y.year)<Number(destination.year));};
       const updateSourceOptions=()=>{
         const previous=$('mhsPromoSource').value,available=eligibleSources();
-        $('mhsPromoSource').innerHTML=(available.length?available.map(y=>'<option value="'+y.id+'">'+esc(y.year)+'</option>').join(''):'<option value="">No earlier academic year available</option>');
+        $('mhsPromoSource').innerHTML=(available.length?available.map(y=>'<option value="'+y.id+'">'+esc(y.year)+'</option>').join(''):'<option value="">Create and activate 2027 to promote from 2026</option>');
         if(available.some(y=>y.id===previous))$('mhsPromoSource').value=previous;
         $('mhsPromoSource').disabled=!available.length;
         $('mhsPromoteNow').disabled=!available.length;
@@ -198,7 +198,7 @@
         }catch(e){notify(e.message,true);btn.disabled=false;}
       };
       if(!eligibleSources().length){
-        $('mhsPromoRows').innerHTML='<tr><td colspan="7">No earlier academic year is available for the selected active destination year. Create/select a later active session after setting up its academic structure.</td></tr>';
+        $('mhsPromoRows').innerHTML='<tr><td colspan="7">To promote students from 2026 to 2027: first create Academic Year 2027 in Academic Year Management, configure its subjects, teacher assignments and routines, then set 2027 as Active. Return here: Destination will be 2027 and Source will automatically show 2026.</td></tr>';
         $('mhsPromoteNow').disabled=true;
       }else draw();
     }catch(e){panel('<div class="box"><h2>Promotion management unavailable</h2><p>'+esc(e.message)+'</p></div>');}
