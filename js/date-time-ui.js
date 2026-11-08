@@ -27,12 +27,12 @@
  function formatDisplayedTimes(root){
   const skip='SCRIPT,STYLE,TEXTAREA,INPUT,SELECT,OPTION,CODE,PRE,[contenteditable="true"]';
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(node){
-   if(!node.nodeValue||!/[0-2]?\\d:[0-5]\\d/.test(node.nodeValue))return NodeFilter.FILTER_REJECT;
+   if(!node.nodeValue||!/[0-2]?\d:[0-5]\d/.test(node.nodeValue))return NodeFilter.FILTER_REJECT;
    if(node.parentElement?.closest(skip))return NodeFilter.FILTER_REJECT;
    return NodeFilter.FILTER_ACCEPT;
   }});
   const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
-  nodes.forEach(node=>{node.nodeValue=node.nodeValue.replace(/(^|[^\\d])([01]?\\d|2[0-3]):([0-5]\\d)(?::[0-5]\\d)?(?=$|[^\\d])/g,(_,prefix,h,m)=>{const hour=Number(h),suffix=hour>=12?'PM':'AM';return prefix+(hour%12||12)+':'+m+' '+suffix;});});
+  nodes.forEach(node=>{node.nodeValue=node.nodeValue.replace(/(^|[^\d])([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?(?=$|[^\d])/g,(_,prefix,h,m)=>{const hour=Number(h),suffix=hour>=12?'PM':'AM';return prefix+(hour%12||12)+':'+m+' '+suffix;});});
  }
  function watch(){
   enhance(document);formatDisplayedTimes(document.body);
