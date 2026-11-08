@@ -309,7 +309,7 @@
         .select('id,name')
         .order('name'),
       sb.from('academic_years')
-        .select('id,year')
+        .select('id,year,is_active')
         .order('year', { ascending: false }),
       sb.from('class_subjects')
         .select('class_id,subject_id,academic_year_id,is_compulsory')
@@ -590,7 +590,7 @@
               <select id="atYear" required>
                 ${options.years.map(y => `
                   <option value="${escTeacher(y.id)}"
-                    ${Number(y.year) === year ? 'selected' : ''}>
+                    ${y.is_active || (!options.years.some(item => item.is_active) && Number(y.year) === year) ? 'selected' : ''}>
                     ${escTeacher(y.year)}
                   </option>
                 `).join('')}
