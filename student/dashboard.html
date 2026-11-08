@@ -110,6 +110,7 @@ window.addEventListener('afterprint',()=>document.body.classList.remove('print-m
     if (!profileBox || !profileBox.textContent.includes('Student ID:') || typeof studentRecord === 'undefined' || !studentRecord) return;
     const sb=window.mhsSupabase;
     const original=studentRecord;
+    let admitEnabledBeforeHistory=null;
     const select=document.getElementById('studentResultsYear');
     if(!select || select.dataset.ready==='1')return;
     select.dataset.ready='1';
@@ -140,7 +141,7 @@ window.addEventListener('afterprint',()=>document.body.classList.remove('print-m
         document.getElementById('msSearch').value='';
         document.getElementById('msResults').textContent=(yearRow?.year||'Selected year')+' published results. Select an examination and search.';
         const historical=yearId!==original.academic_year_id;
-        document.getElementById('admitPrint').disabled=historical||window.__mhsAdmitWasDisabled;
+        if(historical){if(admitEnabledBeforeHistory===null)admitEnabledBeforeHistory=!document.getElementById('admitPrint').disabled;document.getElementById('admitPrint').disabled=true;}else if(admitEnabledBeforeHistory!==null){document.getElementById('admitPrint').disabled=!admitEnabledBeforeHistory;admitEnabledBeforeHistory=null;}
         document.getElementById('admitPrint').title=historical?'Admit cards are available only for the current academic year.':'';
         message.textContent=historical?'Historical view: only published results and marksheets are available. Current routine, attendance, fees and portal profile remain on the active enrollment.':'Current academic year selected.';
       }catch(e){document.getElementById('msResults').textContent=e.message||'Could not load results.';}
@@ -155,7 +156,6 @@ window.addEventListener('afterprint',()=>document.body.classList.remove('print-m
         if(ee)throw ee;if(ye)throw ye;
         window.__mhsStudentEnrollments=enrollments||[];
         window.__mhsStudentYears=years||[];
-        window.__mhsAdmitWasDisabled=document.getElementById('admitPrint').disabled;
         const opts=window.__mhsStudentEnrollments.map(en=>{
           const y=window.__mhsStudentYears.find(x=>x.id===en.academic_year_id);
           return y?{id:y.id,year:y.year,enrollment:en}:null;
