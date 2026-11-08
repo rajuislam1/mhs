@@ -222,3 +222,18 @@ body.lang-bn{font-family:var(--font-bn)!important}body.lang-bn h1,body.lang-bn h
 @media(min-width:851px) and (max-width:1100px){
  .header-clock{top:41px;left:50%;min-width:250px}
 }
+
+
+/* Align the live clock beside the school motto in the same desktop brand row. */
+@media(min-width:851px){
+ .header{align-items:center}
+ .header-clock{position:relative;inset:auto;left:auto;top:auto;transform:none;order:0;flex:0 0 auto;margin:0;z-index:auto;pointer-events:none}
+ .header-motto{margin-left:0;flex:0 0 auto;align-self:center}
+ .header nav{position:relative;z-index:2;flex:1 1 100%;width:100%;margin-top:0}
+}
+@media(min-width:1101px){
+ .header{column-gap:14px}
+ .header-clock{min-width:0;gap:12px;padding:6px 10px}
+ .header-clock .clock-date{font-size:12px}
+ .header-clock .clock-time strong{font-size:15px}
+}
