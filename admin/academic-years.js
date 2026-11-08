@@ -115,7 +115,7 @@
       const eligibleSources=()=>{const destination=destinationYear();return years.filter(y=>destination&&Number(y.year)<Number(destination.year));};
       const updateSourceOptions=()=>{
         const previous=$('mhsPromoSource').value,available=eligibleSources();
-        $('mhsPromoSource').innerHTML=(available.length?available.map(y=>'<option value="'+y.id+'">'+esc(y.year)+'</option>').join(''):'<option value="">Create and activate 2027 to promote from 2026</option>');
+        $('mhsPromoSource').innerHTML=(available.length?available.map(y=>'<option value="'+y.id+'">'+esc(y.year)+'</option>').join(''):'<option value="">Create and activate a later academic year first</option>');
         if(available.some(y=>y.id===previous))$('mhsPromoSource').value=previous;
         $('mhsPromoSource').disabled=!available.length;
         $('mhsPromoteNow').disabled=!available.length;
@@ -198,7 +198,7 @@
         }catch(e){notify(e.message,true);btn.disabled=false;}
       };
       if(!eligibleSources().length){
-        $('mhsPromoRows').innerHTML='<tr><td colspan="7">To promote students from 2026 to 2027: first create Academic Year 2027 in Academic Year Management, configure its subjects, teacher assignments and routines, then set 2027 as Active. Return here: Destination will be 2027 and Source will automatically show 2026.</td></tr>';
+        $('mhsPromoRows').innerHTML='<tr><td colspan="7">No earlier academic year exists for the selected destination. To promote the current '+(destinationYear()?.year||'active')+' session, create Academic Year '+(Number(destinationYear()?.year||0)+1)+' in Academic Year Management, configure its subjects, teacher assignments and routines, then set it as Active. Return here: the previous year will appear as Source and the new active year as Destination.</td></tr>';
         $('mhsPromoteNow').disabled=true;
       }else draw();
     }catch(e){panel('<div class="box"><h2>Promotion management unavailable</h2><p>'+esc(e.message)+'</p></div>');}
