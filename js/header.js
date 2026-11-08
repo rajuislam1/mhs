@@ -33,8 +33,8 @@ document.write(`
 (function(){
  const menu=document.getElementById('menu'),nav=document.getElementById('nav');
  const dateEl=document.getElementById('mhsHeaderDate'),timeEl=document.getElementById('mhsHeaderTime');
- const updateClock=()=>{const now=new Date(),options={timeZone:'Asia/Dhaka'};if(dateEl)dateEl.textContent=new Intl.DateTimeFormat('bn-BD',{...options,weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(now);if(timeEl)timeEl.textContent=new Intl.DateTimeFormat('bn-BD',{...options,hour:'2-digit',minute:'2-digit',hour12:true}).format(now);};
- updateClock();window.setInterval(updateClock,30000);
+ const updateClock=()=>{const now=new Date(),options={timeZone:'Asia/Dhaka'};if(dateEl)dateEl.textContent=new Intl.DateTimeFormat('bn-BD',{...options,weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(now);if(timeEl)timeEl.textContent=new Intl.DateTimeFormat('bn-BD',{...options,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}).format(now);};
+ updateClock();window.setInterval(updateClock,1000);
  menu?.addEventListener('click',()=>{const open=nav?.classList.toggle('open');menu.setAttribute('aria-expanded',String(!!open));});
  document.querySelectorAll('.nav-drop-trigger').forEach(btn=>btn.addEventListener('click',()=>btn.parentElement.classList.toggle('expanded')));
  document.getElementById('langToggle')?.addEventListener('click',()=>window.MHS_I18N?.toggle());
