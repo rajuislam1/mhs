@@ -28,7 +28,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import re, pathlib, subprocess, sys
-          pages = ["admin/index.html", "admin/login.html", "teacher/index.html", "student/login.html", "student/index.html", "results.html", "student.html", "about.html", "gallery.html", "admission-apply.html"]
+          pages = ["admin/index.html", "admin/login.html", "teacher/index.html", "student/login.html", "student/index.html", "student/dashboard.html", "results.html", "student.html", "about.html", "gallery.html", "admission-apply.html"]
           failed = False
           for page in pages:
               path = pathlib.Path(page)
