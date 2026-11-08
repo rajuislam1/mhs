@@ -296,7 +296,8 @@
       teachersResult,
       classesResult,
       subjectsResult,
-      yearsResult
+      yearsResult,
+      classSubjectsResult
     ] = await Promise.all([
       sb.from('teachers')
         .select('id,teacher_id,name,username,status')
@@ -309,11 +310,13 @@
         .order('name'),
       sb.from('academic_years')
         .select('id,year')
-        .order('year', { ascending: false })
+        .order('year', { ascending: false }),
+      sb.from('class_subjects')
+        .select('class_id,subject_id,academic_year_id,is_compulsory')
     ]);
 
     for (const result of [
-      teachersResult, classesResult, subjectsResult, yearsResult
+      teachersResult, classesResult, subjectsResult, yearsResult, classSubjectsResult
     ]) {
       if (result.error) throw result.error;
     }
@@ -322,7 +325,8 @@
       teachers: teachersResult.data || [],
       classes: classesResult.data || [],
       subjects: subjectsResult.data || [],
-      years: yearsResult.data || []
+      years: yearsResult.data || [],
+      classSubjects: classSubjectsResult.data || []
     };
   }
 
@@ -798,6 +802,21 @@
     const assignForm = document.getElementById('assignForm');
     const saveButton = document.getElementById('saveAssignmentBtn');
     const assignMessage = document.getElementById('assignmentMessage');
+    const refreshAssignmentSubjects = () => {
+      const yearId = document.getElementById('atYear').value;
+      const classId = document.getElementById('atClass').value;
+      const allowed = options.classSubjects.filter(x => x.academic_year_id === yearId && x.class_id === classId);
+      const subjectSelect = document.getElementById('atSubject');
+      subjectSelect.innerHTML = '<option value="">Select a subject configured for this class and year</option>' +
+        allowed.map(x => {
+          const subject = options.subjects.find(s => s.id === x.subject_id);
+          return subject ? '<option value="' + escTeacher(subject.id) + '">' + escTeacher(subject.name) + (x.is_compulsory ? ' · Compulsory' : ' · Optional') + '</option>' : '';
+        }).join('');
+      if (!allowed.length) subjectSelect.innerHTML = '<option value="">Configure class subjects first</option>';
+    };
+    document.getElementById('atYear').addEventListener('change', refreshAssignmentSubjects);
+    document.getElementById('atClass').addEventListener('change', refreshAssignmentSubjects);
+    refreshAssignmentSubjects();
 
     assignForm.onsubmit = async event => {
       event.preventDefault();
