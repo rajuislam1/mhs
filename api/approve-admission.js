@@ -24,6 +24,7 @@ module.exports = async (req,res) => {
       rest('students?class_id=eq.'+encodeURIComponent(classId)+'&academic_year_id=eq.'+encodeURIComponent(yearId)+'&roll=eq.'+roll+'&status=eq.true&select=id'),
     ]);
     if(!classes.length||!years.length)return res.status(400).json({success:false,error:'Selected class or academic year is invalid.'});
+    if(years[0].is_active!==true)return res.status(400).json({success:false,error:'Admission approval must use the active academic year. Activate the correct year first.'});
     if(rollDup.length)return res.status(409).json({success:false,error:'This roll number is already assigned in the selected class and year.'});
     // Generate a numeric Student ID using the same 10001+ sequence as manual student creation.
     const existingIds=await rest('students?select=student_id&limit=10000');
