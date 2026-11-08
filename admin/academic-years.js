@@ -4,11 +4,14 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const notify = (s,bad=false) => window.mhsNotify ? window.mhsNotify(s,bad) : alert(s);
   async function getClient(){ return await window.mhsSupabaseReady; }
-  async function adminClient(){
+  async function adminClient(permission='academicYears'){
     const sb=await getClient(),{data:{user},error}=await sb.auth.getUser();
     if(error)throw error;if(!user)throw new Error('Please sign in again.');
-    const {data:p,error:pe}=await sb.from('user_profiles').select('role,is_active').eq('id',user.id).maybeSingle();
-    if(pe)throw pe;if(!p||p.role!=='super_admin'||!p.is_active)throw new Error('Only an active Super Admin can manage academic years and promotion.');
+    const {data:p,error:pe}=await sb.from('user_profiles').select('role,is_active,permissions').eq('id',user.id).maybeSingle();
+    if(pe)throw pe;
+    const allowed=!!p&&p.is_active===true&&(p.role==='super_admin'||(['admin','moderator'].includes(p.role)&&p.permissions?.[permission]===true));
+    if(!allowed)throw new Error('Your account does not have permission to manage this academic module.');
+    if(permission==='academicYears'&&p.role!=='super_admin')throw new Error('Only an active Super Admin can manage academic years.');
     return sb;
   }
   const panel=s=>{app.innerHTML='<div class="panel">'+s+'</div>';};
@@ -42,7 +45,7 @@
   window.MHS_EXTRA.subjects = async function(){
     panel('<div class="box">Loading year-specific subjects…</div>');
     try{
-      const sb=await adminClient();
+      const sb=await adminClient('subjects');
       const [{data:years,error:ye},{data:classes,error:ce},{data:subjects,error:se},{data:links,error:le}]=await Promise.all([
         sb.from('academic_years').select('id,year,is_active').order('year',{ascending:false}),
         sb.from('classes').select('id,name,class_number,status').eq('status',true).order('class_number'),
@@ -88,7 +91,7 @@
   window.MHS_EXTRA.promotion = async function(){
     panel('<div class="box">Loading student promotion workspace…</div>');
     try{
-      const sb=await adminClient();
+      const sb=await adminClient('promotion');
       const [{data:students,error:se},{data:classes,error:ce},{data:years,error:ye},{data:history,error:he},{data:enrollments,error:ee}]=await Promise.all([
         sb.from('students').select('id,student_id,name,roll,class_id,academic_year_id,status,classes(class_number)').eq('status',true).order('name'),
         sb.from('classes').select('id,name,class_number').eq('status',true).order('class_number'),
