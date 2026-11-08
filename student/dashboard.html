@@ -5,7 +5,7 @@
 <div id="profile" class="c np">Loading student profile…</div>
 <div class="c np"><h3>My Subjects</h3><div id="subjects">Loading…</div></div>
 <div class="c np"><h3>Class Routine</h3><p class="hint">Your current class timetable, arranged by day and time.</p><div id="studentClassRoutine">Loading routine…</div></div><div class="c np attendance-student-card"><h3>📊 My Attendance Progress</h3><p class="hint">Your subject-wise class attendance, updated by your teachers.</p><div id="studentAttendance">Loading attendance progress…</div></div>
-<div class="c np"><h3>Published Results</h3><p class="hint">Choose class and exam, search your published marksheet, then print.</p><div class="form"><label>Class<select id="msClass"></select></label><label>Exam<select id="msExam"><option value="">Select Exam</option><option>Test</option><option>Lab Test</option><option>Half Yearly</option><option>Final</option></select></label><label>Search<input id="msSearch" placeholder="Search exam or subject"></label></div><div class="actions" style="margin-top:14px"><button id="msFind">Search Marksheet</button><button id="msPrint" disabled>Print Marksheet</button></div><div id="msResults" class="empty" style="margin-top:14px">Select an exam and search.</div></div>
+<div class="c np"><h3>Published Results</h3><p class="hint">Current-year academic information stays separate. Previous academic years are available here for published results only.</p><label class="np" style="display:block;margin:10px 0">Results Academic Year<select id="studentResultsYear" style="max-width:260px"><option>Loading academic years…</option></select></label><div class="form"><label>Class<select id="msClass"></select></label><label>Exam<select id="msExam"><option value="">Select Exam</option><option>Test</option><option>Lab Test</option><option>Half Yearly</option><option>Final</option></select></label><label>Search<input id="msSearch" placeholder="Search exam or subject"></label></div><div class="actions" style="margin-top:14px"><button id="msFind">Search Marksheet</button><button id="msPrint" disabled>Print Marksheet</button></div><div id="msResults" class="empty" style="margin-top:14px">Select an exam and search.</div></div>
 <div class="c np"><h3>Fee Payments</h3><div id="fees">Loading…</div></div><details class="c np admit-panel"><summary><strong>🎫 Admit Card & Exam Entry</strong><span class="hint">Open to check eligibility and download your A4 PDF</span></summary><div class="admit-panel-body"><p class="hint">Download is enabled after fee clearance and publication of the selected examination routine.</p><div id="admitEligibility">Checking payment eligibility…</div><div class="form admit-form"><label>Examination<select id="admitExam"><option value="">Select Examination</option><option>Half Yearly</option><option>Final</option></select></label><div class="admit-download"><button id="admitPrint" disabled>Download Admit Card (PDF)</button></div></div></div></details><div id="error" class="c error np" hidden></div><div id="marksheetPrintArea"></div><div id="admitCardPrintArea"></div>
 </div></div><script src="../js/date-time-ui.js"></script><script src="../js/supabase.js"></script><script>
 const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -101,4 +101,76 @@ document.getElementById('admitPrint').onclick=async()=>{
  }
 
 window.addEventListener('afterprint',()=>document.body.classList.remove('print-marksheet','print-admit'));
+</script>
+<script>
+(() => {
+  const boot = () => {
+    if (!window.mhsSupabase || !window.mhsSupabaseReady) return;
+    const profileBox=document.getElementById('profile');
+    if (!profileBox || !profileBox.textContent.includes('Student ID:') || !window.studentRecord) return;
+    const sb=window.mhsSupabase;
+    const original=window.studentRecord;
+    const select=document.getElementById('studentResultsYear');
+    if(!select || select.dataset.ready==='1')return;
+    select.dataset.ready='1';
+    const message=document.createElement('p');message.className='hint';message.textContent='Only published results from the selected academic year are shown below.';select.parentElement.appendChild(message);
+    const load=async()=>{
+      const yearId=select.value;
+      if(!yearId)return;
+      select.disabled=true;
+      document.getElementById('msPrint').disabled=true;
+      document.getElementById('msResults').textContent='Loading published results…';
+      try{
+        const enrollment=window.__mhsStudentEnrollments.find(x=>x.academic_year_id===yearId);
+        if(!enrollment)throw new Error('No enrollment record found for this academic year.');
+        const [{data:rows,error:re},{data:classSubjects,error:ce},{data:choices,error:se}]=await Promise.all([
+          sb.from('results').select('id,class_subject_id,exam_name,marks,grade,grade_point,status,academic_year_id,class_subjects(subjects(name))').eq('student_id',original.id).eq('academic_year_id',yearId).eq('status','published').order('exam_name'),
+          sb.from('class_subjects').select('id,is_compulsory,subjects(name)').eq('class_id',enrollment.class_id).eq('academic_year_id',yearId),
+          sb.from('student_subjects').select('class_subject_id,is_optional').eq('student_id',original.id)
+        ]);
+        if(re)throw re;if(ce)throw ce;if(se)throw se;
+        const chosen=new Set((choices||[]).map(x=>x.class_subject_id));
+        window.publishedRows=rows||[];
+        window.requiredSubjectIds=(classSubjects||[]).filter(x=>x.is_compulsory||chosen.has(x.id)).map(x=>x.id);
+        const yearRow=window.__mhsStudentYears.find(x=>x.id===yearId);
+        const classRow=enrollment.classes||{};
+        window.studentRecord={...original,academic_years:{year:yearRow?.year},class_id:enrollment.class_id,roll:enrollment.roll,classes:{name:classRow.name,class_number:classRow.class_number}};
+        document.getElementById('msClass').innerHTML='<option value="'+enrollment.class_id+'">Class '+(classRow.class_number||classRow.name||'')+'</option>';
+        document.getElementById('msExam').value='';
+        document.getElementById('msSearch').value='';
+        document.getElementById('msResults').textContent=(yearRow?.year||'Selected year')+' published results. Select an examination and search.';
+        const historical=yearId!==original.academic_year_id;
+        document.getElementById('admitPrint').disabled=historical||window.__mhsAdmitWasDisabled;
+        document.getElementById('admitPrint').title=historical?'Admit cards are available only for the current academic year.':'';
+        message.textContent=historical?'Historical view: only published results and marksheets are available. Current routine, attendance, fees and portal profile remain on the active enrollment.':'Current academic year selected.';
+      }catch(e){document.getElementById('msResults').textContent=e.message||'Could not load results.';}
+      finally{select.disabled=false;}
+    };
+    (async()=>{
+      try{
+        const [{data:enrollments,error:ee},{data:years,error:ye}]=await Promise.all([
+          sb.from('student_enrollments').select('academic_year_id,class_id,roll,enrollment_status,classes(name,class_number)').eq('student_id',original.id).order('academic_year_id'),
+          sb.from('academic_years').select('id,year').order('year',{ascending:false})
+        ]);
+        if(ee)throw ee;if(ye)throw ye;
+        window.__mhsStudentEnrollments=enrollments||[];
+        window.__mhsStudentYears=years||[];
+        window.__mhsAdmitWasDisabled=document.getElementById('admitPrint').disabled;
+        const opts=window.__mhsStudentEnrollments.map(en=>{
+          const y=window.__mhsStudentYears.find(x=>x.id===en.academic_year_id);
+          return y?{id:y.id,year:y.year,enrollment:en}:null;
+        }).filter(Boolean).sort((a,b)=>b.year-a.year);
+        select.innerHTML=opts.map(x=>'<option value="'+x.id+'" '+(x.id===original.academic_year_id?'selected':'')+'>'+x.year+(x.id===original.academic_year_id?' · Current':' · Previous')+'</option>').join('');
+        if(!opts.length)throw new Error('No academic-year enrollment history found.');
+        select.onchange=load;
+        if(select.value!==original.academic_year_id)select.value=original.academic_year_id;
+        await load();
+      }catch(e){select.innerHTML='<option value="">Academic history unavailable</option>';message.textContent=e.message||'Academic history could not be loaded.';}
+    })();
+  };
+  const observer=new MutationObserver(()=>boot());
+  const target=document.getElementById('profile');
+  if(target)observer.observe(target,{childList:true,subtree:true,characterData:true});
+  boot();
+})();
 </script></body></html>
