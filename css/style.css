@@ -201,13 +201,13 @@ body.lang-bn{font-family:var(--font-bn)!important}body.lang-bn h1,body.lang-bn h
 
 /* Standard header date and live Bangladesh clock */
 .header{position:sticky}
-.header-clock{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;gap:26px;min-width:330px;padding:8px 18px;border:1px solid #e0ebe5;border-radius:12px;background:linear-gradient(135deg,#fbfdfb,#f2f8f4);color:#174b38;box-shadow:0 3px 12px rgba(0,61,45,.045)}
-.header-clock>div{display:flex;align-items:center;gap:8px;min-width:0}
-.header-clock .clock-icon{font-size:20px;color:#b08a20;line-height:1}
+.header-clock{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;gap:18px;min-width:300px;padding:5px 12px;border:1px solid #e0ebe5;border-radius:12px;background:linear-gradient(135deg,#fbfdfb,#f2f8f4);color:#174b38;box-shadow:0 3px 12px rgba(0,61,45,.045)}
+.header-clock>div{display:flex;align-items:center;gap:6px;min-width:0}
+.header-clock .clock-icon{font-size:18px;color:#b08a20;line-height:1}
 .header-clock .clock-date{font-size:14px;font-weight:700;white-space:nowrap}
 .header-clock .clock-time{gap:6px;flex-wrap:wrap}
-.header-clock .clock-time strong{font-size:19px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
-.header-clock .clock-time small{flex-basis:100%;margin-left:31px;margin-top:-5px;color:#75847b;font-size:10px;line-height:1}
+.header-clock .clock-time strong{font-size:17px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
+.header-clock .clock-time small{flex-basis:100%;margin-left:28px;margin-top:-4px;color:#75847b;font-size:10px;line-height:1}
 @media(max-width:1100px){.header-clock{min-width:270px;gap:12px;padding:7px 11px}.header-clock .clock-date{font-size:12px}.header-clock .clock-time strong{font-size:16px}.header-motto{display:none}}
 @media(max-width:850px){.header{height:auto;min-height:70px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:7px;padding:8px 5%}.header-clock{position:static;order:3;transform:none;left:auto;top:auto;width:100%;min-width:0;max-width:360px;margin:0 auto 3px;justify-content:space-around}.header nav{top:100%}.header-clock .clock-date{font-size:13px}.header-clock .clock-time strong{font-size:17px}}
 @media(max-width:420px){.header-clock{gap:8px;padding:7px 8px}.header-clock .clock-date{font-size:11px}.header-clock .clock-icon{font-size:17px}.header-clock .clock-time strong{font-size:15px}.header-clock .clock-time small{font-size:9px}}
