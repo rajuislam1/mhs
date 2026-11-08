@@ -9,7 +9,8 @@
     if(error)throw error;if(!user)throw new Error('Please sign in again.');
     const {data:p,error:pe}=await sb.from('user_profiles').select('role,is_active,permissions').eq('id',user.id).maybeSingle();
     if(pe)throw pe;
-    const allowed=!!p&&p.is_active===true&&(p.role==='super_admin'||(['admin','moderator'].includes(p.role)&&p.permissions?.[permission]===true));
+    const permissionAllowed=permission==='promotion'?(p?.permissions?.promotion===true&&p?.permissions?.students===true):p?.permissions?.[permission]===true;
+    const allowed=!!p&&p.is_active===true&&(p.role==='super_admin'||(['admin','moderator'].includes(p.role)&&permissionAllowed));
     if(!allowed)throw new Error('Your account does not have permission to manage this academic module.');
     if(permission==='academicYears'&&p.role!=='super_admin')throw new Error('Only an active Super Admin can manage academic years.');
     return sb;
