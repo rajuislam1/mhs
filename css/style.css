@@ -211,3 +211,14 @@ body.lang-bn{font-family:var(--font-bn)!important}body.lang-bn h1,body.lang-bn h
 @media(max-width:1100px){.header-clock{min-width:270px;gap:12px;padding:7px 11px}.header-clock .clock-date{font-size:12px}.header-clock .clock-time strong{font-size:16px}.header-motto{display:none}}
 @media(max-width:850px){.header{height:auto;min-height:70px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:7px;padding:8px 5%}.header-clock{position:static;order:3;transform:none;left:auto;top:auto;width:100%;min-width:0;max-width:360px;margin:0 auto 3px;justify-content:space-around}.header nav{top:100%}.header-clock .clock-date{font-size:13px}.header-clock .clock-time strong{font-size:17px}}
 @media(max-width:420px){.header-clock{gap:8px;padding:7px 8px}.header-clock .clock-date{font-size:11px}.header-clock .clock-icon{font-size:17px}.header-clock .clock-time strong{font-size:15px}.header-clock .clock-time small{font-size:9px}}
+
+
+/* Header clock belongs to the brand row, never the navigation row. */
+@media(min-width:851px){
+ .header{position:sticky;isolation:isolate}
+ .header-clock{top:41px;z-index:1;pointer-events:none}
+ .header nav{position:relative;z-index:2;flex:1 1 100%;width:100%;margin-top:0}
+}
+@media(min-width:851px) and (max-width:1100px){
+ .header-clock{top:41px;left:50%;min-width:250px}
+}
