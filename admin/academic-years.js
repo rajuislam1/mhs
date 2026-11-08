@@ -103,19 +103,26 @@
         sb.from('student_subjects').select('student_id,class_subject_id')
       ]);
       for(const x of [{error:ee},{error:ce},{error:ye},{error:he},{error:re},{error:cse},{error:sse}])if(x.error)throw x.error;
-      const active=years.find(y=>y.is_active);
-      if(!active)throw new Error('Create and activate the destination academic year first.');
-      const sources=years.filter(y=>Number(y.year)<Number(active.year));
+      const activeYears=years.filter(y=>y.is_active);
+      if(!activeYears.length)throw new Error('Create and activate a destination academic year first.');
       const classLabel=id=>{const c=classes.find(x=>x.id===id);return c?'Class '+c.class_number:'—';};
       const historyRows=history.map(h=>'<tr><td>'+esc(h.students?.name)+' · '+esc(h.students?.student_id)+'</td><td>'+classLabel(h.from_class_id)+'</td><td>'+classLabel(h.to_class_id)+'</td><td>'+esc(h.promotion_status||'promoted')+'</td><td>'+esc(h.academic_years?.year)+'</td><td>'+esc(h.promoted_at?new Date(h.promoted_at).toLocaleDateString():'—')+'</td><td>'+esc(h.remarks||'')+'</td></tr>').join('');
-      panel('<div class="box"><h2>GPA-Based Student Promotion & Roll Assignment</h2><p class="hint">Only students with all required Final Exam subjects published can be processed. Passed students are promoted to the selected next class; failed students repeat their current class with an Admin-assigned roll. Previous-year records remain unchanged.</p><form id="mhsPromotionForm" class="form"><label>Source Academic Year<select id="mhsPromoSource" required>'+sources.map(y=>'<option value="'+y.id+'">'+esc(y.year)+'</option>').join('')+'</select></label><label>Destination Academic Year<input value="'+esc(active.year)+' (Active)'+'" disabled></label><label>Current Class<select id="mhsPromoSourceClass" required>'+classes.map(c=>'<option value="'+c.id+'">Class '+esc(c.class_number)+'</option>').join('')+'</select></label><label>Next Class for Passed Students<select id="mhsPromoTargetClass" required></select></label><label class="full">Remarks<input id="mhsPromoRemarks" placeholder="Optional promotion note"></label></form><div class="toolbar"><input id="mhsPromoSearch" type="search" placeholder="Search name, Student ID or current roll" style="max-width:340px"><label><input type="checkbox" id="mhsPromoAll"> Select all eligible visible</label><span id="mhsPromoCount">0 selected</span></div><div class="table-wrap"><table class="table"><thead><tr><th>Select</th><th>Student ID</th><th>Name</th><th>Current Roll</th><th>Final GPA</th><th>Result Status</th><th>New Academic-Year Roll (Admin edit)</th></tr></thead><tbody id="mhsPromoRows"></tbody></table></div><button type="button" id="mhsPromoteNow">Confirm Promotion & Assign Rolls</button><p class="hint" id="mhsPromoMessage"></p></div><div class="box"><h2>Promotion & Repetition History</h2><div class="table-wrap"><table class="table"><thead><tr><th>Student</th><th>Previous Class</th><th>New Class</th><th>Status</th><th>Destination Year</th><th>Date</th><th>Remarks</th></tr></thead><tbody>'+historyRows+'</tbody></table></div></div>');
+      panel('<div class="box"><h2>GPA-Based Student Promotion & Roll Assignment</h2><p class="hint">Only students with all required Final Exam subjects published can be processed. Passed students are promoted to the selected next class; failed students repeat their current class with an Admin-assigned roll. Previous-year records remain unchanged.</p><form id="mhsPromotionForm" class="form"><label>Source Academic Year<select id="mhsPromoSource" required></select></label><label>Destination Academic Year<select id="mhsPromoTargetYear" required>'+activeYears.map(y=>'<option value="'+y.id+'">'+esc(y.year)+' · Active</option>').join('')+'</select></label><label>Current Class<select id="mhsPromoSourceClass" required>'+classes.map(c=>'<option value="'+c.id+'">Class '+esc(c.class_number)+'</option>').join('')+'</select></label><label>Next Class for Passed Students<select id="mhsPromoTargetClass" required></select></label><label class="full">Remarks<input id="mhsPromoRemarks" placeholder="Optional promotion note"></label></form><div class="toolbar"><input id="mhsPromoSearch" type="search" placeholder="Search name, Student ID or current roll" style="max-width:340px"><label><input type="checkbox" id="mhsPromoAll"> Select all eligible visible</label><span id="mhsPromoCount">0 selected</span></div><div class="table-wrap"><table class="table"><thead><tr><th>Select</th><th>Student ID</th><th>Name</th><th>Current Roll</th><th>Final GPA</th><th>Result Status</th><th>New Academic-Year Roll (Admin edit)</th></tr></thead><tbody id="mhsPromoRows"></tbody></table></div><button type="button" id="mhsPromoteNow">Confirm Promotion & Assign Rolls</button><p class="hint" id="mhsPromoMessage"></p></div><div class="box"><h2>Promotion & Repetition History</h2><div class="table-wrap"><table class="table"><thead><tr><th>Student</th><th>Previous Class</th><th>New Class</th><th>Status</th><th>Destination Year</th><th>Date</th><th>Remarks</th></tr></thead><tbody>'+historyRows+'</tbody></table></div></div>');
       const $=id=>document.getElementById(id);
       const sourceClass=()=>classes.find(c=>c.id===$('mhsPromoSourceClass').value);
       const sourceYear=()=>years.find(y=>y.id===$('mhsPromoSource').value);
+      const destinationYear=()=>years.find(y=>y.id===$('mhsPromoTargetYear').value);
+      const eligibleSources=()=>{const destination=destinationYear();return years.filter(y=>destination&&Number(y.year)<Number(destination.year));};
+      const updateSourceOptions=()=>{
+        const previous=$('mhsPromoSource').value,available=eligibleSources();
+        $('mhsPromoSource').innerHTML=(available.length?available.map(y=>'<option value="'+y.id+'">'+esc(y.year)+'</option>').join(''):'<option value="">No earlier academic year available</option>');
+        if(available.some(y=>y.id===previous))$('mhsPromoSource').value=previous;
+        $('mhsPromoSource').disabled=!available.length;
+        $('mhsPromoteNow').disabled=!available.length;
+      };
       const updateTargetOptions=()=>{
         const current=sourceClass(),eligible=classes.filter(c=>current&&Number(c.class_number)===Number(current.class_number)+1);
         $('mhsPromoTargetClass').innerHTML=eligible.map(c=>'<option value="'+c.id+'">Class '+esc(c.class_number)+'</option>').join('')||'<option value="">No next class available — graduating class</option>';
-        $('mhsPromoteNow').disabled=!sources.length;
       };
       const studentMetrics=enrollment=>{
         const studentId=enrollment.student_id,yearId=enrollment.academic_year_id,classId=enrollment.class_id;
@@ -130,8 +137,8 @@
         return {status:failed?'failed':'passed',reason:'',gpa:Number(gpa.toFixed(2)),requiredIds};
       };
       const getSourceStudents=()=>{
-        const yearId=$('mhsPromoSource').value,classId=$('mhsPromoSourceClass').value;
-        return enrollments.filter(e=>e.academic_year_id===yearId&&e.class_id===classId&&e.enrollment_status==='active'&&e.students&&e.students.status!==false&&!enrollments.some(dest=>dest.student_id===e.student_id&&dest.academic_year_id===active.id)).map(e=>({...e,student:e.students,...studentMetrics(e)}));
+        const yearId=$('mhsPromoSource').value,classId=$('mhsPromoSourceClass').value,destinationId=$('mhsPromoTargetYear').value;
+        return enrollments.filter(e=>e.academic_year_id===yearId&&e.class_id===classId&&e.enrollment_status==='active'&&e.students&&e.students.status!==false&&!enrollments.some(dest=>dest.student_id===e.student_id&&dest.academic_year_id===destinationId)).map(e=>({...e,student:e.students,...studentMetrics(e)}));
       };
       let currentRows=[];
       const selected=()=>[...app.querySelectorAll('.mhs-promo-row:checked')].map(x=>x.value);
@@ -152,12 +159,15 @@
         $('mhsPromoAll').checked=false;updateCount();
         app.querySelectorAll('.mhs-promo-row').forEach(x=>x.onchange=updateCount);
       };
+      updateSourceOptions();
       updateTargetOptions();
+      $('mhsPromoTargetYear').addEventListener('change',()=>{updateSourceOptions();draw();});
       ['mhsPromoSource','mhsPromoSourceClass'].forEach(id=>$(id).addEventListener('change',()=>{if(id==='mhsPromoSourceClass')updateTargetOptions();draw();}));
       $('mhsPromoSearch').addEventListener('input',draw);
       $('mhsPromoAll').onchange=e=>{app.querySelectorAll('.mhs-promo-row:not(:disabled)').forEach(x=>x.checked=e.target.checked);updateCount();};
       $('mhsPromoteNow').onclick=async()=>{
-        const ids=selected(),targetClass=$('mhsPromoTargetClass').value,sourceClassId=$('mhsPromoSourceClass').value,sourceYearId=$('mhsPromoSource').value;
+        const ids=selected(),targetClass=$('mhsPromoTargetClass').value,sourceClassId=$('mhsPromoSourceClass').value,sourceYearId=$('mhsPromoSource').value,destination=destinationYear();
+        if(!destination||!sourceYearId)return notify('Select both a source and an active destination academic year.',true);
         if(!ids.length)return notify('Select at least one student with a completed Final Result.',true);
         const assignments=[];
         for(const id of ids){
@@ -173,22 +183,22 @@
           const key=item.target_class_id+'|'+item.roll;
           if(seen.has(key))return notify('Duplicate new roll '+item.roll+' in '+classLabel(item.target_class_id)+'. Assign a unique roll.',true);
           seen.add(key);
-          const conflict=enrollments.find(e=>e.academic_year_id===active.id&&e.class_id===item.target_class_id&&Number(e.roll)===item.roll&&!ids.includes(e.student_id));
-          if(conflict)return notify('Roll '+item.roll+' is already assigned in '+classLabel(item.target_class_id)+' for '+active.year+'. Choose another roll.',true);
+          const conflict=enrollments.find(e=>e.academic_year_id===destination.id&&e.class_id===item.target_class_id&&Number(e.roll)===item.roll&&!ids.includes(e.student_id));
+          if(conflict)return notify('Roll '+item.roll+' is already assigned in '+classLabel(item.target_class_id)+' for '+destination.year+'. Choose another roll.',true);
         }
         const promoted=assignments.filter(x=>x.promotion_status==='promoted').length,repeated=assignments.length-promoted;
         if(promoted>0&&!targetClass)return notify('No next class is configured. Passed students in the graduating class cannot be processed through class promotion.',true);
-        if(!confirm('Process '+assignments.length+' student(s) for '+active.year+'? '+(promoted?promoted+' will be promoted to '+classLabel(targetClass)+'; ':'')+repeated+' will repeat '+classLabel(sourceClassId)+' with Admin-assigned rolls.'))return;
+        if(!confirm('Process '+assignments.length+' student(s) for '+destination.year+'? '+(promoted?promoted+' will be promoted to '+classLabel(targetClass)+'; ':'')+repeated+' will repeat '+classLabel(sourceClassId)+' with Admin-assigned rolls.'))return;
         const btn=$('mhsPromoteNow');btn.disabled=true;
         try{
-          const {data,error}=await sb.rpc('mhs_process_student_promotion',{p_assignments:assignments,p_source_year_id:sourceYearId,p_target_year_id:active.id,p_source_class_id:sourceClassId,p_remarks:$('mhsPromoRemarks').value.trim()||null});
+          const {data,error}=await sb.rpc('mhs_process_student_promotion',{p_assignments:assignments,p_source_year_id:sourceYearId,p_target_year_id:destination.id,p_source_class_id:sourceClassId,p_remarks:$('mhsPromoRemarks').value.trim()||null});
           if(error)throw error;
           notify((data||assignments.length)+' student(s) processed successfully. New-year rolls have been saved.');
           await window.MHS_EXTRA.promotion();
         }catch(e){notify(e.message,true);btn.disabled=false;}
       };
-      if(!sources.length){
-        $('mhsPromoRows').innerHTML='<tr><td colspan="7">Create a new academic year and activate it before processing promotions.</td></tr>';
+      if(!eligibleSources().length){
+        $('mhsPromoRows').innerHTML='<tr><td colspan="7">No earlier academic year is available for the selected active destination year. Create/select a later active session after setting up its academic structure.</td></tr>';
         $('mhsPromoteNow').disabled=true;
       }else draw();
     }catch(e){panel('<div class="box"><h2>Promotion management unavailable</h2><p>'+esc(e.message)+'</p></div>');}
