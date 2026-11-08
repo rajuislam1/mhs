@@ -248,3 +248,11 @@ body.lang-bn{font-family:var(--font-bn)!important}body.lang-bn h1,body.lang-bn h
  .header>.menu{display:none}
  .header>nav{flex:1 0 100%;width:100%;margin-top:0}
 }
+
+
+/* Transparent header clock: remove the panel treatment and keep date/time clean. */
+.header-clock{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important;}
+.header-clock .clock-time{gap:0!important;}
+.header-clock .clock-time small{display:none!important;}
+.header-clock .clock-time strong{font-weight:700;}
+@media(min-width:851px){.header-clock{justify-content:center!important;}}
