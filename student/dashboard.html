@@ -107,9 +107,9 @@ window.addEventListener('afterprint',()=>document.body.classList.remove('print-m
   const boot = () => {
     if (!window.mhsSupabase || !window.mhsSupabaseReady) return;
     const profileBox=document.getElementById('profile');
-    if (!profileBox || !profileBox.textContent.includes('Student ID:') || !window.studentRecord) return;
+    if (!profileBox || !profileBox.textContent.includes('Student ID:') || typeof studentRecord === 'undefined' || !studentRecord) return;
     const sb=window.mhsSupabase;
-    const original=window.studentRecord;
+    const original=studentRecord;
     const select=document.getElementById('studentResultsYear');
     if(!select || select.dataset.ready==='1')return;
     select.dataset.ready='1';
@@ -130,11 +130,11 @@ window.addEventListener('afterprint',()=>document.body.classList.remove('print-m
         ]);
         if(re)throw re;if(ce)throw ce;if(se)throw se;
         const chosen=new Set((choices||[]).map(x=>x.class_subject_id));
-        window.publishedRows=rows||[];
-        window.requiredSubjectIds=(classSubjects||[]).filter(x=>x.is_compulsory||chosen.has(x.id)).map(x=>x.id);
+        publishedRows=rows||[];
+        requiredSubjectIds=(classSubjects||[]).filter(x=>x.is_compulsory||chosen.has(x.id)).map(x=>x.id);
         const yearRow=window.__mhsStudentYears.find(x=>x.id===yearId);
         const classRow=enrollment.classes||{};
-        window.studentRecord={...original,academic_years:{year:yearRow?.year},class_id:enrollment.class_id,roll:enrollment.roll,classes:{name:classRow.name,class_number:classRow.class_number}};
+        studentRecord={...original,academic_years:{year:yearRow?.year},class_id:enrollment.class_id,roll:enrollment.roll,classes:{name:classRow.name,class_number:classRow.class_number}};
         document.getElementById('msClass').innerHTML='<option value="'+enrollment.class_id+'">Class '+(classRow.class_number||classRow.name||'')+'</option>';
         document.getElementById('msExam').value='';
         document.getElementById('msSearch').value='';
