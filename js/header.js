@@ -3,6 +3,7 @@ try { const l=localStorage.getItem('mhs_lang')==='bn'?'bn':'en'; document.docume
 document.write(`
 <div class="topbar"><div data-en="EIIN: 120140 · Estd. 1962 · Dinajpur Education Board" data-bn="EIIN: ১২০১৪০ · স্থাপিত: ১৯৬২ · দিনাজপুর শিক্ষা বোর্ড">EIIN: 120140 · Estd. 1962 · Dinajpur Education Board</div><div><span>☎ 01752209431</span><span>✉ mokhleshpurhighschool@gmail.com</span></div></div>
 <header class="header"><a class="brand" href="index.html"><img src="assets/images/logo.svg" alt="MHS"><div><b data-en="Mokhleshpur High School" data-bn="মোখলেশপুর উচ্চ বিদ্যালয়">Mokhleshpur High School</b><span data-en="Established 1962" data-bn="স্থাপিত ১৯৬২">Established 1962</span></div></a>
+<div class="header-clock" aria-label="Bangladesh date and time"><div class="clock-date"><span class="clock-icon" aria-hidden="true">▦</span><span id="mhsHeaderDate">তারিখ লোড হচ্ছে…</span></div><div class="clock-time"><span class="clock-icon" aria-hidden="true">◷</span><strong id="mhsHeaderTime">--:-- --</strong><small>বাংলাদেশ সময়</small></div></div>
 <div class="header-motto"><span class="motto-dot"></span><div><b data-en="Learning for All" data-bn="সবার জন্য শিক্ষা">Learning for All</b><small data-en="A legacy of learning since 1962" data-bn="১৯৬২ সাল থেকে শিক্ষার ঐতিহ্য">A legacy of learning since 1962</small></div><strong>EIIN 120140</strong></div>
 <button class="menu" id="menu" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
 <nav id="nav">
@@ -31,6 +32,9 @@ document.write(`
 </nav></header><div class="ticker"><strong data-en="NOTICE" data-bn="নোটিশ">NOTICE</strong><div id="tickerItems"></div></div>`);
 (function(){
  const menu=document.getElementById('menu'),nav=document.getElementById('nav');
+ const dateEl=document.getElementById('mhsHeaderDate'),timeEl=document.getElementById('mhsHeaderTime');
+ const updateClock=()=>{const now=new Date(),options={timeZone:'Asia/Dhaka'};if(dateEl)dateEl.textContent=new Intl.DateTimeFormat('bn-BD',{...options,weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(now);if(timeEl)timeEl.textContent=new Intl.DateTimeFormat('bn-BD',{...options,hour:'2-digit',minute:'2-digit',hour12:true}).format(now);};
+ updateClock();window.setInterval(updateClock,30000);
  menu?.addEventListener('click',()=>{const open=nav?.classList.toggle('open');menu.setAttribute('aria-expanded',String(!!open));});
  document.querySelectorAll('.nav-drop-trigger').forEach(btn=>btn.addEventListener('click',()=>btn.parentElement.classList.toggle('expanded')));
  document.getElementById('langToggle')?.addEventListener('click',()=>window.MHS_I18N?.toggle());
