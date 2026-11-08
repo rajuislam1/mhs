@@ -113,9 +113,9 @@
       const sourceClass=()=>classes.find(c=>c.id===$('mhsPromoSourceClass').value);
       const sourceYear=()=>years.find(y=>y.id===$('mhsPromoSource').value);
       const updateTargetOptions=()=>{
-        const current=sourceClass(),eligible=classes.filter(c=>current&&Number(c.class_number)>Number(current.class_number));
-        $('mhsPromoTargetClass').innerHTML=eligible.map(c=>'<option value="'+c.id+'">Class '+esc(c.class_number)+'</option>').join('')||'<option value="">No higher active class available</option>';
-        $('mhsPromoteNow').disabled=!sources.length||!eligible.length;
+        const current=sourceClass(),eligible=classes.filter(c=>current&&Number(c.class_number)===Number(current.class_number)+1);
+        $('mhsPromoTargetClass').innerHTML=eligible.map(c=>'<option value="'+c.id+'">Class '+esc(c.class_number)+'</option>').join('')||'<option value="">No next class available — graduating class</option>';
+        $('mhsPromoteNow').disabled=!sources.length;
       };
       const studentMetrics=enrollment=>{
         const studentId=enrollment.student_id,yearId=enrollment.academic_year_id,classId=enrollment.class_id;
@@ -159,7 +159,6 @@
       $('mhsPromoteNow').onclick=async()=>{
         const ids=selected(),targetClass=$('mhsPromoTargetClass').value,sourceClassId=$('mhsPromoSourceClass').value,sourceYearId=$('mhsPromoSource').value;
         if(!ids.length)return notify('Select at least one student with a completed Final Result.',true);
-        if(!targetClass)return notify('No higher active destination class is available for passed students.',true);
         const assignments=[];
         for(const id of ids){
           const row=currentRows.find(s=>s.student_id===id);
@@ -178,7 +177,8 @@
           if(conflict)return notify('Roll '+item.roll+' is already assigned in '+classLabel(item.target_class_id)+' for '+active.year+'. Choose another roll.',true);
         }
         const promoted=assignments.filter(x=>x.promotion_status==='promoted').length,repeated=assignments.length-promoted;
-        if(!confirm('Process '+assignments.length+' student(s) for '+active.year+'? '+promoted+' will be promoted to '+classLabel(targetClass)+' and '+repeated+' will repeat '+classLabel(sourceClassId)+' with Admin-assigned rolls.'))return;
+        if(promoted>0&&!targetClass)return notify('No next class is configured. Passed students in the graduating class cannot be processed through class promotion.',true);
+        if(!confirm('Process '+assignments.length+' student(s) for '+active.year+'? '+(promoted?promoted+' will be promoted to '+classLabel(targetClass)+'; ':'')+repeated+' will repeat '+classLabel(sourceClassId)+' with Admin-assigned rolls.'))return;
         const btn=$('mhsPromoteNow');btn.disabled=true;
         try{
           const {data,error}=await sb.rpc('mhs_process_student_promotion',{p_assignments:assignments,p_source_year_id:sourceYearId,p_target_year_id:active.id,p_source_class_id:sourceClassId,p_remarks:$('mhsPromoRemarks').value.trim()||null});
