@@ -5,7 +5,8 @@ const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const MODULES = [
   'notices','attendance','teachers','results','routine','examroutine',
   'editrequests','gallery','students','subjects','studentSubjects',
-  'promotion','admissions','fees','feePayments','admitcards'
+  'promotion','admissions','fees','feePayments','admitcards',
+  'academicYears','hero','schoolStatistics','schoolContent'
 ];
 const cleanPermissions = value => {
   const input = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
