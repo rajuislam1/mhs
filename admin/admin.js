@@ -10,7 +10,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&
 function canAccess(key){
  if(role==='super_admin')return true;
  if(key==='overview')return true;
- if(key==='rolemanagement'||key==='settings')return false;
+ if(key==='rolemanagement')return false;
  return permissions[key]===true;
 }
 function applyNavigationAccess(){
