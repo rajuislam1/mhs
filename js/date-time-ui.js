@@ -32,7 +32,7 @@
    return NodeFilter.FILTER_ACCEPT;
   }});
   const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
-  nodes.forEach(node=>{node.nodeValue=node.nodeValue.replace(/(^|[^\d])([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?(?=$|[^\d])/g,(_,prefix,h,m)=>{const hour=Number(h),suffix=hour>=12?'PM':'AM';return prefix+(hour%12||12)+':'+m+' '+suffix;});});
+  nodes.forEach(node=>{const original=node.nodeValue;const formatted=original.replace(/(^|[^\d])([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?(?=$|[^\d])/g,(_,prefix,h,m)=>{const hour=Number(h),suffix=hour>=12?'PM':'AM';return prefix+(hour%12||12)+':'+m+' '+suffix;});if(formatted!==original)node.nodeValue=formatted;});
  }
  function watch(){
   enhance(document);formatDisplayedTimes(document.body);
