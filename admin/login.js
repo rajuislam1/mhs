@@ -37,31 +37,3 @@ document.getElementById('login').addEventListener('submit', async (e) => {
   }
 });
 
-document.getElementById('forgot-password').addEventListener('click', async () => {
-  const emailInput = document.getElementById('u');
-  const msg = document.getElementById('msg');
-  const email = emailInput.value.trim();
-
-  if (!email) {
-    msg.textContent = 'প্রথমে Administrator Email লিখুন, তারপর Forgot Password চাপুন।';
-    emailInput.focus();
-    return;
-  }
-
-  const button = document.getElementById('forgot-password');
-  button.disabled = true;
-  msg.textContent = 'Sending password recovery email...';
-
-  try {
-    const supabase = await window.mhsSupabaseReady;
-    const redirectTo = window.location.origin + '/admin/reset-password.html';
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-    if (error) throw error;
-    msg.textContent = 'যদি এই ইমেইলে Admin account থাকে, password reset link পাঠানো হয়েছে। Inbox/Spam দেখুন।';
-  } catch (error) {
-    console.error('Password recovery error:', error);
-    msg.textContent = error.message || 'Could not send password recovery email.';
-  } finally {
-    button.disabled = false;
-  }
-});

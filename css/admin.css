@@ -167,3 +167,49 @@ html,body{height:100%;min-height:100%;overflow:hidden}
 
 /* Ensure delegated admin navigation items stay hidden even when nav buttons use display:flex. */
 .admin-shell nav button[hidden],.admin-shell nav button[aria-hidden="true"]{display:none!important}
+
+
+/* Animated blob hover effect for all actionable buttons across the portals. */
+button:not(:disabled),input[type="button"]:not(:disabled),input[type="submit"]:not(:disabled),.primary,.btn-small,.logout{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  transform:translateZ(0);
+  transition:transform .22s ease,box-shadow .25s ease,filter .25s ease,background-color .25s ease;
+}
+button:not(:disabled)::before,input[type="button"]:not(:disabled)::before,input[type="submit"]:not(:disabled)::before,.primary::before,.btn-small::before,.logout::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  width:48%;
+  aspect-ratio:1;
+  left:26%;
+  top:115%;
+  border-radius:42% 58% 63% 37% / 45% 42% 58% 55%;
+  background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.48),rgba(255,255,255,.16) 58%,transparent 72%);
+  opacity:0;
+  pointer-events:none;
+  transform:scale(.45) rotate(0deg);
+  transition:opacity .2s ease;
+}
+button:not(:disabled):hover::before,input[type="button"]:not(:disabled):hover::before,input[type="submit"]:not(:disabled):hover::before,.primary:hover::before,.btn-small:hover::before,.logout:hover::before{
+  opacity:1;
+  animation:mhsBlobDrift 1.15s ease-in-out infinite alternate;
+}
+button:not(:disabled):hover,input[type="button"]:not(:disabled):hover,input[type="submit"]:not(:disabled):hover,.primary:hover,.btn-small:hover,.logout:hover{
+  transform:translateY(-2px);
+  box-shadow:0 9px 22px rgba(0,61,45,.2);
+  filter:brightness(1.06);
+}
+button:not(:disabled):active,input[type="button"]:not(:disabled):active,input[type="submit"]:not(:disabled):active,.primary:active,.btn-small:active,.logout:active{
+  transform:translateY(0) scale(.985);
+}
+@keyframes mhsBlobDrift{
+  0%{transform:translate(-22%,-35%) scale(1.05) rotate(-12deg);border-radius:42% 58% 63% 37% / 45% 42% 58% 55%}
+  50%{transform:translate(12%,-72%) scale(1.5) rotate(95deg);border-radius:62% 38% 39% 61% / 52% 61% 39% 48%}
+  100%{transform:translate(28%,-45%) scale(1.18) rotate(190deg);border-radius:35% 65% 55% 45% / 60% 38% 62% 40%}
+}
+@media(prefers-reduced-motion:reduce){
+  button,input[type="button"],input[type="submit"],.primary,.btn-small,.logout{transition:none!important}
+  button::before,input[type="button"]::before,input[type="submit"]::before,.primary::before,.btn-small::before,.logout::before{animation:none!important;transition:none!important}
+}
