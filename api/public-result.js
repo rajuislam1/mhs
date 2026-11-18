@@ -9,20 +9,31 @@ module.exports = async (req, res) => {
   const headers={apikey:key,Authorization:'Bearer '+key},base=url.replace(/\/$/,'')+'/rest/v1';
   async function get(path){const r=await fetch(base+path,{headers});const body=await r.json().catch(()=>null);if(!r.ok)throw new Error('Database request failed.');return body;}
   try{
-    const [classes,years]=await Promise.all([get('/classes?select=id&class_number=eq.'+encodeURIComponent(cls)+'&limit=1'),get('/academic_years?select=id&year=eq.'+encodeURIComponent(year)+'&limit=1')]);
-    if(!classes?.length||!years?.length)return res.status(404).json({error:'No published result found for the supplied details.'});
-    const students=await get('/students?select=id,name,roll,class_id,academic_year_id,section&roll=eq.'+encodeURIComponent(roll)+'&class_id=eq.'+encodeURIComponent(classes[0].id)+'&academic_year_id=eq.'+encodeURIComponent(years[0].id)+'&status=eq.true&limit=1');
+    const years=await get('/academic_years?select=id,year&year=eq.'+encodeURIComponent(year)+'&limit=1');
+    if(!years?.length)return res.status(404).json({error:'No published result found for the supplied details.'});
+    const yearId=years[0].id;
+    // Search the historic enrollment (class, roll, year) so promotions don't break old results.
+    const classRows=await get('/classes?select=id,class_number&class_number=eq.'+encodeURIComponent(cls)+'&limit=10');
+    if(!classRows?.length)return res.status(404).json({error:'No published result found for the supplied details.'});
+    const classIds=classRows.map(x=>x.id);
+    const classFilter='in.('+classIds.map(id=>encodeURIComponent(id)).join(',')+')';
+    const enrollments=await get('/student_enrollments?select=student_id,academic_year_id,class_id,roll,enrollment_status&academic_year_id=eq.'+encodeURIComponent(yearId)+'&roll=eq.'+encodeURIComponent(roll)+'&class_id='+classFilter+'&limit=10');
+    const enrollment=(enrollments||[]).find(x=>['active','completed','promoted','repeated'].includes(String(x.enrollment_status||'').toLowerCase()));
+    if(!enrollment)return res.status(404).json({error:'No published result found for the supplied details.'});
+    const classId=enrollment.class_id,studentId=enrollment.student_id;
+    const students=await get('/students?select=id,name,student_id&id=eq.'+encodeURIComponent(studentId)+'&limit=1');
     if(!students?.length)return res.status(404).json({error:'No published result found for the supplied details.'});
-    const student=students[0],yearId=years[0].id,classId=classes[0].id;
+    const student=students[0];
     const [rows,required,selected]=await Promise.all([
-      get('/results?select=id,class_subject_id,marks,grade,grade_point,exam_name,status,class_subjects(subject_id,subjects(name))&student_id=eq.'+encodeURIComponent(student.id)+'&academic_year_id=eq.'+encodeURIComponent(yearId)+'&status=eq.published&exam_name=eq.'+encodeURIComponent(exam)),
+      get('/results?select=id,class_subject_id,marks,grade,grade_point,exam_name,status,class_subjects(subject_id,subjects(name))&student_id=eq.'+encodeURIComponent(studentId)+'&academic_year_id=eq.'+encodeURIComponent(yearId)+'&status=eq.published&exam_name=eq.'+encodeURIComponent(exam)),
       get('/class_subjects?select=id,is_compulsory&class_id=eq.'+encodeURIComponent(classId)+'&academic_year_id=eq.'+encodeURIComponent(yearId)),
-      get('/student_subjects?select=class_subject_id&student_id=eq.'+encodeURIComponent(student.id))
+      get('/student_subjects?select=class_subject_id&student_id=eq.'+encodeURIComponent(studentId))
     ]);
     const selectedIds=new Set((selected||[]).map(x=>x.class_subject_id));
     const requiredIds=(required||[]).filter(x=>x.is_compulsory||selectedIds.has(x.id)).map(x=>x.id);
     const eligibleRows=(rows||[]).filter(r=>requiredIds.includes(r.class_subject_id));
     const subjects=eligibleRows.map(r=>({subject:r.class_subjects?.subjects?.name||'Subject',marks:Number(r.marks||0),grade:r.grade||'',point:Number(r.grade_point||0),class_subject_id:r.class_subject_id}));
+    if(!subjects.length)return res.status(404).json({error:'No published result found for the supplied details.'});
     const publishedIds=new Set(eligibleRows.map(r=>r.class_subject_id));
     const complete=requiredIds.length>0&&requiredIds.every(id=>publishedIds.has(id));
     const total=subjects.reduce((sum,row)=>sum+row.marks,0),average=subjects.length?total/subjects.length:0;
