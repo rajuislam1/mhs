@@ -3,3 +3,33 @@ body.mhs-admin-theme{--mhs-admin-bg:#f4f2ec;--mhs-admin-ink:#15233a;--mhs-admin-
 body.mhs-admin-theme .admin-shell aside{background:linear-gradient(180deg,#101f36,#1b3153)!important;color:#f7f3e9!important;border-right:1px solid rgba(199,164,91,.3)}body.mhs-admin-theme .side-brand{color:#f6e9c8!important}body.mhs-admin-theme .side-caption{color:#c7a45b!important;letter-spacing:2px}
 body.mhs-admin-theme .admin-shell nav button{color:#d7deeb!important;border:1px solid transparent}body.mhs-admin-theme .admin-shell nav button:hover,body.mhs-admin-theme .admin-shell nav button.active{background:linear-gradient(100deg,#314c70,#213854)!important;border-color:#c7a45b55!important;color:#fff!important}
 body.mhs-admin-theme .admin-head{background:#fffdf9!important;border-bottom:2px solid #c7a45b55!important}body.mhs-admin-theme .admin-head h1,body.mhs-admin-theme .panel h1,body.mhs-admin-theme .panel h2{color:#15243b!important}body.mhs-admin-theme .admin-head a{color:#9b7833!important}body.mhs-admin-theme .panel{background:#f4f2ec!important}body.mhs-admin-theme .stat,body.mhs-admin-theme .box{border-color:#d8cfbc!important;box-shadow:0 8px 24px rgba(16,31,54,.055)}body.mhs-admin-theme .stat b{color:#a47c35!important}body.mhs-admin-theme .primary,body.mhs-admin-theme .login-card button{background:linear-gradient(100deg,#203a5d,#142641)!important}body.mhs-admin-theme.login-page,body.mhs-admin-theme .login-page{background:radial-gradient(circle at 15% 10%,#c7a45b44,transparent 36%),linear-gradient(135deg,#101f36,#1b3153)!important}body.mhs-admin-theme .login-card{border-top:4px solid #c7a45b}body.mhs-admin-theme .login-card a{color:#9b7833}
+
+/* Full Admin Dashboard identity — applies to the complete portal, not only login. */
+body.mhs-admin-theme{background:#f2f0e9!important;color:#17263d!important}
+body.mhs-admin-theme .admin-shell{background:#f2f0e9!important}
+body.mhs-admin-theme .admin-shell>aside{background:linear-gradient(180deg,#101f36 0%,#182d4b 58%,#243d5e 100%)!important;color:#f8f2e4!important;border-right:1px solid #c7a45b55!important}
+body.mhs-admin-theme .admin-shell .side-brand{color:#f7e9c7!important;border-bottom-color:#c7a45b55!important}
+body.mhs-admin-theme .admin-shell .side-caption{color:#d2b36f!important}
+body.mhs-admin-theme .admin-shell nav button{color:#dce4ef!important;background:transparent!important;border:1px solid transparent!important}
+body.mhs-admin-theme .admin-shell nav button:before{background:#ffffff18!important;color:#e2c47e!important}
+body.mhs-admin-theme .admin-shell nav button:hover,body.mhs-admin-theme .admin-shell nav button.active{background:linear-gradient(100deg,#304d70,#233b5a)!important;border:1px solid #c7a45b88!important;color:#fff!important;box-shadow:0 5px 16px #07172c55!important}
+body.mhs-admin-theme .admin-shell .logout{background:#fff!important;color:#8d2930!important;border:1px solid #e5c5c3!important}
+body.mhs-admin-theme .admin-head{background:#fffdf8!important;border-bottom:2px solid #c7a45b!important;box-shadow:0 4px 18px #182d4b10!important}
+body.mhs-admin-theme .admin-head span{color:#9a7b42!important}
+body.mhs-admin-theme .admin-head h1,body.mhs-admin-theme .panel h1,body.mhs-admin-theme .panel h2,body.mhs-admin-theme .panel h3,body.mhs-admin-theme .box h2{color:#172b47!important}
+body.mhs-admin-theme .admin-head a,body.mhs-admin-theme .head-actions .lang-btn{color:#8b6a2d!important;border-color:#d8c69e!important}
+body.mhs-admin-theme #app,body.mhs-admin-theme .panel{background:#f2f0e9!important}
+body.mhs-admin-theme .stat,body.mhs-admin-theme .box,body.mhs-admin-theme .panel .card,body.mhs-admin-theme .panel .panel-card{background:#fffefa!important;border:1px solid #ded5c2!important;box-shadow:0 8px 24px #172b4710!important}
+body.mhs-admin-theme .stat{border-top:3px solid #b99750!important}
+body.mhs-admin-theme .stat b{color:#9b7835!important}
+body.mhs-admin-theme .stat span,body.mhs-admin-theme .hint{color:#65738a!important}
+body.mhs-admin-theme .primary,body.mhs-admin-theme .form button,body.mhs-admin-theme .tabs button.active,body.mhs-admin-theme .quick-grid button:hover{background:linear-gradient(100deg,#203a5d,#142641)!important;color:#fff!important;border-color:#c7a45b!important}
+body.mhs-admin-theme .btn-small,body.mhs-admin-theme .tabs button,body.mhs-admin-theme .quick-grid button{background:#f4f0e6!important;color:#344b68!important;border:1px solid #d9cba9!important}
+body.mhs-admin-theme input:focus,body.mhs-admin-theme select:focus,body.mhs-admin-theme textarea:focus{border-color:#b18b43!important;box-shadow:0 0 0 3px #c7a45b30!important}
+body.mhs-admin-theme .table th{background:#e9e4d8!important;color:#263a55!important}
+body.mhs-admin-theme .table td{border-bottom-color:#e7e0d2!important}
+body.mhs-admin-theme .table tbody tr:hover{background:#f7f3e9!important}
+body.mhs-admin-theme .pill-status{background:#e9efe9!important;color:#315b49!important}
+body.mhs-admin-theme .attendance-hero{background:linear-gradient(115deg,#eee8d9,#e7edf5)!important;border-color:#d8c69e!important}
+body.mhs-admin-theme .attendance-kicker,body.mhs-admin-theme .attendance-summary{color:#344b68!important}
+body.mhs-admin-theme .attendance-icon{background:linear-gradient(135deg,#203a5d,#b18b43)!important}
