@@ -1,2 +1,32 @@
 /* MHS Teacher portal blue/teal academic theme */
 body.mhs-teacher-theme .admin-shell aside{background:linear-gradient(180deg,#123c59,#155a8b 65%,#167e86)!important;color:#f3fbff!important}body.mhs-teacher-theme .side-brand{color:#fff!important}body.mhs-teacher-theme .admin-shell nav button{color:#d6edf8!important}body.mhs-teacher-theme .admin-shell nav button:hover,body.mhs-teacher-theme .admin-shell nav button.active{background:rgba(255,255,255,.16)!important;border-left:3px solid #7be0df!important;color:#fff!important}body.mhs-teacher-theme .admin-head{border-bottom:2px solid #72c9d4!important}body.mhs-teacher-theme .admin-head a{color:#167e86!important}body.mhs-teacher-theme .stat b{color:#155a8b!important}body.mhs-teacher-theme .primary,body.mhs-teacher-theme .login-card button{background:linear-gradient(100deg,#155a8b,#167e86)!important}body.mhs-teacher-theme.login-page,body.mhs-teacher-theme .login-page{background:radial-gradient(circle at 10% 10%,#7be0df33,transparent 38%),linear-gradient(135deg,#123c59,#167e86)!important}body.mhs-teacher-theme .login-card{border-top:4px solid #72c9d4}body.mhs-teacher-theme .login-card a{color:#167e86}
+
+/* Full Teacher Portal identity — distinct from Admin and Student portals. */
+body.mhs-teacher-theme{background:#eef5f8!important;color:#17354a!important}
+body.mhs-teacher-theme .admin-shell{background:#eef5f8!important}
+body.mhs-teacher-theme .admin-shell>aside{background:linear-gradient(180deg,#103b57 0%,#155b83 58%,#147c83 100%)!important;color:#f2fbff!important;border-right:1px solid #72c9d455!important}
+body.mhs-teacher-theme .admin-shell .side-brand{color:#fff!important;border-bottom-color:#ffffff30!important}
+body.mhs-teacher-theme .admin-shell .side-caption{color:#a8e7e5!important}
+body.mhs-teacher-theme .admin-shell nav button{color:#d8edf6!important;background:transparent!important;border:1px solid transparent!important}
+body.mhs-teacher-theme .admin-shell nav button:before{background:#ffffff18!important;color:#9be5e1!important}
+body.mhs-teacher-theme .admin-shell nav button:hover,body.mhs-teacher-theme .admin-shell nav button.active{background:linear-gradient(100deg,#17658c,#147c83)!important;border:1px solid #8ce0df88!important;color:#fff!important;box-shadow:0 5px 16px #062b4055!important}
+body.mhs-teacher-theme .admin-head{background:#fbfeff!important;border-bottom:2px solid #72c9d4!important;box-shadow:0 4px 18px #123d5510!important}
+body.mhs-teacher-theme .admin-head span{color:#24758a!important}
+body.mhs-teacher-theme .admin-head h1,body.mhs-teacher-theme .panel h1,body.mhs-teacher-theme .panel h2,body.mhs-teacher-theme .panel h3,body.mhs-teacher-theme .box h2{color:#173d56!important}
+body.mhs-teacher-theme .admin-head a,body.mhs-teacher-theme .head-actions .lang-btn{color:#147c83!important;border-color:#9bd6dc!important}
+body.mhs-teacher-theme #app,body.mhs-teacher-theme .panel{background:#eef5f8!important}
+body.mhs-teacher-theme .stat,body.mhs-teacher-theme .box,body.mhs-teacher-theme .panel .card,body.mhs-teacher-theme .panel .panel-card{background:#fbfeff!important;border:1px solid #cfe2e9!important;box-shadow:0 8px 24px #123d5510!important}
+body.mhs-teacher-theme .stat{border-top:3px solid #2697a2!important}
+body.mhs-teacher-theme .stat b{color:#176b8c!important}
+body.mhs-teacher-theme .stat span,body.mhs-teacher-theme .hint{color:#557383!important}
+body.mhs-teacher-theme .primary,body.mhs-teacher-theme .form button,body.mhs-teacher-theme .tabs button.active,body.mhs-teacher-theme .quick-grid button:hover{background:linear-gradient(100deg,#155a8b,#167e86)!important;color:#fff!important;border-color:#72c9d4!important}
+body.mhs-teacher-theme .btn-small,body.mhs-teacher-theme .tabs button,body.mhs-teacher-theme .quick-grid button{background:#e6f2f5!important;color:#155a78!important;border:1px solid #b9dce2!important}
+body.mhs-teacher-theme input:focus,body.mhs-teacher-theme select:focus,body.mhs-teacher-theme textarea:focus{border-color:#2697a2!important;box-shadow:0 0 0 3px #72c9d433!important}
+body.mhs-teacher-theme .table th{background:#dcecf1!important;color:#17445d!important}
+body.mhs-teacher-theme .table td{border-bottom-color:#d9e8ed!important}
+body.mhs-teacher-theme .table tbody tr:hover{background:#edf8fa!important}
+body.mhs-teacher-theme .pill-status{background:#dff4ef!important;color:#176b63!important}
+body.mhs-teacher-theme .teacher-notice-bar{background:#e5f5f6!important;border-color:#a9dce0!important;color:#17495d!important}
+body.mhs-teacher-theme .teacher-request{background:#fbfeff!important;border-color:#cfe2e9!important}
+body.mhs-teacher-theme .teacher-request.pending{background:#fff9e8!important;border-left-color:#d3a23b!important}
+body.mhs-teacher-theme .teacher-request.done{border-left-color:#2697a2!important}
