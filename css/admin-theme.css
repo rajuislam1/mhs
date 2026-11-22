@@ -33,3 +33,32 @@ body.mhs-admin-theme .pill-status{background:#e9efe9!important;color:#315b49!imp
 body.mhs-admin-theme .attendance-hero{background:linear-gradient(115deg,#eee8d9,#e7edf5)!important;border-color:#d8c69e!important}
 body.mhs-admin-theme .attendance-kicker,body.mhs-admin-theme .attendance-summary{color:#344b68!important}
 body.mhs-admin-theme .attendance-icon{background:linear-gradient(135deg,#203a5d,#b18b43)!important}
+
+
+/* Colorful Admin overview statistic cards */
+body.mhs-admin-theme .mhs-overview-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:2px 0 22px;flex-wrap:wrap}
+body.mhs-admin-theme .mhs-overview-eyebrow{display:block;color:#9b7835;font-size:11px;font-weight:800;letter-spacing:1.7px}
+body.mhs-admin-theme .mhs-overview-heading h2{margin:5px 0 2px;font-size:25px;font-weight:800}
+body.mhs-admin-theme .mhs-overview-heading p{margin:0;color:#718096;font-size:13px}
+body.mhs-admin-theme .mhs-live-indicator{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #d9e8df;border-radius:99px;background:#f0f8f3;color:#276749;font-size:12px;font-weight:700}
+body.mhs-admin-theme .mhs-live-indicator i{width:8px;height:8px;border-radius:50%;background:#22a06b;box-shadow:0 0 0 4px #22a06b20}
+body.mhs-admin-theme .mhs-overview-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+body.mhs-admin-theme .mhs-overview-card{--card-bg:#eff8f2;--card-ink:#18734e;--card-line:#d8ecdf;position:relative;display:flex;flex-direction:column;align-items:flex-start;min-width:0;min-height:174px;padding:19px 18px 15px;border:1px solid var(--card-line)!important;border-top:0!important;border-radius:17px!important;background:var(--card-bg)!important;color:var(--card-ink)!important;text-align:left;box-shadow:0 7px 20px rgba(25,45,75,.055)!important;cursor:pointer}
+body.mhs-admin-theme .mhs-overview-card:hover{transform:translateY(-4px);box-shadow:0 14px 28px rgba(25,45,75,.12)!important}
+body.mhs-admin-theme .mhs-overview-icon{display:grid;place-items:center;width:43px;height:43px;margin-bottom:12px;border-radius:13px;background:#ffffffb8;color:var(--card-ink)}
+body.mhs-admin-theme .mhs-overview-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+body.mhs-admin-theme .mhs-overview-value{font-size:30px;line-height:1.15;font-weight:800;letter-spacing:-1px;color:var(--card-ink)}
+body.mhs-admin-theme .mhs-overview-label{margin-top:4px;color:#334155;font-size:13px;font-weight:700}
+body.mhs-admin-theme .mhs-overview-open{display:flex;justify-content:space-between;align-items:center;width:100%;margin-top:auto;padding-top:13px;color:var(--card-ink);font-size:11px;font-weight:700;opacity:.78}
+body.mhs-admin-theme .mhs-overview-card--notices{--card-bg:#eaf7ef;--card-ink:#16804e;--card-line:#cce9d7}
+body.mhs-admin-theme .mhs-overview-card--teachers{--card-bg:#edf3ff;--card-ink:#356bc0;--card-line:#d4e1fa}
+body.mhs-admin-theme .mhs-overview-card--students{--card-bg:#fff4e8;--card-ink:#c47724;--card-line:#f4dfc5}
+body.mhs-admin-theme .mhs-overview-card--results{--card-bg:#f4efff;--card-ink:#8054b7;--card-line:#e3d8f5}
+body.mhs-admin-theme .mhs-overview-card--gallery{--card-bg:#eaf7fb;--card-ink:#23839b;--card-line:#d0eaf1}
+body.mhs-admin-theme .mhs-overview-card--achievements{--card-bg:#fff0f3;--card-ink:#bd5574;--card-line:#f4d7e0}
+body.mhs-admin-theme .mhs-overview-card--admissions{--card-bg:#fff8df;--card-ink:#a27b1c;--card-line:#f0e4b8}
+body.mhs-admin-theme .mhs-overview-footer{margin-top:22px}
+body.mhs-admin-theme .mhs-overview-footer>p{color:#718096;margin-top:-8px}
+@media(max-width:1100px){body.mhs-admin-theme .mhs-overview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){body.mhs-admin-theme .mhs-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}body.mhs-admin-theme .mhs-overview-card{min-height:158px;padding:14px}body.mhs-admin-theme .mhs-overview-heading h2{font-size:21px}}
+@media(max-width:380px){body.mhs-admin-theme .mhs-overview-grid{grid-template-columns:1fr}}
