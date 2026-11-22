@@ -62,3 +62,111 @@ body.mhs-admin-theme .mhs-overview-footer>p{color:#718096;margin-top:-8px}
 @media(max-width:1100px){body.mhs-admin-theme .mhs-overview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){body.mhs-admin-theme .mhs-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}body.mhs-admin-theme .mhs-overview-card{min-height:158px;padding:14px}body.mhs-admin-theme .mhs-overview-heading h2{font-size:21px}}
 @media(max-width:380px){body.mhs-admin-theme .mhs-overview-grid{grid-template-columns:1fr}}
+
+
+/* Dashboard cards layout fix — 2026-11-22 */
+body.mhs-admin-theme #app .mhs-overview-grid{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  align-items:stretch!important;
+  gap:14px!important;
+}
+body.mhs-admin-theme #app .mhs-overview-card{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  grid-template-columns:40px minmax(0,1fr)!important;
+  grid-template-rows:auto auto auto!important;
+  align-content:center!important;
+  align-items:center!important;
+  column-gap:12px!important;
+  row-gap:2px!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:116px!important;
+  height:116px!important;
+  padding:15px!important;
+  overflow:hidden!important;
+  text-align:left!important;
+  border:1px solid var(--card-line)!important;
+  border-radius:13px!important;
+  box-shadow:0 4px 14px rgba(25,45,75,.06)!important;
+  transform:none;
+}
+body.mhs-admin-theme #app .mhs-overview-card::before,
+body.mhs-admin-theme #app .mhs-overview-card::after{content:none!important;display:none!important}
+body.mhs-admin-theme #app .mhs-overview-card:hover{
+  transform:translateY(-2px)!important;
+  box-shadow:0 8px 20px rgba(25,45,75,.11)!important;
+}
+body.mhs-admin-theme #app .mhs-overview-icon{
+  grid-column:1!important;
+  grid-row:1 / span 2!important;
+  display:grid!important;
+  place-items:center!important;
+  box-sizing:border-box!important;
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  min-height:38px!important;
+  max-width:38px!important;
+  max-height:38px!important;
+  margin:0!important;
+  padding:0!important;
+  border-radius:11px!important;
+  overflow:hidden!important;
+}
+body.mhs-admin-theme #app .mhs-overview-icon svg{
+  display:block!important;
+  width:19px!important;
+  height:19px!important;
+  min-width:19px!important;
+  min-height:19px!important;
+  max-width:19px!important;
+  max-height:19px!important;
+  flex:none!important;
+}
+body.mhs-admin-theme #app .mhs-overview-value{
+  grid-column:2!important;
+  grid-row:1!important;
+  display:block!important;
+  margin:0!important;
+  font-size:26px!important;
+  line-height:1.1!important;
+  font-weight:800!important;
+}
+body.mhs-admin-theme #app .mhs-overview-label{
+  grid-column:2!important;
+  grid-row:2!important;
+  display:block!important;
+  min-width:0!important;
+  margin:2px 0 0!important;
+  font-size:12px!important;
+  line-height:1.3!important;
+  overflow-wrap:anywhere!important;
+}
+body.mhs-admin-theme #app .mhs-overview-open{
+  grid-column:1 / -1!important;
+  grid-row:3!important;
+  display:flex!important;
+  justify-content:space-between!important;
+  width:100%!important;
+  margin:7px 0 0!important;
+  padding:6px 0 0!important;
+  border-top:1px solid var(--card-line)!important;
+  font-size:10px!important;
+  line-height:1.2!important;
+}
+body.mhs-admin-theme #app .mhs-overview-footer{margin-top:18px!important}
+@media(max-width:1100px){
+  body.mhs-admin-theme #app .mhs-overview-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:760px){
+  body.mhs-admin-theme #app .mhs-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  body.mhs-admin-theme #app .mhs-overview-card{height:108px!important;min-height:108px!important;padding:12px!important;column-gap:9px!important}
+  body.mhs-admin-theme #app .mhs-overview-icon{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;max-width:34px!important;max-height:34px!important}
+  body.mhs-admin-theme #app .mhs-overview-icon svg{width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important;max-width:17px!important;max-height:17px!important}
+}
+@media(max-width:380px){
+  body.mhs-admin-theme #app .mhs-overview-grid{grid-template-columns:1fr!important}
+}
